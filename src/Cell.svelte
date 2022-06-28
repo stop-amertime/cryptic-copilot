@@ -20,24 +20,25 @@ const dispatch = createEventDispatcher();
         class= "valid {sel} {num}"
         on:click={() => dispatch('clicked', slots)}>
 
-            {#key letter} 
-                {#if letter.toUpperCase() != letter.toLowerCase()}
+
                 <svg 
-                class="letter"
-                in:slide={{ duration:500, easing:cubicOut}}
-                out:slide={{duration:200, easing:cubicOut}} 
+                class="letter"                
                 width="100%"
                 height="100%"
                 viewBox="-25 -75 100 100"
                 preserveAspectRatio="none">
 
-                    <text x="0" y="0">
+                    {#key letter} 
+
+
+                    <text
+                        in:fly={{y: 70, duration:500, easing:cubicOut}}
+                        out:fly={{y: -70, duration:500, easing:cubicOut}}
+                        x="0" y="0">
                         {letter}
                     </text>
-
+                    {/key} 
                 </svg> 
-                {/if}    
-            {/key} 
 
         </div>
 {:else}
