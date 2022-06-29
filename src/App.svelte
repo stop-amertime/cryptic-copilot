@@ -17,14 +17,18 @@ $gridTemplate = Load.lastOrDefaultLayout()
   <div id="gridArea">
     {#await $gridTemplate}
 
-    <div id="gridLoading"> <img src="/src/assets/icons/grid-loading.gif"></div>
+    <div id="gridLoading"> <img src="/src/assets/icons/grid-loading.gif" alt="Grid Loading Spinner"></div>
+
     {:then value} 
+
     <Grid gridTemplate={value}/> 
+
     {/await}
+    
   </div>
 
 
-  
+
   <div id="panelArea">
     <Panel/>
   </div>

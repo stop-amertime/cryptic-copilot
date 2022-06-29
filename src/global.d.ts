@@ -32,8 +32,8 @@ interface IWord extends IDictionaryEntry {
 
 interface IDevice {
     words: Array<IWord>
-    type: "Anagram" | "Container" | "Charade" | "Multi",
-    score: number,
+    type?: "Anagram" | "Container" | "Charade" | "Multi",
+    score?: number,
 }
 
 type IWordSlot = {
@@ -76,15 +76,12 @@ interface IStateRecord {
     // For use by the file manager. 
 }
 
-interface IDeviceList {
-    anagrams?: Array<any>
-    containers?: Array<any>
-    charades?: Array<any>
-    definitions?: Array<any> 
-    hiddenwords?: Array<any>
-}
+type IDeviceList = {type: string, list:Array<IDevice>};
+type IDeviceSet = IDeviceList[];
 
+// interface IThesaurusEntry {
 
+// }   
 
 
 

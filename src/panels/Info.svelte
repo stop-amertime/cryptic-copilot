@@ -1,16 +1,16 @@
 <script>
 
 import { selectedSlotWord } from "../stores";
-import { DeviceFinder }  from '../modules/ClueEngine';
+import { WordInfo }  from '../modules/ClueEngine';
 import VirtualList from '@sveltejs/svelte-virtual-list'
 
 let isActive = true;
-let deviceLists = null; 
+let deviceSet = null; 
 
 selectedSlotWord.subscribe( (slotWord) => {
     if (slotWord.word)
     {
-        deviceLists = DeviceFinder.devicesFor(slotWord.word);
+        deviceSet = WordInfo.getDevices(slotWord.word);
         //dictionaryList = DeviceFinder.definitions()
     }
 });
@@ -18,7 +18,7 @@ selectedSlotWord.subscribe( (slotWord) => {
 </script>
 
 
-{#await deviceLists}
+{#await deviceSet}
 <div> Loading Devices.. </div>
 
 {:then lists}

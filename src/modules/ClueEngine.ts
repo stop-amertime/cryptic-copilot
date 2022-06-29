@@ -12,6 +12,10 @@ const enum WordDirection {
     Anagram = "word anagram"
 }
 
+const trivialEndings = ["ER", "ED", "S", "ING", "ABLE"]; //?TODO TOP 
+const averageScore = (arr) => {return arr.reduce((partialsum, x) => partialsum + DICTIONARY.get(x).score, 0) / arr.length;}
+
+
 ////// HELPERS  
 // Hashing { 
 
@@ -164,7 +168,137 @@ function generateMatchRegex(letters: string[]) : RegExp{
     
     return new RegExp("(\\b|^)" + searchstring + "(\\b|$)");
 }
-function rateDevice(wordarray) {
+
+function crawlAnagramTree(inputword, searchList: Map<any,any> = DICTIONARY) {
+            
+    let inputhash = getHash(inputword);
+    let mycompleteanagrams = [];
+    let mypartialanagrams = [];   
+            
+    // The crazy magic happens. 
+    for (let [key, value] of searchList) {
+        if (value.hash == inputhash) { mycompleteanagrams.push([key]) }
+        else if (inputhash % value.hash == 0) { mypartialanagrams.push([key,{"hash":value.hash}]) }
+    }
+
+    //let mysearcharray = [...(wordArraytoHashMap(mypartialanagrams))];
+
+    // For partial anagrams, run function recursively on remaining letters. 
+    // Forward search only - create searchlist based on words further forward in the list. 
+    let searchLength = inputword.length >> 1
+            
+    for (let i=0; i<mypartialanagrams.length;i++) {
+        let pa  = mypartialanagrams[i][0];
+        let forwardSearchMap = new Map(mypartialanagrams.slice(i));
+
+        if (pa.length < searchLength) { continue; }
+        let remainingWord = getLeftoverLetters(inputword, pa).join("");
+        let anagramsofremainingword = crawlAnagramTree(remainingWord, forwardSearchMap);
+        if (anagramsofremainingword == null) { continue; }
+
+        for (let pair of anagramsofremainingword) {     //REMOVE THIS LOOP TO "HEIRARCHICALISE"
+            let accumulated = [pa, pair].flat(1);       //FLATTENER 
+            mycompleteanagrams.push(accumulated);
+        }
+    }
+
+    if (mycompleteanagrams.length == 0) { return null; }
+    return mycompleteanagrams;
+}
+
+function isDevice(origWord, subWordArray, depth = 0) : Array<IWord> {
+
+    let inputWord = origWord;
+
+    // TRIVIAL CASE - SINGLE WORD
+    if (subWordArray.length == 1
+        && subWordArray[0].length == inputWord.length) {
+
+        return [ {"word": subWordArray[0], "direction": findDirection(subWordArray[0], inputWord)} as IWord ]
+    }
+
+
+    // MULTIPLE WORDS - RECURSIVELY BUILD AS CHARADE/CONTAINER
+    for (let i = 0; i < subWordArray.length; i++) {
+        let subword = subWordArray[i];
+
+        let charade = (isCharade(subWordArray[i], inputWord))
+        if (charade == "start") {
+            let matched, leftovers = "";
+            [matched, leftovers] = [inputWord.slice(0, subword.length), inputWord.slice(subword.length)];
+            subWordArray.splice(i, 1);
+            i = -1;
+            let recursive = isDevice(leftovers, subWordArray, depth);
+            if (recursive != null) {
+                return [{"word": subword, "direction": findDirection(subword, matched)} as IWord, ...recursive] ;
+            }
+        }
+
+        else if (charade == "end") {
+            //if (trivialEndings.includes(subWordArray[i])) {continue;} //throw away if 'trivial' word ending.
+
+            let subword = subWordArray[i];
+
+            let matched = inputWord.slice(-1 * subword.length);
+            let leftovers = inputWord.slice(0, inputWord.length - subword.length);
+
+            subWordArray.splice(i, 1);
+            let recursive = isDevice(leftovers, subWordArray, depth);
+            if (recursive != null) {
+                return [...recursive, {"word": subword, "direction": findDirection(subword, matched)} as IWord];
+            }
+        }
+
+        else if (depth == 0)   //Try a container IF not already in a container (avoid double nesting)
+        {
+
+            let cont = isContainer(subword, inputWord);
+            if (cont != null) {
+                let matched, leftovers = "";
+                [matched, leftovers] = cont;
+                subWordArray.splice(i, 1);
+                let recursive = isDevice(leftovers, subWordArray, 1);
+                if (recursive != null) {
+                    return [ {"word": subword, "direction": findDirection(subword, matched), "contains": recursive} as IWord];
+                }
+
+            }
+        }
+    }
+
+    //NO MATCHES OF ANY KIND: RETURN NULL.
+    return null;
+
+
+    function isCharade(subword, baseword) {
+        switch ([...subword].sort().join('')) {
+
+            case [...baseword.substring(0, subword.length)].sort().join(''): return "start";
+            case [...baseword.substring(baseword.length - subword.length)].sort().join(''): return "end";
+            default: return null;
+        }
+    }
+
+    function isContainer(subword, baseword) {
+        if (subword.length < 2) { return null; }
+
+        let sorted = [...subword].sort().join('')
+        let lengthdiff = baseword.length - subword.length;
+        if (lengthdiff == 0) { return null; } //just in case
+
+        for (let i = 1; i + lengthdiff < baseword.length; i++) {
+            let middleremoved = baseword.slice(0, i) + baseword.slice(i + lengthdiff);
+
+            if ([...middleremoved].sort().join('') == sorted) {
+                return [middleremoved, baseword.slice(i, i + lengthdiff)]
+
+            }
+        }
+        return null;
+    }
+}
+
+function rateDevice(wordarray: Array<IWord>) {
 
     let comp = 0;  //complexity
     let score = 0; //scoreofwords
@@ -178,8 +312,8 @@ function rateDevice(wordarray) {
             abouts += 1;
         }
 
-        if (wordarray[i].dir == "reversed") { comp += 1 } // REVERSE factor.
-        else if (wordarray[i].dir == "scrambled") { comp += 2 } // SCRAMBLED factor.
+        if (wordarray[i].direction == WordDirection.Reverse) { comp += 1 } // REVERSE factor.
+        else if (wordarray[i].direction == WordDirection.Anagram) { comp += 2 } // SCRAMBLED factor.
 
         score += wordarray[i].score;
         score += wordarray[i].word.length * 0.5;
@@ -193,6 +327,49 @@ function rateDevice(wordarray) {
     return out;
 
 
+}
+
+function categoriseAnagrams(anagramList, targetword) {
+    
+    let containers = {type:"Containers", list:[]} as IDeviceList;
+    let anagrams = {type:"Anagrams", list:[]} as IDeviceList; 
+
+    for (let anagramSet of anagramList) { 
+
+        if (anagramSet.join("").length != targetword.length) {continue;}
+
+        let device = isDevice(targetword, anagramSet);
+
+        if (!device) {      //Filter out incomplete partials...
+            anagrams.list.push({"words":anagramSet, "type": "Anagram" } as IDevice);
+        }
+
+        else {
+            if (!trivialEndings.includes(device[device.length-1].word))             //Filter out trivial endings, doesnt work??. 
+            containers.list.push({"words":device, "type":"Container"} as IDevice);
+        }
+    }
+
+    return [anagrams, containers];
+}
+
+function sortDevices(devices: IDeviceList[]){
+    
+    for (let type of devices) {
+
+        if (type.type = "Anagrams"){
+        type.list.sort((a, b) => {
+            return (
+                averageScore(b.words) - averageScore(a.words))
+                || b.words.length - a.words.length
+        });}
+
+        else if (type.type = "Containers"){
+            type.list.sort(function (a, b) {       //= sort devices 
+            return rateDevice(b.words) - rateDevice(a.words)
+        });
+        }
+    }
 }
 
 export const validWordFinder = {
@@ -257,183 +434,17 @@ export const validWordFinder = {
 
 }
 
-async function searchDevices(targetword){         //== THE NEW DEVICE SEARCHER WITH PRIME-HASHING! 
-        
-    const trivialEndings = ["ER", "ED", "S", "ING", "ABLE"]; //?TODO TOP 
-    let devicesDTO = { "anagrams": [], "containers": [], "charades": [], "hiddenwords": [] };
-
-    let alreadySearched = new Map();
-    console.time('Crawl Anagram Tree');
+async function generateDevices(targetword){         //== THE NEW DEVICE SEARCHER WITH PRIME-HASHING! 
+            
+console.time('Crawl Anagram Tree');
     let anagramList = crawlAnagramTree(targetword, DICTIONARY);
-    console.timeEnd('Crawl Anagram Tree');
-        
-    //////// CATEGORISE ////////
+console.timeEnd('Crawl Anagram Tree');
 
-    for (let anagramSet of anagramList) { 
-
-        if (anagramSet.join("").length != targetword.length) {continue;}
-
-        let device = isDevice(targetword, anagramSet);
-
-        if (!device) {      //Filter out incomplete partials...
-            devicesDTO.anagrams.push(anagramSet);
-        }
-
-        else {
-            if (!trivialEndings.includes(device[device.length-1].word))             //Filter out trivial endings, doesnt work??. 
-            devicesDTO.containers.push(device);
-        }
-    }
-
-    //////// SORT ////////
-
-    //!TODO TOP 
-    const averageScore = (arr) => {return arr.reduce((partialsum, x) => partialsum + DICTIONARY.get(x).score, 0) / arr.length;}
-    devicesDTO.anagrams.sort((a, b) => {
-        return (b.averageScore - a.averageScore)
-                || b.length - a.length
-    });//!TODO TOP 
-
-    devicesDTO.containers.sort(function (a, b) {       //= sort devices 
-        return rateDevice(b) - rateDevice(a)
-    });
-
-    //devicesDTO.hiddenwords = searchHiddenWords(targetword);
-    return [devicesDTO.anagrams, devicesDTO.containers,devicesDTO.charades, devicesDTO.hiddenwords];
-
-    function crawlAnagramTree(inputword, searchList: Map<any,any> = DICTIONARY) {
-            
-        let inputhash = getHash(inputword);
-        let mycompleteanagrams = [];
-        let mypartialanagrams = [];
-
-        //if (alreadySearched.has(inputword)) { return null };
-        //alreadySearched.set(inputword, true);     
-            
-        // The crazy magic happens. 
-        for (let [key, value] of searchList) {
-            if (value.hash == inputhash) { mycompleteanagrams.push([key]) }
-            else if (inputhash % value.hash == 0) { mypartialanagrams.push([key,{"hash":value.hash}]) }
-        }
-
-        //let mysearcharray = [...(wordArraytoHashMap(mypartialanagrams))];
-
-        // For partial anagrams, run function recursively on remaining letters. 
-        // Forward search only - create searchlist based on words further forward in the list. 
-        let searchLength = inputword.length >> 1
-            
-        for (let i=0; i<mypartialanagrams.length;i++) {
-            let pa  = mypartialanagrams[i][0];
-            let forwardSearchMap = new Map(mypartialanagrams.slice(i));
-
-            if (pa.length < searchLength) { continue; }
-            let remainingWord = getLeftoverLetters(inputword, pa).join("");
-            let anagramsofremainingword = crawlAnagramTree(remainingWord, forwardSearchMap);
-            if (anagramsofremainingword == null) { continue; }
-
-            for (let pair of anagramsofremainingword) {     //REMOVE THIS LOOP TO "HEIRARCHICALISE"
-                let accumulated = [pa, pair].flat(1);       //FLATTENER 
-                mycompleteanagrams.push(accumulated);
-            }
-        }
-
-        if (mycompleteanagrams.length == 0) { return null; }
-        return mycompleteanagrams;
-    }
-
-    function isDevice(origWord, subWordArray, depth = 0) {
-
-        let inputWord = origWord;
-            
-        // TRIVIAL CASE - SINGLE WORD
-        if (subWordArray.length == 1
-            && subWordArray[0].length == inputWord.length) {
-
-            return [ {"word": subWordArray[0], "direction": findDirection(subWordArray[0], inputWord)} as IWord ]
-        }
+    let [anagrams, containers] = categoriseAnagrams(anagramList, targetword); //Categorise
+    sortDevices([anagrams,containers]); //Sort
+    return [anagrams, containers] as IDeviceSet; 
 
 
-        // MULTIPLE WORDS - RECURSIVELY BUILD AS CHARADE/CONTAINER
-        for (let i = 0; i < subWordArray.length; i++) {
-            let subword = subWordArray[i];
-
-            let charade = (isCharade(subWordArray[i], inputWord))
-            if (charade == "start") {
-                let matched, leftovers = "";
-                [matched, leftovers] = [inputWord.slice(0, subword.length), inputWord.slice(subword.length)];
-                subWordArray.splice(i, 1);
-                i = -1;
-                let recursive = isDevice(leftovers, subWordArray, depth);
-                if (recursive != null) {
-                    return [{"word": subword, "direction": findDirection(subword, matched)}, ...recursive];
-                }
-            }
-
-            else if (charade == "end") {
-                //if (trivialEndings.includes(subWordArray[i])) {continue;} //throw away if 'trivial' word ending.
-
-                let subword = subWordArray[i];
-
-                let matched = inputWord.slice(-1 * subword.length);
-                let leftovers = inputWord.slice(0, inputWord.length - subword.length);
-
-                subWordArray.splice(i, 1);
-                let recursive = isDevice(leftovers, subWordArray, depth);
-                if (recursive != null) {
-                    return [...recursive, {"word": subword, "direction": findDirection(subword, matched)}];
-                }
-            }
-
-            else if (depth == 0)   //Try a container IF not already in a container (avoid double nesting)
-            {
-
-                let cont = isContainer(subword, inputWord);
-                if (cont != null) {
-                    let matched, leftovers = "";
-                    [matched, leftovers] = cont;
-                    subWordArray.splice(i, 1);
-                    let recursive = isDevice(leftovers, subWordArray, 1);
-                    if (recursive != null) {
-                        return [ {"word": subword, "direction": findDirection(subword, matched), "contains": recursive} as IWord];
-                    }
-
-                }
-            }
-
-        }
-
-        //NO MATCHES OF ANY KIND: RETURN NULL.
-        return null;
-
-
-        function isCharade(subword, baseword) {
-            switch ([...subword].sort().join('')) {
-
-                case [...baseword.substring(0, subword.length)].sort().join(''): return "start";
-                case [...baseword.substring(baseword.length - subword.length)].sort().join(''): return "end";
-                default: return null;
-            }
-        }
-
-        function isContainer(subword, baseword) {
-            if (subword.length < 2) { return null; }
-
-            let sorted = [...subword].sort().join('')
-            let lengthdiff = baseword.length - subword.length;
-            if (lengthdiff == 0) { return null; } //just in case
-
-            for (let i = 1; i + lengthdiff < baseword.length; i++) {
-                let middleremoved = baseword.slice(0, i) + baseword.slice(i + lengthdiff);
-
-                if ([...middleremoved].sort().join('') == sorted) {
-                    return [middleremoved, baseword.slice(i, i + lengthdiff)]
-
-                }
-            }
-            return null;
-
-        }
-    }
 
     function searchHiddenWords(searchWord) {
 
@@ -520,10 +531,13 @@ async function searchDevices(targetword){         //== THE NEW DEVICE SEARCHER W
     }
 }
 
-export const DeviceFinder = {
+export const WordInfo = {
 
-    async devicesFor(word){
-        return searchDevices(word)
+    async getDevices(word){
+        let deviceSet = generateDevices(word);
+        // LET THESAURUS ENTRY = GET THESAURUS ENTRY 
+
+        return deviceSet; 
     },
 
     async fetchAndParseMWThesaurus(word) {
