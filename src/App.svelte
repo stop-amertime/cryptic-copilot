@@ -4,8 +4,7 @@ import Grid from './Grid.svelte'
 import Panel from './Panel.svelte'
 import {Load} from './modules/FileManager.js'
 import {dictionary, gridTemplate} from './stores'
-
-
+import {fade} from 'svelte/transition'
 
 // STARTUP
 $dictionary = Load.lastOrDefaultDictionary() 
@@ -15,14 +14,16 @@ $gridTemplate = Load.lastOrDefaultLayout()
 
 <div id="main">
 
-
   <div id="gridArea">
     {#await $gridTemplate}
-    <div id="gridLoading"> LOADING... </div>
+
+    <div id="gridLoading"> <img src="/src/assets/icons/grid-loading.gif"></div>
     {:then value} 
     <Grid gridTemplate={value}/> 
     {/await}
   </div>
+
+
   
   <div id="panelArea">
     <Panel/>
