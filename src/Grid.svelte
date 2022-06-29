@@ -3,6 +3,7 @@
 import { writable } from 'svelte/store';
 import Cell from './Cell.svelte';
 import { wordSlots, selectedSlotWord, selectedSlotId } from './stores';
+import {fade} from 'svelte/transition'
 export let gridTemplate;
 let rowsize, numcells; 
 
@@ -142,7 +143,7 @@ function makeWordSlots(gridTemplate) {
 function updateSelectedSlot(event: {detail: Array<number> }){
 
     let slotIds = event.detail; 
-    if (!slotIds || slotIds.length<1) {return;}
+    if (slotIds ==null || slotIds.length<1) {return;}
 
     // If multiple slots for that cell, toggle between. 
     if (slotIds.length >= 2){ 
@@ -159,7 +160,7 @@ function updateSelectedSlot(event: {detail: Array<number> }){
 
 // @selectedSlotId --> Highlight correct cells when wordSlot is selected. 
 selectedSlotId.subscribe( (id: number) => {
-    if (id){
+    if (id!=null){
         highlightSlotCells(id);
         updateSlotWord(id);
     }
@@ -172,7 +173,6 @@ function highlightSlotCells(slotId: number) :void{
 }
 
 function updateSlotWord(slotId: number) :void {
-
 
     let slot = $wordSlots[slotId] as IWordSlot;
     if (!slot.cells) {return;}
@@ -187,7 +187,7 @@ function updateSlotWord(slotId: number) :void {
             let cellslots = $cells[cellId].slots;          //Find the slots of that cell
             let sharedSlotId = cellslots.find(c => c!=slotId); //See if the cell is shared with another slot.  
             
-            if (sharedSlotId && $wordSlots[sharedSlotId].word){ //If slot has a valid word in it, 
+            if (sharedSlotId!==undefined && $wordSlots[sharedSlotId].word){ //If slot has a valid word in it, 
                 isOverwritable = false;                        //That letter is not overwritable. 
             }
 
@@ -213,7 +213,7 @@ selectedSlotWord.subscribe( slotword => {
 
 function updateGridWithNewWord (word) {
 
-    if (!$selectedSlotId) {return;}
+    if ($selectedSlotId === null) {return;}
     $wordSlots[$selectedSlotId].word = word;
 
     let editedcells = $wordSlots[$selectedSlotId].cells;
@@ -245,7 +245,9 @@ function updateGridWithNewWord (word) {
 
 </script>
 
-        <div id="Grid" style="--dimension:{rowsize}">
+        <div id="Grid"
+        transition:fade={{duration:1000}}
+        style="--dimension:{rowsize}">
 
         {#each $cells as cell}
                 <Cell {...cell} on:clicked={updateSelectedSlot}></Cell>

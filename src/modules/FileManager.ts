@@ -10,12 +10,13 @@ let DICT_URL = {
     'minified': `./src/data/${DICT_VERSION}.min.txt`,
     'compressed': `./src/data/${DICT_VERSION}.lz.txt`
 };
+let DEFAULT_LAYOUTURL = "./src/data/gridtemplates.json";
 
-//== VARIABLES
+
+//== LAST STATE
 let currentDictionary = localStorage.getItem('dictionary') || null;
 let currentState = localStorage.getItem('state') || null;
 let currentLayout = JSON.parse(localStorage.getItem('currentLayout')) || null;
-let defaultLayoutURL = "./src/data/gridtemplates.json";
 
 let activeFile = null;
 
@@ -31,7 +32,6 @@ function stringifyState(slots) {
     ////// MUST RELOAD STATE OF: 
     /////////// cells
     /////////// wordSlots
-    /////////// wordSlotData (?)
 
     let wordSlots = [];
     slots.forEach((s, index) => {
@@ -93,7 +93,7 @@ function unminifyDictionary(minifiedstring: string) {
 
         let proparray = parsestring[0].split(' '); //  is [key,t(ype),score,hash]
 
-        let wordobject = { isAbbreviation, "score": proparray[2], "hash": proparray[3] } as IWordProperties;
+        let wordobject = { isAbbreviation, "score": proparray[2], "hash": proparray[3] } as IDictionaryEntry;
 
         if (parsestring.length > 1) { wordobject["abbreviationFor"] = parsestring[1].split(',') }
 
@@ -108,7 +108,7 @@ export const Load = {
     lastOrDefaultLayout: async () => {
 
         // CURRENTLY DOESN'T CACHE LAYOUT... 
-        let response = await fetch(defaultLayoutURL);
+        let response = await fetch(DEFAULT_LAYOUTURL);
         let template = await response.json();
 
         currentLayout = template;

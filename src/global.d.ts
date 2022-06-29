@@ -11,22 +11,22 @@ const enum WordDirection {
     Anagram = "word anagram"
 }
 
-type IDictionary = Map<string, IWordProperties> 
+type IDictionary = Map<string, IDictionaryEntry> 
 type IGridLayout = Array<Array<number>> 
 
 type IDictionaryOrPromise = IDictionary | Promise<IDictionary>
 type IGridLayoutOrPromise = IGridLayout | Promise<IGridLayout> 
 
-interface IWordProperties {
+interface IDictionaryEntry {
     isAbbreviation? : boolean,
     hash? : number,
     abbreviationFor? : Array<string>,
     score? : number,
-    direction? : WordDirection,
+    direction? : string,
     contains? : Array<IWord> 
 }
 
-interface IWord extends IWordProperties {
+interface IWord extends IDictionaryEntry {
     word: string
 }
 
@@ -76,6 +76,13 @@ interface IStateRecord {
     // For use by the file manager. 
 }
 
+interface IDeviceList {
+    anagrams?: Array<any>
+    containers?: Array<any>
+    charades?: Array<any>
+    definitions?: Array<any> 
+    hiddenwords?: Array<any>
+}
 
 
 
