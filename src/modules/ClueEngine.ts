@@ -1,10 +1,5 @@
-import { dictionary } from '../stores';
 
 let DICTIONARY = new Map() as IDictionary;
-
-dictionary.subscribe ( async (d) => {
-    DICTIONARY = await d;
-});
 
 const enum WordDirection {
     Forward = "word",
@@ -395,27 +390,24 @@ export const validWordFinder = {
         return possibleWordsArray;
     },
 
-    filter(filterTerm: string, possibleWords: string[], letters: string[]) { 
+    checkValidNewWord(filterTerm: string, letters: string[]) { 
 
         let searchLength = filterTerm.length;
         let slotLength = letters.length;
         let isValidSearch, userMessage;
-
-        let list =  possibleWords.filter(x => x.search(filterTerm) != -1); 
         
-        if (this.generateMatchRegex(letters).test(filterTerm)){
+        if (generateMatchRegex(letters).test(filterTerm)){
             isValidSearch = true;
-            userMessage = `'${filterTerm}' can be entered as a custom word!`
+            userMessage = `'${filterTerm}' can be entered as a custom word.`
         }
 
         else{
             isValidSearch = false; 
             userMessage = (filterTerm.length != slotLength) 
-                ? `'${filterTerm}' is ${searchLength} letters long - it must be ${slotLength} to fit.`
-                : `'${filterTerm}' doesn't match the existing letters`;
+                ? `'${filterTerm}' has  ${searchLength} / ${slotLength} letters needed to be a custom word.`
+                : `'${filterTerm}' won't fit - it needs to match the existing letters: ${letters.join('')}`;
         }
-        let searchResults = {list, isValidSearch, userMessage};
-        return searchResults;
+        return [isValidSearch, userMessage];
     },
 
     anyPossibleWord(letters){
@@ -540,6 +532,7 @@ export const WordInfo = {
         return deviceSet; 
     },
 
+
     async fetchAndParseMWThesaurus(word) {
 
         const response = await fetch("https://dictionaryapi.com/api/v3/references/thesaurus/json/" + word + "?key=f6bff6bb-3ff1-42d4-9de7-86291d3e2b26")
@@ -611,3 +604,5 @@ export const WordInfo = {
         return {"ThesaurusDTO": ThesaurusDTO,"matches": matches}; //TODO: IThesaurusEntry
     }
 };
+
+export function setDictionary(dictionary: IDictionary){ DICTIONARY = dictionary };

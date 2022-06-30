@@ -12,10 +12,9 @@ const enum WordDirection {
 }
 
 type IDictionary = Map<string, IDictionaryEntry> 
-type IGridLayout = Array<Array<number>> 
-
 type IDictionaryOrPromise = IDictionary | Promise<IDictionary>
-type IGridLayoutOrPromise = IGridLayout | Promise<IGridLayout> 
+
+
 
 interface IDictionaryEntry {
     isAbbreviation? : boolean,
@@ -25,6 +24,9 @@ interface IDictionaryEntry {
     direction? : string,
     contains? : Array<IWord> 
 }
+
+// interface IThesaurusEntry {
+// } 
 
 interface IWord extends IDictionaryEntry {
     word: string
@@ -36,6 +38,30 @@ interface IDevice {
     score?: number,
 }
 
+type IDeviceList = {type: string, list:IDevice[]};
+
+type IDeviceSet = IDeviceList[];
+
+type IDeviceSetOrPromise = IDeviceSet | Promise<IDeviceSet>
+
+//= Grid 
+
+type IGridLayout = number[][];
+
+type IGridLayoutOrPromise = IGridLayout | Promise<IGridLayout>;
+
+type ICell = {
+    id: number,
+    isValid: boolean,
+    isNumbered?: boolean,
+    letter?: string, 
+    isSelected?: boolean,
+    isHovered?: boolean,
+    slots: number[]
+}
+
+//= WordSlot 
+
 type IWordSlot = {
     number : number,
     orientation: SlotOrientation,
@@ -46,22 +72,12 @@ type IWordSlot = {
     clue: string
 }
 
-type ICell = {
-    id: number,
-    isValid: boolean,
-    isNumbered?: boolean,
-    letter?: string, 
-    isSelected?: boolean,
-    isHovered?: boolean,
-    slots: Array<number>
-}
-
 type ISlotLetter = {
     letter: string,
     isOverwritable: boolean
 }
 
-interface ISlotWord {
+interface ISlotProperties {
     letters : Array<ISlotLetter>,
     word? : string | null 
     //'word' seems odd but is separate conceptually:
@@ -69,19 +85,13 @@ interface ISlotWord {
     isNewWord : boolean
 } 
 
-interface IStateRecord { 
-    cells: Array<Cell>
+interface IStateRecord {
+    layout: IGridLayout 
     wordSlots: Array<IWordSlot>
     // Could add remembering the current selection?
     // For use by the file manager. 
 }
 
-type IDeviceList = {type: string, list:Array<IDevice>};
-type IDeviceSet = IDeviceList[];
-
-// interface IThesaurusEntry {
-
-// }   
 
 
 

@@ -14,10 +14,9 @@ let DEFAULT_LAYOUTURL = "./src/data/gridtemplates.json";
 
 
 //== LAST STATE
-let currentDictionary = localStorage.getItem('dictionary') || null;
-let currentState = localStorage.getItem('state') || null;
-let currentLayout = JSON.parse(localStorage.getItem('currentLayout')) || null;
-
+let lastDictionary = localStorage.getItem('dictionary') || null;
+let lastLayout = JSON.parse(localStorage.getItem('currentLayout')) || null;
+let lastSlots = JSON.parse(localStorage.getItem('wordSlots')) || null;
 let activeFile = null;
 
 // if (currentState){
@@ -25,21 +24,6 @@ let activeFile = null;
 // }
 // else {              // Load default blank layout //____ EDIT: TO CACHE 'DEFAULT' LAYOUT TOO.
 
-
-function stringifyState(slots) {
-
-    ///// RIP THIS OUT... 
-    ////// MUST RELOAD STATE OF: 
-    /////////// cells
-    /////////// wordSlots
-
-    let wordSlots = [];
-    slots.forEach((s, index) => {
-        wordSlots[index] = { "word": s.word || null, "clueText": s.clueText };
-    });
-
-    return JSON.stringify({ "layout": currentLayout, "wordSlots": wordSlots });
-}
 
 function stringifyDictionary(dictionary, compression = "compressed") {
 
@@ -67,7 +51,7 @@ function minifyDictionary(dictionary) {
     return string;
 }
 
-function parseAndLoadDictionary(string: string, compression = "raw") {
+function parseAndLoadDictionary(string: string, compression = "compressed") {
 
     switch (compression) {
         case "raw": return new Map(JSON.parse(string)) as IDictionary;
@@ -93,34 +77,32 @@ function unminifyDictionary(minifiedstring: string) {
 
         let proparray = parsestring[0].split(' '); //  is [key,t(ype),score,hash]
 
-        let wordobject = { isAbbreviation, "score": proparray[2], "hash": proparray[3] } as IDictionaryEntry;
+        let wordobject = { isAbbreviation, "score": proparray[1], "hash": proparray[2] } as IDictionaryEntry;
 
         if (parsestring.length > 1) { wordobject["abbreviationFor"] = parsestring[1].split(',') }
 
         temp_DICTIONARY.set(proparray[0], wordobject);
     }
+    console.log(temp_DICTIONARY);
     return temp_DICTIONARY;
 }
-
 
 export const Load = {
 
     lastOrDefaultLayout: async () => {
 
-        // CURRENTLY DOESN'T CACHE LAYOUT... 
         let response = await fetch(DEFAULT_LAYOUTURL);
         let template = await response.json();
 
-        currentLayout = template;
-        localStorage.setItem('currentLayout', JSON.stringify(currentLayout));
-
-        return currentLayout;
+        lastLayout = template;
+        localStorage.setItem('currentLayout', JSON.stringify(lastLayout));
+        return lastLayout;
     },
 
     lastOrDefaultDictionary: async () => {
 
-        if (currentDictionary) {
-            return unminifyDictionary(currentDictionary);
+        if (lastDictionary) {
+            return unminifyDictionary(lastDictionary);
         }
 
         else {
@@ -128,11 +110,13 @@ export const Load = {
             let response = await fetch(DICT_URL[DICT_SAVECOMPRESSION])
             let fetchedString = await response.text();
 
-            let temp_dictionary = parseAndLoadDictionary(fetchedString);
-            localStorage.setItem('dictionary', stringifyDictionary(temp_dictionary));
+            let temp_dictionary = parseAndLoadDictionary(fetchedString, DICT_SAVECOMPRESSION);
+            localStorage.setItem('dictionary', stringifyDictionary(temp_dictionary, DICT_CACHECOMPRESSION));
             return temp_dictionary; 
         }
     },
+
+    lastSlots,
 
     StateFromFile: async function () {
         [activeFile] = await window.showOpenFilePicker();
@@ -147,14 +131,14 @@ export const Load = {
 
 export const Save = {
 
-    state : async () => {
+    slots : async (wordSlots: Array<IWordSlot>) => {
 
         console.log('Saving state..');
-        localStorage.setItem('state', stringifyState());
+        localStorage.setItem('wordSlots', JSON.stringify(wordSlots));
 
         if (activeFile) {
             const writableStream = await activeFile.createWritable();
-            await writableStream.write(stringifyState());
+            await writableStream.write(stringifyStateRecord()); ////////!!!!!
             await writableStream.close();
         }
     },
@@ -171,7 +155,7 @@ export const Save = {
         };
         activeFile = await window.showSaveFilePicker(saveOptions);
         const writableStream = await activeFile.createWritable();
-        await writableStream.write(stringifyState());
+        await writableStream.write(stringifyStateRecord());
         await writableStream.close();
     }
 }

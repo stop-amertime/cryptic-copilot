@@ -3,25 +3,33 @@
 import Grid from './Grid.svelte'
 import Panel from './Panel.svelte'
 import {Load} from './modules/FileManager.js'
-import {dictionary, gridTemplate} from './stores'
 import {fade} from 'svelte/transition'
+import {writable, derived} from 'svelte/store'
+import StateMediator, {dictionary, gridTemplate, wordSlots} from './StateMediator.svelte'
 
-// STARTUP
-$dictionary = Load.lastOrDefaultDictionary() 
-$gridTemplate = Load.lastOrDefaultLayout()
+// Startup 
+$wordSlots = Load.lastSlots as IWordSlot[] | null;
+
+let lastTemplate = Load.lastOrDefaultLayout();
+lastTemplate.then( (t) => $gridTemplate = t);
+
+let lastDictionary   = Load.lastOrDefaultDictionary();
+lastDictionary.then( (d) => $dictionary = d);
 
 </script>
+
+<StateMediator/>
 
 <div id="main">
 
   <div id="gridArea">
-    {#await $gridTemplate}
+    {#await lastTemplate then}
 
-    <div id="gridLoading"> <img src="/src/assets/icons/grid-loading.gif" alt="Grid Loading Spinner"></div>
+    <!-- <div id="gridLoading"> <img src="/src/assets/icons/grid-loading.gif" alt="Grid Loading Spinner"></div>
 
-    {:then value} 
+    {:then}  -->
 
-    <Grid gridTemplate={value}/> 
+    <Grid /> 
 
     {/await}
     

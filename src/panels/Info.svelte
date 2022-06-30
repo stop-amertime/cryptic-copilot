@@ -1,13 +1,13 @@
 <script>
 
-import { selectedSlotWord } from "../stores";
+import { activeSlotProps } from "../StateMediator.svelte";
 import { WordInfo }  from '../modules/ClueEngine';
 import VirtualList from '@sveltejs/svelte-virtual-list'
 
 let isActive = true;
 let deviceSet = null; 
 
-selectedSlotWord.subscribe( (slotWord) => {
+activeSlotProps.subscribe( (slotWord) => {
     if (slotWord.word)
     {
         deviceSet = WordInfo.getDevices(slotWord.word);

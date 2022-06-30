@@ -1,14 +1,14 @@
 <script lang="ts">
 
-import { writable } from 'svelte/store'
-import { selectedSlotWord } from './stores'
-import { fly } from 'svelte/transition';
-
 import PossibleWords from './panels/PossibleWords.svelte'
 import Info from './panels/Info.svelte'
 import Clues from './panels/Clues.svelte'
 import Settings from './panels/Settings.svelte'
 
+import {activeSlotProps} from './StateMediator.svelte'
+
+import { writable } from 'svelte/store'
+import { fly } from 'svelte/transition';
 
 
 // Display the correct page based on Tab Selection
@@ -28,7 +28,7 @@ $: currentPage = displayPage[$currentTab];
 
 
 // Toggle disabling Tab 2 (Word Info) when word is null.
-selectedSlotWord.subscribe (slotword => toggleTab2(slotword));
+activeSlotProps.subscribe (slotword => toggleTab2(slotword));
 
 function toggleTab2(slotword){ 
     // If not a full word, disable tab 2.
