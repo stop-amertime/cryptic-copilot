@@ -1,9 +1,11 @@
 // @ts-nocheck
 import LZString from 'lz-string'
+import { TestScheduler } from 'rxjs/testing';
+import { src_url_equal } from 'svelte/internal';
 
 //== SETTINGS 
-let DICT_VERSION = 'dict-4.0';
-let DICT_SAVECOMPRESSION = 'compressed';
+let DICT_VERSION = 'dict-5.0';
+let DICT_SAVECOMPRESSION = 'minified';
 let DICT_CACHECOMPRESSION = 'minified';
 let DICT_URL = {
     'raw': `./src/data/${DICT_VERSION}.json`,
@@ -38,18 +40,6 @@ function stringifyDictionary(dictionary, compression = "compressed") {
     }
 }
 
-function minifyDictionary(dictionary) {
-    let string = "";
-    for (let [key, value] of dictionary) {
-        if (value.defs) {
-            string += `${key} ${value.score} ${value.hash};${value.defs.join()}#`;
-        }
-        else {
-            string += `${key} ${value.score} ${value.hash}#`;
-        }
-    }
-    return string;
-}
 
 function parseAndLoadDictionary(string: string, compression = "compressed") {
 
@@ -64,6 +54,18 @@ function parseAndLoadDictionary(string: string, compression = "compressed") {
     }
 }
 
+function minifyDictionary(dictionary) {
+    let string = "";
+    for (let [key, value] of dictionary) {
+        if (value.abbreviationFor) {
+            string += `${key} ${value.score} ${value.hash};${value.abbreviationFor.join()}#`;
+        }
+        else {
+            string += `${key} ${value.score} ${value.hash}#`;
+        }
+    }
+    return string;
+}
 function unminifyDictionary(minifiedstring: string) {
 
     let temp_DICTIONARY = new Map() as IDictionary;
@@ -71,7 +73,7 @@ function unminifyDictionary(minifiedstring: string) {
     for (let parsestring of wordarray) {
 
         let isAbbreviation = false; 
-        if (parsestring.includes(';') ) {let isAbbreviation = true};
+        if (parsestring.includes(';') ) {isAbbreviation = true};
 
         parsestring = parsestring.split(';'); // is array ["key&props","defs"]
 
@@ -83,7 +85,6 @@ function unminifyDictionary(minifiedstring: string) {
 
         temp_DICTIONARY.set(proparray[0], wordobject);
     }
-    console.log(temp_DICTIONARY);
     return temp_DICTIONARY;
 }
 
@@ -101,20 +102,49 @@ export const Load = {
 
     lastOrDefaultDictionary: async () => {
 
+        // let response = await fetch(DICT_URL[DICT_SAVECOMPRESSION])
+        // let fetchedString = await response.text();
+
+        // let temp_DICTIONARY = new Map() as IDictionary;
+        // let wordarray = fetchedString.split('#');
+        // for (let parsestring of wordarray) {
+
+        //     let isAbbreviation = false; 
+        //     if (parsestring.includes(';') ) {let isAbbreviation = true};
+
+        //     parsestring = parsestring.split(';'); // is array ["key&props","defs"]
+
+        //     let proparray = parsestring[0].split(' '); //  is [key,t(ype),score,hash]
+
+        //     let wordobject = { isAbbreviation, "score": proparray[2], "hash": proparray[3] } as IDictionaryEntry;
+
+        //     if (parsestring.length > 1) { wordobject["abbreviationFor"] = parsestring[1].split(',') }
+
+        //     temp_DICTIONARY.set(proparray[0], wordobject);
+        //     }
+
+        // document.body.addEventListener('click', () => {
+        // downloadUtf16(stringifyDictionary(temp_DICTIONARY,"compressed"))
+        // });
+        // },
+        
         if (lastDictionary) {
             return unminifyDictionary(lastDictionary);
         }
 
         else {
-
             let response = await fetch(DICT_URL[DICT_SAVECOMPRESSION])
             let fetchedString = await response.text();
-
             let temp_dictionary = parseAndLoadDictionary(fetchedString, DICT_SAVECOMPRESSION);
-            localStorage.setItem('dictionary', stringifyDictionary(temp_dictionary, DICT_CACHECOMPRESSION));
+            localStorage.setItem('dictionary', minifyDictionary(temp_dictionary));
+            document.body.addEventListener('click', () => 
+            Save.textToFile(LZString.compressToUTF16(minifyDictionary(temp_dictionary))));
+
+            
             return temp_dictionary; 
         }
     },
+    
 
     lastSlots,
 
@@ -133,7 +163,6 @@ export const Save = {
 
     slots : async (wordSlots: Array<IWordSlot>) => {
 
-        console.log('Saving state..');
         localStorage.setItem('wordSlots', JSON.stringify(wordSlots));
 
         if (activeFile) {
@@ -143,7 +172,7 @@ export const Save = {
         }
     },
 
-    StateToFile: async () => {
+    stateToFile: async () => {
 
         const saveOptions =
         {
@@ -157,6 +186,60 @@ export const Save = {
         const writableStream = await activeFile.createWritable();
         await writableStream.write(stringifyStateRecord());
         await writableStream.close();
+    },
+
+    textToFile: async (text: string) => {
+
+        const saveOptions =
+        {
+            types: [
+                {
+                    description: 'text',
+                    accepts: {'text/plain': ['.txt']}
+                }],
+        };
+        activeFile = await window.showSaveFilePicker(saveOptions);
+        const writableStream = await activeFile.createWritable();
+        await writableStream.write(text);
+        await writableStream.close();
     }
 }
 
+function downloadUtf16(str, filename) {
+
+    var charCode, byteArray = [];
+
+        // BE BOM
+    byteArray.push(254, 255);
+
+        // LE BOM
+    // byteArray.push(255, 254);
+
+    for (var i = 0; i < str.length; ++i) {
+    
+        charCode = str.charCodeAt(i);
+        
+        // BE Bytes
+        byteArray.push((charCode & 0xFF00) >>> 8);
+        byteArray.push(charCode & 0xFF);
+        
+        // LE Bytes
+        // byteArray.push(charCode & 0xff);
+        // byteArray.push(charCode / 256 >>> 0);
+    }
+
+    var blob = new Blob([new Uint8Array(byteArray)], {type:'text/plain;charset=UTF-16BE;'});
+    var blobUrl = URL.createObjectURL(blob);
+
+    var link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = filename;
+
+    if (document.createEvent) {
+    var event = document.createEvent('MouseEvents');
+    event.initEvent('click', true, true);
+    link.dispatchEvent(event);
+    } else {
+    link.click();
+    }
+}

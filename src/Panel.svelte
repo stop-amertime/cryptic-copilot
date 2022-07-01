@@ -5,7 +5,7 @@ import Info from './panels/Info.svelte'
 import Clues from './panels/Clues.svelte'
 import Settings from './panels/Settings.svelte'
 
-import {activeSlotProps} from './StateMediator.svelte'
+import {activeSlotWord} from './StateMediator.svelte'
 
 import { writable } from 'svelte/store'
 import { fly } from 'svelte/transition';
@@ -23,24 +23,18 @@ let displayPage = {
     "Word":PossibleWords, "Info":Info, "Clues":Clues, "Settings":Settings
 };
 
-let currentTab = writable('Word');
-$: currentPage = displayPage[$currentTab];
+let currentTab = 'Word';
+$: currentPage = displayPage[currentTab];
 
 
 // Toggle disabling Tab 2 (Word Info) when word is null.
-activeSlotProps.subscribe (slotword => toggleTab2(slotword));
-
-function toggleTab2(slotword){ 
-    // If not a full word, disable tab 2.
-    if (!slotword || !slotword.word) {
-        if ($currentTab == 'Info') {$currentTab = 'Word'};
-        $tabs[1].disabled = true; 
-    } 
-    else{
-        $tabs[1].disabled = false;
-    }  
+$: if (!$activeSlotWord) {
+    if (currentTab == 'Info') {currentTab = 'Word'};
+    $tabs[1].disabled = true; 
+} 
+else {
+    $tabs[1].disabled = false;
 }
-
 </script>
 
 
@@ -50,10 +44,10 @@ function toggleTab2(slotword){
 
     <div id="panelTabs">
         {#each $tabs as tab}
-            <label class='{tab.label == $currentTab ? "selected" : ""} {tab.disabled ? "disabled" : ""}'>
+            <label class='{tab.label == currentTab ? "selected" : ""} {tab.disabled ? "disabled" : ""}'>
                 <input type="radio" 
                 value={tab.label}
-                bind:group={$currentTab} 
+                bind:group={currentTab} 
                 disabled='{tab.disabled}'
                 hidden/>
                 {tab.label}

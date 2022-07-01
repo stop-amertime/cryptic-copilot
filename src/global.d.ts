@@ -6,15 +6,12 @@ const enum SlotOrientation {
 }
 
 const enum WordDirection {
-    Forward = "word",
-    Reverse = "word reverse",
-    Anagram = "word anagram"
+    Forward = "",
+    Reverse = "reverse",
+    Anagram = "anagram"
 }
 
-type IDictionary = Map<string, IDictionaryEntry> 
-type IDictionaryOrPromise = IDictionary | Promise<IDictionary>
-
-
+//= Word 
 
 interface IDictionaryEntry {
     isAbbreviation? : boolean,
@@ -25,22 +22,31 @@ interface IDictionaryEntry {
     contains? : Array<IWord> 
 }
 
-// interface IThesaurusEntry {
-// } 
-
 interface IWord extends IDictionaryEntry {
     word: string
 }
 
+//= Dictionary & Thesaurus 
+
+type IDictionary = Map<string, IDictionaryEntry> 
+type IDictionaryOrPromise = IDictionary | Promise<IDictionary>
+
+// interface IThesaurusEntry {
+// !LOOK BACK IN PREV FORMATTER CODE FOR STRUCTURE 
+// } 
+
+//= Device (Set of Words)
+
 interface IDevice {
     words: Array<IWord>
-    type?: "Anagram" | "Container" | "Charade" | "Multi",
-    score?: number,
+    score?: number
 }
-
-type IDeviceList = {type: string, list:IDevice[]};
-
-type IDeviceSet = IDeviceList[];
+    
+interface IDeviceSet {
+    anagrams?: IDevice[]
+    containers? : IDevice[]
+    hiddenwords? : IDevice[]
+};
 
 type IDeviceSetOrPromise = IDeviceSet | Promise<IDeviceSet>
 
@@ -72,24 +78,19 @@ type IWordSlot = {
     clue: string
 }
 
-type ISlotLetter = {
+type ISlotCellState = {
     letter: string,
     isOverwritable: boolean
 }
 
-interface ISlotProperties {
-    letters : Array<ISlotLetter>,
-    word? : string | null 
-    //'word' seems odd but is separate conceptually:
-    // WordSlot could have a bunch of letters, but not a valid word. 
-    isNewWord : boolean
-} 
+type ISlotCellStates = ISlotCellState[];
+
+//= Saving and Loading
 
 interface IStateRecord {
     layout: IGridLayout 
     wordSlots: Array<IWordSlot>
     // Could add remembering the current selection?
-    // For use by the file manager. 
 }
 
 

@@ -3,131 +3,85 @@
 /*-------------------------------------*/
 import { derived, writable } from "svelte/store";
 import VirtualList from "@sveltejs/svelte-virtual-list";
-import { activeSlotProps } from "../StateMediator.svelte";
+import { activeSlotCells, activeSlotWord, activeSlotId } from "../StateMediator.svelte";
 import { validWordFinder } from '../modules/ClueEngine';
 import { fly } from 'svelte/transition'
 import IconButton from "./subcomponents/IconButton.svelte";
 import LetterBoxes from "./subcomponents/LetterBoxes.svelte";
+import {Center, Button} from '@svelteuidev/core'
 /*-------------------------------------*/
 
+let rawSearchInput = "";
+$: searchInput = (rawSearchInput) ? rawSearchInput.toUpperCase().replaceAll( /[^A-Z]/g , "") : "";
 
-let rawSearchInput = writable("");
-let possibleWords = writable([]);
-let searchletters = [];
-$: isValidWord = $activeSlotProps?.word ? true : false;
-$: isValidSearch = false;
-$: userSearchMessage = "";
+$: possibleWords = ($activeSlotCells) ? validWordFinder.search($activeSlotCells) : [];
 
-let searchInput = derived( rawSearchInput, (string) => {
-    if (string) {return string.toUpperCase().replaceAll( /[^A-Z]/g , "")}
-    else {return ""};
-});
+$: filteredPossibleWords = (!!searchInput) ? 
+    possibleWords.filter( w => w.includes(searchInput))
+    : possibleWords;
 
-let filteredPossibleWords = derived( [possibleWords, searchInput] , () => {
-    return ($searchInput) 
-    ? $possibleWords.filter( w => w.includes($searchInput))
-    : $possibleWords;
-});
-
-searchInput.subscribe( (string) => {
-    [isValidSearch, userSearchMessage] = validWordFinder.checkValidNewWord(string, searchletters)
-});
-
-activeSlotProps.subscribe( (slotProps) => {
-    if (slotProps){
-        let newsearchletters = [];
-        for (let slotletter of slotProps.letters){
-            newsearchletters.push( slotletter.isOverwritable ? '.' : slotletter.letter)
-        }
-        searchletters = newsearchletters;
-        $possibleWords = validWordFinder.search(searchletters)
-        $rawSearchInput = "";
-    }
-});
-
-function setNewWord(word: string) : void {
-    
-    activeSlotProps.update( (prevstate) => {
-        
-        for (let i = 0; i<prevstate.letters.length; i++){
-            if (prevstate.letters[i].isOverwritable) {
-                prevstate.letters[i].letter = (word) ? word[i] : ''
-            }
-        }
-
-        return  {
-        "word": word,
-        "isNewWord": true,
-        "letters": prevstate.letters
-        } as ISlotProperties;
-    });
-
-}
+$: [isValidSearch, searchSubMessage, messageColour] = (!!searchInput) ? 
+    validWordFinder.checkValidNewWord(searchInput, $activeSlotCells)
+    : [false, "", "black"];
 
 </script>
 
-{#if $activeSlotProps}
+{#if $activeSlotId}
 <div id="wrapper">
 
     <div id="topArea">
 
-        <LetterBoxes letters={$activeSlotProps.letters}/>
+        <LetterBoxes letters={$activeSlotCells}/>
 
         <IconButton id="resetbutton" url="/src/assets/icons/deletebin.png" 
-        disabled={!isValidWord} on:clicked={() => setNewWord(null)}/>
+        disabled={!!$activeSlotWord} on:clicked={() => $activeSlotWord = null}/>
 
-        <input id="searchInput" bind:value={$rawSearchInput}
+        <input id="searchInput" bind:value={rawSearchInput}
             placeholder="🔎︎  Search or add a new word.."/>
 
         <IconButton id="searchSubmit" url="/src/assets/icons/addtext.png" 
-        disabled={!isValidSearch} on:clicked={() => setNewWord($searchInput)}/>
+        disabled={!isValidSearch} on:clicked={() => $activeSlotWord = searchInput}/>
 
-        <span id="matchText"> {$filteredPossibleWords.length} matching words. </span>
-
+        {#if filteredPossibleWords.length > 0}
+        <span id="matchText"> {filteredPossibleWords.length} matching words. </span>
+        {:else if searchInput}
+        <span id="noWordsText"  style:color={messageColour}> {searchSubMessage}</span>
+        {/if}
     </div>
 
-    {#if $filteredPossibleWords && $filteredPossibleWords.length > 0}
+    {#if filteredPossibleWords && filteredPossibleWords.length > 0}
 
         <div id="possibleWordsWrapper">
             
             <VirtualList 
-            items={$filteredPossibleWords} 
+            items={filteredPossibleWords} 
             let:item>
 
-                <button 
+                <Button
+                    variant="outline"
                     class="possibleWord" 
-                    on:click={() => setNewWord(item)}>
+                    on:click={() => $activeSlotWord = item}>
                     {item}
-                </button>
+                </Button>
 
             </VirtualList>
         </div>
 
     {:else}
         <div id="noPossibleWords">
-
+        <Center>
             <img 
                 id="noWordsIcon" 
                 src="/src/assets/icons/nomatches.png" 
                 alt="No matching words.">
-
-            {#if $searchInput}
-            <span 
-                id="noWordsText" 
-                class={isValidSearch? "y" : "n"}>
-                {userSearchMessage}
-            </span>
-            {/if}
-
+        </Center>
         </div>
     {/if}
 
 </div>
 
 {:else }
-
-<div> No word selected. </div>
-
+<Center><p> Click the grid to begin. </p></Center>
 {/if}
 
 <style>
@@ -156,35 +110,12 @@ function setNewWord(word: string) : void {
         overflow: auto;
     }
 
-    .possibleWord {
-        background-color: aliceblue;
-        margin: 5px;
-        padding: 5px;
-        width: 70%;
-        text-align: center;
-        border-radius: 3px;
-        border: 1px solid blue;
-        cursor: pointer;
-    }
-
-    .possibleWord:hover{
-        background-color: aqua;
-    }
-
-    .possibleWord:focus{
-        background-color:whitesmoke;
-    }
-
     #noPossibleWords {
         flex: 1 0 auto; 
-        display:flex;
-        flex-direction: column;
         min-height: 200px;
         width: 100%;
         height: calc(100% - 200px);
         overflow: auto;
-        justify-content: center;
-        align-items: center;
     }
 
     #noWordsIcon {
@@ -192,17 +123,8 @@ function setNewWord(word: string) : void {
         height: 50px;
     }
 
-    #noWordsText {
-        margin: 20px;
-        font-weight: bold;
-    }
-
-    #noWordsText.y {
-        color: green;
-    }
-
-    #noWordsText.n {
-        color: orangered;
+    #noWordsText{
+        font-size: 75%;
     }
 
 </style>

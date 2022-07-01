@@ -1,10 +1,13 @@
 <script context="module" lang="ts">
 
-import {writable} from 'svelte/store'
+/*---------------------------------------------------*/
+import {writable, derived} from 'svelte/store'
 import {makeCells, makeWordSlots, mapCellsToSlots} from './modules/GridGenerator'
 import {setDictionary} from './modules/ClueEngine'
-import { subscribe } from 'svelte/internal';
 import { Save } from './modules/FileManager';
+/*---------------------------------------------------*/
+
+//======= MAIN STORES 
 
 /// Dictionary
 export const dictionary = writable(null as IDictionary);
@@ -16,43 +19,55 @@ export const cells = writable([] as ICell[]);
 
 /// Active Slot State
 export const activeSlotId = writable(null as number);
-export const activeSlotProps = writable(null as ISlotProperties);
+export const activeSlotWord = writable(null as string);
+export const activeSlotCells = writable(null as ISlotCellStates);
 
 </script>
 <script lang="ts">
+
+/////////////////////======== EVENTS
 
 // @ new Dictionary -> set Dictionary
 dictionary.subscribe( (dict) => { if(dict) setDictionary(dict)} );
 
 
 // @ new Template -> intialise or load slots, cells. 
-    gridTemplate.subscribe( (template) => initGrid(template));
+gridTemplate.subscribe( (template) => initGrid(template));
 
-/// @ new Word Entered -> update wordSlot & cells, save state. 
-    activeSlotProps.subscribe( (slotProps) => {
+// @ new Word Entered -> update wordSlot & cells, save state. 
+activeSlotWord.subscribe( (newWord: string) => {
 
-        if ( slotProps && slotProps.isNewWord) {
-            if ($activeSlotId === null) {console.log("NO SLOT SELECTED"); return;}
-            $wordSlots[$activeSlotId].word = slotProps.word;
-            updateSlotCellLetters( $wordSlots[$activeSlotId], slotProps.letters );
-            Save.slots($wordSlots);
-        }
+        if ($activeSlotId === null) {console.log("NO SLOT SELECTED"); return;}
 
-        //TODO: Calcualate possibility of intersecting wordslots.
-    });
+        $wordSlots[$activeSlotId].word = newWord;
 
-// @ new Slot selected -> update Word Props, //! UPDATE DEVICES! 
+        /// Find and replace overwritable letters to retain state of other slots. 
+        let updatedCells = $activeSlotCells.map( (cellOfSlot, i) => {
+            return cellOfSlot.isOverwritable 
+                ? {...cellOfSlot, letter: newWord?.[i] || ''} 
+                : cellOfSlot
+        });
+
+        $activeSlotCells = updatedCells;
+        refreshGridLetters( $wordSlots[$activeSlotId], updatedCells );
+
+        Save.slots($wordSlots);
+
+    //TODO: Calcualate possibility of intersecting wordslots.
+});
+
+// @ new Slot selected -> refresh Word Props, Devices 
     activeSlotId.subscribe( async (id : number) => {
         
         for (let cell of $cells){
             $cells[cell.id].isSelected = (cell.slots.includes(id));
         };
-        setActiveSlotPropsToSlot(id);
+        refreshActiveSlotProps(id);
+
     });
 
 
     // Functions.
-
 
     function initGrid(template: IGridLayout) {
         if (template){
@@ -60,7 +75,7 @@ dictionary.subscribe( (dict) => { if(dict) setDictionary(dict)} );
             $cells = makeCells(template);
             if ($wordSlots) {    
                 $wordSlots.forEach( (slot) => {
-                    if (slot.word) updateSlotCellLetters(slot, slot.word)
+                    if (slot.word) {refreshGridLetters(slot, slot.word);}
                 });
             }
             else {   
@@ -70,43 +85,37 @@ dictionary.subscribe( (dict) => { if(dict) setDictionary(dict)} );
         }
     } 
 
-    function setActiveSlotPropsToSlot(slotId: number) :void {
+    function refreshActiveSlotProps(slotId: number) :void {
 
         if (!slotId) {return;}
-
         let slot = $wordSlots[slotId] as IWordSlot;
-        if (!slot.cells) {return;}
-        let letters = [];
-        let mycells = slot.cells;
+        if (!slot?.cells) {return;}
+        let mycells = [] as ISlotCellState[];
 
-        mycells.forEach( (cellId, index) => //Iterate to find the slots letters. 
-            {
-                let letter = $cells[cellId].letter;
-                let isOverwritable = true; 
-
-                let cellslots = $cells[cellId].slots;          //Find the slots of that cell
-                let sharedSlotId = cellslots.find(c => c!=slotId); //See if the cell is shared with another slot.  
+        for (let cellId of slot.cells) {
+            let isOverwritable = true; 
             
-                if (sharedSlotId!==undefined && $wordSlots[sharedSlotId].word){ //If slot has a valid word in it, 
-                    isOverwritable = false;                        //That letter is not overwritable. 
-                }
+            //check the cells slots, to see if it is shared with another slot 
+            let sharedSlotId =  $cells[cellId].slots.find(c => c!=slotId);  
 
-                letters.push({letter, isOverwritable} as ISlotLetter);
+            //If slot has a valid word in it, That letter is not overwritable. 
+            if (sharedSlotId!==undefined && $wordSlots[sharedSlotId].word){ 
+                isOverwritable = false;                       
+            }
+
+            mycells.push({
+                letter: $cells[cellId].letter, 
+                isOverwritable
             });
+        };
 
-        $activeSlotProps = {
-            "letters": letters,
-            "word": slot.word,
-            "isNewWord": false 
-            //this event comes from selecting an existing wordSlot, 
-            //so not a 'new' word.  
-        }
-    }
+        $activeSlotWord = slot.word;
+        $activeSlotCells = mycells;
+    };
 
-
-    function updateSlotCellLetters(slot: IWordSlot, wordOrLetterArray: ISlotLetter[] | string) {
+    function refreshGridLetters(slot: IWordSlot, wordOrCellStates: string | ISlotCellState[]) {
         
-        if (typeof wordOrLetterArray == "string"){
+        if (typeof wordOrCellStates == "string"){
             for (let i = 0; i < slot.cells.length; i++) {
                     let cellId = slot.cells[i];
                     $cells[cellId].letter = slot.word[i];
@@ -114,14 +123,14 @@ dictionary.subscribe( (dict) => { if(dict) setDictionary(dict)} );
         }
 
         else {
-                console.log("Updating Slot Cell Letters...");
                 for (let i = 0; i < slot.cells.length; i++) {
-                if (wordOrLetterArray[i].isOverwritable){
+                if (wordOrCellStates[i].isOverwritable){
                     let cellId = slot.cells[i];
-                    $cells[cellId].letter = wordOrLetterArray[i].letter;
+                    $cells[cellId].letter = wordOrCellStates[i].letter;
                 }
             } 
-        }  
+        }
+        $cells = $cells;  
     }
 
     

@@ -2,13 +2,13 @@
 let DICTIONARY = new Map() as IDictionary;
 
 const enum WordDirection {
-    Forward = "word",
-    Reverse = "word reverse",
-    Anagram = "word anagram"
+    Forward = "forward",
+    Reverse = "reverse",
+    Anagram = "anagram"
 }
 
-const trivialEndings = ["ER", "ED", "S", "ING", "ABLE"]; //?TODO TOP 
-const averageScore = (arr) => {return arr.reduce((partialsum, x) => partialsum + DICTIONARY.get(x).score, 0) / arr.length;}
+const trivialEndings = ["ER", "ED", "S", "ING", "ABLE"]; 
+const averageScore = (arr) => {return arr.reduce((partialsum, x) => partialsum + DICTIONARY?.get(x)?.score || 0, 0) / arr.length;}
 
 
 ////// HELPERS  
@@ -152,13 +152,13 @@ const averageScore = (arr) => {return arr.reduce((partialsum, x) => partialsum +
     }
 //}
 
-function generateMatchRegex(letters: string[]) : RegExp{
+function generateMatchRegex(cells: ISlotCellStates) : RegExp{
 
     let searchstring = ""   
-    letters.forEach( (letter) => {
-            searchstring += (letter.toLocaleLowerCase() == letter.toLocaleUpperCase()) 
+    cells.forEach( (cell) => {
+            searchstring += (cell.isOverwritable) 
             ? '.'
-            : letter
+            : cell.letter
     });
     
     return new RegExp("(\\b|^)" + searchstring + "(\\b|$)");
@@ -225,7 +225,7 @@ function isDevice(origWord, subWordArray, depth = 0) : Array<IWord> {
             i = -1;
             let recursive = isDevice(leftovers, subWordArray, depth);
             if (recursive != null) {
-                return [{"word": subword, "direction": findDirection(subword, matched)} as IWord, ...recursive] ;
+                return [{"word": subword, "direction": findDirection(subword, matched)}, ...recursive] ;
             }
         }
 
@@ -240,7 +240,7 @@ function isDevice(origWord, subWordArray, depth = 0) : Array<IWord> {
             subWordArray.splice(i, 1);
             let recursive = isDevice(leftovers, subWordArray, depth);
             if (recursive != null) {
-                return [...recursive, {"word": subword, "direction": findDirection(subword, matched)} as IWord];
+                return [...recursive, {"word": subword, "direction": findDirection(subword, matched)}];
             }
         }
 
@@ -324,10 +324,10 @@ function rateDevice(wordarray: Array<IWord>) {
 
 }
 
-function categoriseAnagrams(anagramList, targetword) {
+function categoriseAsDevices(anagramList: any[], targetword: string ) : IDeviceSet {
     
-    let containers = {type:"Containers", list:[]} as IDeviceList;
-    let anagrams = {type:"Anagrams", list:[]} as IDeviceList; 
+    let containers = [] as IDevice[];
+    let anagrams = [] as IDevice[]; 
 
     for (let anagramSet of anagramList) { 
 
@@ -336,46 +336,128 @@ function categoriseAnagrams(anagramList, targetword) {
         let device = isDevice(targetword, anagramSet);
 
         if (!device) {      //Filter out incomplete partials...
-            anagrams.list.push({"words":anagramSet, "type": "Anagram" } as IDevice);
+            let anagramDevice = anagramSet.map((s) => {return {"word": s} as IWord}) as Array<IWord>;
+            anagrams.push({"words":anagramDevice} as IDevice);
         }
 
         else {
             if (!trivialEndings.includes(device[device.length-1].word))             //Filter out trivial endings, doesnt work??. 
-            containers.list.push({"words":device, "type":"Container"} as IDevice);
+            containers.push({"words":device} as IDevice);
         }
     }
 
-    return [anagrams, containers];
+    return {anagrams, containers} as IDeviceSet;
 }
 
-function sortDevices(devices: IDeviceList[]){
+function sortDevices(devices: IDeviceSet){
     
-    for (let type of devices) {
-
-        if (type.type = "Anagrams"){
-        type.list.sort((a, b) => {
-            return (
-                averageScore(b.words) - averageScore(a.words))
+    if (devices.anagrams){
+        devices.anagrams.sort((a, b) => {
+            return averageScore(b.words) - averageScore(a.words)
                 || b.words.length - a.words.length
-        });}
+        });
+    }
 
-        else if (type.type = "Containers"){
-            type.list.sort(function (a, b) {       //= sort devices 
+    if (devices.containers) {
+        devices.containers.sort(function (a, b) {       //= sort devices 
             return rateDevice(b.words) - rateDevice(a.words)
         });
+    }
+}
+
+function searchHiddenWords(searchWord) {
+
+    //= Find 2 words with word hidden inside.
+    /*
+    for (let l=2; l+1<letterarray.length; l++)
+    {
+
+        if (letterarray.length < 6) return;
+
+        w1 = letterarray.slice(0,l).join("");
+        w2 = letterarray.slice(l,).join("");
+
+
+        let starttest = w1 + "$";
+        let endtest = "^" + w2;
+        let regex1 = new RegExp(starttest);
+        let regex2 = new RegExp(endtest);
+        var starts = wordList.filter(w => regex1.test(w));
+        if (starts.length > 0)
+        {
+            var ends = wordList.filter(w => regex2.test(w));
+            if (ends.length > 0)
+            {
+      
+            }
+        }
+
+    }
+    */
+
+    //= Find 3-word hiddens.
+
+    // FIND INCLUDED WORDS
+    let internalWords = []
+
+    for (let [key, value] of DICTIONARY) {
+        if (
+            key.length > 2 &&
+            searchWord.includes(key) &&
+            !searchWord.startsWith(key) &&
+            !searchWord.endsWith(key)) {
+            internalWords.push(key);
         }
     }
+
+
+    // FIND HIDDEN SENTENCES
+    let hiddenSentences = new Map();
+
+    for (let internalWord in internalWords) {
+        let internalWordStartIndex = searchWord.indexOf(internalWord);
+        let internalWordEndIndex = internalWordStartIndex + internalWord.length;
+
+        let w1 = searchWord.substring(0, internalWordStartIndex);
+        let w2 = searchWord.substring(internalWordEndIndex);
+
+        let starttest = ".+" + w1 + "$";
+        let endtest = "^" + w2 + ".+";
+        let regexStart = new RegExp(starttest);
+        let regexEnd = new RegExp(endtest);
+
+        let starts = [];
+        let ends = [];
+        for (let word in DICTIONARY.keys) {
+                    
+            if (regexStart.test(word)) { starts.push(word) };
+            if (regexEnd.test(word)) { ends.push(word) };
+        }
+
+        if (starts.length > 0 && ends.length > 0) {
+            let out = [];
+            for (let i = 0; i < starts.length && i < ends.length; i++) {
+                out.push([starts[i], internalWord, ends[i]]);
+            }
+            hiddenSentences.set(`...${w1} ${internalWord} ${w2}...`, out);
+        }
+
+    }
+
+    // OUTPUT MAP STRUCTURE : KEY-subheading, VALUE-array of subvalues
+    // Format accordingly, returning an array of [div,  div, ... ]
+    return hiddenSentences;
 }
 
 export const validWordFinder = {
 
     //Pull out default options/ variables if adding user settings (e.g. search depth, dictionaries, etc.Obj)
 
-    search(letters: string[]) : string[] {        
+    search(cells: ISlotCellStates) : string[] {        
         //? -> Finds all valid words for template e.g. [ _ A B _ _ C ] -> [FABRIC, ..., ...]
 
-        let searchregex = generateMatchRegex(letters);
-        let searchlength = letters.length;
+        let searchregex = generateMatchRegex(cells);
+        let searchlength = cells.length;
 
         // Test through the dictionary
         let possibleWordsArray = []
@@ -390,24 +472,24 @@ export const validWordFinder = {
         return possibleWordsArray;
     },
 
-    checkValidNewWord(filterTerm: string, letters: string[]) { 
+    checkValidNewWord(filterTerm: string, cells: ISlotCellStates) { 
 
         let searchLength = filterTerm.length;
-        let slotLength = letters.length;
-        let isValidSearch, userMessage;
+        let slotLength = cells.length;
+        let isValidSearch, userMessage, colour;
         
-        if (generateMatchRegex(letters).test(filterTerm)){
+        if (generateMatchRegex(cells).test(filterTerm)){
             isValidSearch = true;
-            userMessage = `'${filterTerm}' can be entered as a custom word.`
+            [userMessage, colour]  = [`'${filterTerm}' can be entered as a custom word.`, "green"];
         }
 
         else{
             isValidSearch = false; 
-            userMessage = (filterTerm.length != slotLength) 
-                ? `'${filterTerm}' has  ${searchLength} / ${slotLength} letters needed to be a custom word.`
-                : `'${filterTerm}' won't fit - it needs to match the existing letters: ${letters.join('')}`;
+            [userMessage, colour] = (filterTerm.length != slotLength) 
+                ? [`${searchLength} / ${slotLength} letters needed to be a custom word.`, "orangered"]
+                : [`'${filterTerm}' doesn't fit with the letters on the grid.`, "red"];
         }
-        return [isValidSearch, userMessage];
+        return [isValidSearch, userMessage, colour];
     },
 
     anyPossibleWord(letters){
@@ -429,106 +511,21 @@ export const validWordFinder = {
 async function generateDevices(targetword){         //== THE NEW DEVICE SEARCHER WITH PRIME-HASHING! 
             
 console.time('Crawl Anagram Tree');
-    let anagramList = crawlAnagramTree(targetword, DICTIONARY);
+    let uncategorisedAnagrams = crawlAnagramTree(targetword, DICTIONARY);
 console.timeEnd('Crawl Anagram Tree');
 
-    let [anagrams, containers] = categoriseAnagrams(anagramList, targetword); //Categorise
-    sortDevices([anagrams,containers]); //Sort
-    return [anagrams, containers] as IDeviceSet; 
-
-
-
-    function searchHiddenWords(searchWord) {
-
-        //= Find 2 words with word hidden inside.
-        /*
-        for (let l=2; l+1<letterarray.length; l++)
-        {
-
-            if (letterarray.length < 6) return;
-
-            w1 = letterarray.slice(0,l).join("");
-            w2 = letterarray.slice(l,).join("");
-
-
-            let starttest = w1 + "$";
-            let endtest = "^" + w2;
-            let regex1 = new RegExp(starttest);
-            let regex2 = new RegExp(endtest);
-            var starts = wordList.filter(w => regex1.test(w));
-            if (starts.length > 0)
-            {
-                var ends = wordList.filter(w => regex2.test(w));
-                if (ends.length > 0)
-                {
-      
-                }
-            }
-
-        }
-        */
-
-        //= Find 3-word hiddens.
-
-        // FIND INCLUDED WORDS
-        let internalWords = []
-
-        for (let [key, value] of DICTIONARY) {
-            if (
-                key.length > 2 &&
-                searchWord.includes(key) &&
-                !searchWord.startsWith(key) &&
-                !searchWord.endsWith(key)) {
-                internalWords.push(key);
-            }
-        }
-
-
-        // FIND HIDDEN SENTENCES
-        let hiddenSentences = new Map();
-
-        for (let internalWord in internalWords) {
-            let internalWordStartIndex = searchWord.indexOf(internalWord);
-            let internalWordEndIndex = internalWordStartIndex + internalWord.length;
-
-            let w1 = searchWord.substring(0, internalWordStartIndex);
-            let w2 = searchWord.substring(internalWordEndIndex);
-
-            let starttest = ".+" + w1 + "$";
-            let endtest = "^" + w2 + ".+";
-            let regexStart = new RegExp(starttest);
-            let regexEnd = new RegExp(endtest);
-
-            let starts = [];
-            let ends = [];
-            for (let word in DICTIONARY.keys) {
-                    
-                if (regexStart.test(word)) { starts.push(word) };
-                if (regexEnd.test(word)) { ends.push(word) };
-            }
-
-            if (starts.length > 0 && ends.length > 0) {
-                let out = [];
-                for (let i = 0; i < starts.length && i < ends.length; i++) {
-                    out.push([starts[i], internalWord, ends[i]]);
-                }
-                hiddenSentences.set(`...${w1} ${internalWord} ${w2}...`, out);
-            }
-
-        }
-
-        // OUTPUT MAP STRUCTURE : KEY-subheading, VALUE-array of subvalues
-        // Format accordingly, returning an array of [div,  div, ... ]
-        return hiddenSentences;
-    }
+    let devices = categoriseAsDevices(uncategorisedAnagrams, targetword); //Categorise
+    sortDevices(devices); //Sort
+    return devices as IDeviceSet; 
 }
 
-export const WordInfo = {
+export const Devices = {
 
-    async getDevices(word){
+    async get(word){
         let deviceSet = generateDevices(word);
-        // LET THESAURUS ENTRY = GET THESAURUS ENTRY 
-
+        deviceSet.then(d => console.log(d));
+        
+             // LET THESAURUS ENTRY = GET THESAURUS ENTRY 
         return deviceSet; 
     },
 
@@ -604,5 +601,18 @@ export const WordInfo = {
         return {"ThesaurusDTO": ThesaurusDTO,"matches": matches}; //TODO: IThesaurusEntry
     }
 };
+
+const scoreToColour = (score: number) : string => { 
+    if (score < 20) return "hsl(0,75%,85%)";
+    else return `hsl(${score*2}, 75%, 85%)`;
+}
+
+export const WordInfo = {
+    get(word: string) {
+        let entry = DICTIONARY.get(word) as IDictionaryEntry;
+        console.log(entry);
+        return {colour: scoreToColour(entry.score), isAbbreviation: entry.isAbbreviation}  
+    }
+}
 
 export function setDictionary(dictionary: IDictionary){ DICTIONARY = dictionary };
