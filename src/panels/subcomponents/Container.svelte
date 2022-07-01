@@ -13,12 +13,12 @@ export let device : IDevice =
 function wordProps(node: HTMLButtonElement, {word, dir, pos} ) {
     let entry = WordInfo.get(word);
     node.style.background = entry.colour;
-    if (entry.isAbbreviation) {node.style.fontSize = "300%"} 
-    node.classList.add(dir, pos,"word");
+    if (entry.isAbbreviation) {node.classList.add("abbr")} 
+    node.classList.add("word", dir, pos);
 }
 
 </script>
-<div class="container"> 
+<div class="device"> 
     {#each device.words as i}
         <button use:wordProps={{"word": i.word, "dir": i.direction, "pos": "outer"}}>
         {i.word} 
@@ -33,54 +33,74 @@ function wordProps(node: HTMLButtonElement, {word, dir, pos} ) {
     {/each}
 </div> 
 
-<style lang="sass">
+<style lang="scss">
 
-.container
-    display: block
-    height: 65px
+:global(.device){
+    display: block;
+    height: 60px;
+    padding-left: 30px;
+    padding-top: 10px;
+}
 
-.word 
-    display:inline-block
-    position: relative
-    font-size: 14px
-    font-family: 'Courier New', Courier, monospace
-    margin: 0px 5px 0px 5px         
-    border-radius:3px
-    border: 1px solid black
-    background-color: whitesmoke
-    cursor:pointer 
-    height: 50px
-    line-height: 50px
-    .inner
-        height: 40px
-        line-height: 40px
+:global(.word) {
+    display:inline-block;
+    position: relative;
+    font-size: 16px;
+    font-family: 'Courier New', Courier, monospace;
+    margin: 0px 2px 0px 2px;
+    padding: 0px 8px 0px 8px;
+    border-radius:2px;
+    border: none;
+    cursor:pointer ;
+    height: 50px;
+    line-height: 50px;
+    &:hover{
+        opacity: 0.8;
+    }
+    overflow:visible;
+}
 
-    hover
-    background-color:aliceblue
+:global(.inner){
+        height: 40px;
+        line-height: 40px;
+        box-shadow: 0px 5px 10px rgba(54, 54, 54, 0.435);
+        padding: 0px 5px 0px 5px;
+    }
+
+:global(.word.abbr){
+    font-style: italic;
+}
+
+@mixin floatinglabel {
+    color: rgb(0, 0, 0);
+    position: absolute;
+    top: -5px;
+    left: -7px;
+    width:18px;
+    height: 20px;
+    float: left;
+    font-style: bold;
+    font-size: 14px;
+    font-style: normal;
+    line-height: 20px;
+    text-align: center;
+    vertical-align: center;
+    // background-color:rgba(247, 247, 247, 0.685);
+    border-radius: 20px;
+    // border: 0.5px solid gray;
+    // box-shadow: 3px 5px 6px rgba(128, 128, 128, 0.435);
+}
+
+:global(.anagram:before) {
+    content:"⟳";
+    @include floatinglabel
+}
+
+:global(.reverse:before) {
+    content:"\21A9  ";
+    @include floatinglabel
+}
 
 
-.anagram:before
-        content:"⟳"
-        color: black
-        position: absolute
-        top: 0px
-        left: 0px
-        border-radius:3px
-        width:20px
-        float: left
-        line-height: 20px
-        text-align: center
-
-.reverse:before 
-        content:"\21A9  "
-        color: black
-        font-weight: bold
-        position: absolute
-        top: -2px
-        left: -2px
-        width:20px
-        float: left
-        line-height: 20px
-        text-align: center 
 
 </style>

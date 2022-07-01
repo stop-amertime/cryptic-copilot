@@ -610,7 +610,6 @@ const scoreToColour = (score: number) : string => {
 export const WordInfo = {
     get(word: string) {
         let entry = DICTIONARY.get(word) as IDictionaryEntry;
-        console.log(entry);
         return {colour: scoreToColour(entry.score), isAbbreviation: entry.isAbbreviation}  
     }
 }

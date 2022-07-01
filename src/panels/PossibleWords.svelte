@@ -8,7 +8,9 @@ import { validWordFinder } from '../modules/ClueEngine';
 import { fly } from 'svelte/transition'
 import IconButton from "./subcomponents/IconButton.svelte";
 import LetterBoxes from "./subcomponents/LetterBoxes.svelte";
-import {Center, Button} from '@svelteuidev/core'
+import {Center, Button, ActionIcon} from '@svelteuidev/core'
+import Icon from "@iconify/svelte";
+
 /*-------------------------------------*/
 
 let rawSearchInput = "";
@@ -33,19 +35,21 @@ $: [isValidSearch, searchSubMessage, messageColour] = (!!searchInput) ?
 
         <LetterBoxes letters={$activeSlotCells}/>
 
-        <IconButton id="resetbutton" url="/src/assets/icons/deletebin.png" 
-        disabled={!!$activeSlotWord} on:clicked={() => $activeSlotWord = null}/>
+        <ActionIcon color="dark" size="xl" variant="outline"
+        disabled={!$activeSlotWord} on:click={() => $activeSlotWord = null}>
+        <Icon icon="tabler:backspace" width="50" height="50" /> </ActionIcon>
 
         <input id="searchInput" bind:value={rawSearchInput}
-            placeholder="🔎︎  Search or add a new word.."/>
+        placeholder="🔎︎  Search or add a new word.."/>
 
-        <IconButton id="searchSubmit" url="/src/assets/icons/addtext.png" 
-        disabled={!isValidSearch} on:clicked={() => $activeSlotWord = searchInput}/>
+        <ActionIcon color="dark" size="xl" variant="outline"
+        disabled={!isValidSearch} on:click={() => $activeSlotWord = searchInput}>
+        <Icon icon="tabler:pencil-plus" width="50" height="50" /> </ActionIcon>
 
         {#if filteredPossibleWords.length > 0}
-        <span id="matchText"> {filteredPossibleWords.length} matching words. </span>
+            <span id="matchText"> {filteredPossibleWords.length} matching words. </span>
         {:else if searchInput}
-        <span id="noWordsText"  style:color={messageColour}> {searchSubMessage}</span>
+            <span id="noWordsText"  style:color={messageColour}> {searchSubMessage}</span>
         {/if}
     </div>
 
@@ -53,13 +57,9 @@ $: [isValidSearch, searchSubMessage, messageColour] = (!!searchInput) ?
 
         <div id="possibleWordsWrapper">
             
-            <VirtualList 
-            items={filteredPossibleWords} 
-            let:item>
+            <VirtualList items={filteredPossibleWords} let:item>
 
-                <Button
-                    variant="outline"
-                    class="possibleWord" 
+                <Button ripple variant="outline" class="possibleWord" 
                     on:click={() => $activeSlotWord = item}>
                     {item}
                 </Button>
@@ -97,7 +97,7 @@ $: [isValidSearch, searchSubMessage, messageColour] = (!!searchInput) ?
         width: 100%;
         display: grid;
         grid-template-columns: 1fr 60px;
-        grid-template-rows: repeat(2, 60px) 40px;
+        grid-template-rows: repeat(2, 44px) 40px;
         grid-column-gap: 15px;
         grid-row-gap: 20px;
     }

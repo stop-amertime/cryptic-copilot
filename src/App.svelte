@@ -16,6 +16,11 @@ lastTemplate.then( (t) => $gridTemplate = t);
 let lastDictionary   = Load.lastOrDefaultDictionary();
 lastDictionary.then( (d) => $dictionary = d);
 
+let pallete = {
+  primary: "rgb(0,0,0)",
+  subtle: "rgb(200,200,200)"
+}
+
 </script>
 
 <StateMediator/>
@@ -45,16 +50,20 @@ lastDictionary.then( (d) => $dictionary = d);
 </div>
 
 
-<style>
+<style lang="scss">
 * {
   box-sizing: border-box;
 }
 
 :global(*) {
-  font-family:'Courier New', Courier, monospace;
+  font-family:'Courier New', Courier, monospace; 
+  $primary-color: hsl(0, 0%, 100%);
+  $highlight: rgba(242, 242, 242, 0.716);
+  $normal-shadow: 5px 5px;
 }
 
-@media (min-width: 700px) {
+@media (min-width: 800px) {
+
   #main {
     position: absolute 0 0;
     width: 100vw;
@@ -67,12 +76,12 @@ lastDictionary.then( (d) => $dictionary = d);
   }
 
   #gridArea{
-    flex: 1 0 300px;
+    flex: 1 0 400px;
     padding-right: 15px;
   }
 
   #panelArea{
-    flex: 1 1 400px;
+    flex: 1 1 300px;
     height: 100%;
   }
 
@@ -81,24 +90,31 @@ lastDictionary.then( (d) => $dictionary = d);
     /* LOL */
   }
 }
-@media (max-width: 699px) {
+@media (max-width: 799px) {
   
   #main{
-    width: 100vw; 
+    display: flex;
+    flex-direction: column;
+    width: 100vw;
+    height: 100vh;
+    align-items:center;
+    justify-items: center;
   }
 
   #gridArea {
-    width: 100%;
     height: 40%;
+    display:flex;
+    justify-content: center;
+    width: 100%;
+    flex: 1 0 1fr;
   }
 
   #panelArea{
-    width: 100%;
-    height: 70%;
+    width: 90%;
+    flex: 1 1 auto;
     margin: 20px;
-    margin-top: 0px;
+    margin-top: 15px;
   }
-
 
 }
 

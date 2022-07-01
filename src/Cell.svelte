@@ -65,6 +65,7 @@ const dispatch = createEventDispatcher();
         width: 100%;
         height: 100%;
         font-size: 500%;
+        font-weight: 800;
         font-family: 'Courier New', Courier, monospace;
     }
 

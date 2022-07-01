@@ -39,13 +39,20 @@ function updateSelectedSlot(event: {    detail: number[]    }){
     * {
         box-sizing:border-box;
     }
-
+/* @media (min-width: 800px) { */
     #Grid{
+        max-height: 100%;
+        max-width: 100%;
+        height: 100%;
         aspect-ratio: 1;
         display: grid;
         grid-template-columns: repeat(var(--dimension),1fr);
         grid-template-rows: repeat(var(--dimension),1fr);
     }
+
+/* @media (max-width: 799px) {
+
+    } */
 
 </style>
 
