@@ -3,24 +3,19 @@
 import {fly} from 'svelte/transition'
 
 export let letters = [];
+let mywidth; 
 
 </script>
 
 <div id="letterBox">
     {#each letters as l}
-        <div 
-        style="--number: {letters.length}" 
+    {#key l.letter}
+        <div style="--number: {letters.length}; --size:{mywidth}"
         class="letter {l.isOverwritable ? '' : "fixed"}"
-        in:fly={{duration:100}}>
-            <svg 
-            width="100%"
-            height="100%"
-            viewBox="0 -50 50 50"
-            preserveAspectRatio="none">
-                <text x="0" y="0">
-                    {l.letter}
-                </text>
+        bind:clientWidth={mywidth}>
+            {l.letter}
         </div>
+    {/key}
     {/each}
 </div>
 
@@ -43,11 +38,8 @@ export let letters = [];
         margin: 3px; 
         width: 6%;
         aspect-ratio: 1;
-    }
-
-    .letter > svg > text {
-        font-size: 500%;
-        font-weight: bold;
+        font-size: --mywidth;
+        font-weight: 1000; 
     }
 
     .fixed {

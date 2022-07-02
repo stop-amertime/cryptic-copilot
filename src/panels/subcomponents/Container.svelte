@@ -36,10 +36,9 @@ function wordProps(node: HTMLButtonElement, {word, dir, pos} ) {
 <style lang="scss">
 
 :global(.device){
-    display: block;
-    height: 60px;
-    padding-left: 30px;
-    padding-top: 10px;
+    display: flex;
+    align-items: stretch;
+    height: 80px;
 }
 
 :global(.word) {
@@ -47,13 +46,10 @@ function wordProps(node: HTMLButtonElement, {word, dir, pos} ) {
     position: relative;
     font-size: 16px;
     font-family: 'Courier New', Courier, monospace;
-    margin: 0px 2px 0px 2px;
-    padding: 0px 8px 0px 8px;
+    margin: 8px 2px;
     border-radius:2px;
-    border: none;
+    border:1px solid gray;
     cursor:pointer ;
-    height: 50px;
-    line-height: 50px;
     &:hover{
         opacity: 0.8;
     }
@@ -63,8 +59,8 @@ function wordProps(node: HTMLButtonElement, {word, dir, pos} ) {
 :global(.inner){
         height: 40px;
         line-height: 40px;
-        box-shadow: 0px 5px 10px rgba(54, 54, 54, 0.435);
-        padding: 0px 5px 0px 5px;
+        box-shadow: inset 0px 3px 10px rgba(54, 54, 54, 0.39);
+        padding: 0px 10px;
     }
 
 :global(.word.abbr){
@@ -74,8 +70,8 @@ function wordProps(node: HTMLButtonElement, {word, dir, pos} ) {
 @mixin floatinglabel {
     color: rgb(0, 0, 0);
     position: absolute;
-    top: -5px;
-    left: -7px;
+    top: -2px;
+    left: -2px;
     width:18px;
     height: 20px;
     float: left;

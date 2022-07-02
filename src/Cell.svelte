@@ -1,7 +1,8 @@
 <script>
 import { createEventDispatcher} from "svelte";
 import { fly, slide } from 'svelte/transition';
-import { cubicOut } from 'svelte/easing';
+import { cubicIn, cubicOut } from 'svelte/easing';
+import {activeCellAnimations} from './StateMediator.svelte'
 
 export let id;
 export let isValid;
@@ -11,7 +12,18 @@ export let isNumbered = false;
 export let slots = [];
 $: num = isNumbered ? "numbered" : "";
 $: sel = isSelected ? "selected" : "";
+
 const dispatch = createEventDispatcher();
+$: myOrder = $activeCellAnimations.order?.[id] ?? Math.random() * 7;
+
+$: animStyle = {
+    duration:500, 
+    delay:(myOrder  * 150) //ms
+};
+
+$: animation = $activeCellAnimations.orientation == "A" 
+    ? {in: {y:300, ...animStyle, easing:cubicOut}, out:{y:-300, ...animStyle, easing: cubicIn}}
+    : {in: {x:-300, ...animStyle,easing:cubicOut}, out:{x:300 , ...animStyle, easing: cubicIn}};
 
 </script>
 
@@ -30,13 +42,13 @@ const dispatch = createEventDispatcher();
 
                     {#key letter} 
 
-
                     <text
-                        in:fly={{y: 70, duration:500, easing:cubicOut}}
-                        out:fly={{y: -70, duration:500, easing:cubicOut}}
+                        in:fly={animation.in}
+                        out:fly={animation.out}
                         x="0" y="0">
                         {letter}
                     </text>
+
                     {/key} 
                 </svg> 
 

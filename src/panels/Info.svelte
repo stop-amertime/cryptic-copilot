@@ -1,15 +1,14 @@
 <script lang="ts">
-/*-----------------------------------------*/
-import { activeSlotWord } from "../StateMediator.svelte";
-import { Devices }  from '../modules/ClueEngine';
-import VirtualList from '@sveltejs/svelte-virtual-list'
-import DeviceList from "./subcomponents/DeviceList.svelte";
-import Anagram from './subcomponents/Anagram.svelte';
-import Container from './subcomponents/Container.svelte';
-/*-----------------------------------------*/
+        import { activeWord } from "../StateMediator.svelte";
+        import { Devices }  from '../modules/ClueEngine';
+        import VirtualList from '@sveltejs/svelte-virtual-list'
+        import DeviceList from "./subcomponents/DeviceList.svelte";
+        import Anagram from './subcomponents/Anagram.svelte';
+        import Container from './subcomponents/Container.svelte';
+
 
 let isActive = true;
-$: deviceSetPromise = (!!$activeSlotWord) ? Devices.get($activeSlotWord) : null
+$: deviceSetPromise = (!!$activeWord) ? Devices.get($activeWord) : null
 </script>
 
 <div id="page">

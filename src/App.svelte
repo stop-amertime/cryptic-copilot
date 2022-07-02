@@ -16,6 +16,7 @@ lastTemplate.then( (t) => $gridTemplate = t);
 let lastDictionary   = Load.lastOrDefaultDictionary();
 lastDictionary.then( (d) => $dictionary = d);
 
+//TODO: Colour pallete?
 let pallete = {
   primary: "rgb(0,0,0)",
   subtle: "rgb(200,200,200)"

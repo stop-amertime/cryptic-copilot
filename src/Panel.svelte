@@ -5,7 +5,7 @@ import Info from './panels/Info.svelte'
 import Clues from './panels/Clues.svelte'
 import Settings from './panels/Settings.svelte'
 
-import {activeSlotWord} from './StateMediator.svelte'
+import {activeWord} from './StateMediator.svelte'
 
 import { writable } from 'svelte/store'
 import { fly } from 'svelte/transition';
@@ -28,7 +28,7 @@ $: currentPage = displayPage[currentTab];
 
 
 // Toggle disabling Tab 2 (Word Info) when word is null.
-$: if (!$activeSlotWord) {
+$: if (!$activeWord) {
     if (currentTab == 'Info') {currentTab = 'Word'};
     $tabs[1].disabled = true; 
 } 
@@ -79,7 +79,7 @@ else {
     height:100%;
     display: flex; 
     flex-direction: column;
-    overflow-y:hidden;
+    overflow:hidden;
 }
 
 /* Static border, doesn't move while internal panel animates. */
