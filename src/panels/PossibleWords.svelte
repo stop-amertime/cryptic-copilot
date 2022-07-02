@@ -5,7 +5,7 @@
     import { activeCells, activeWord, activeSlotId } from "../StateMediator.svelte";
     import { validWordFinder } from '../modules/ClueEngine';
     import LetterBoxes from "./subcomponents/LetterBoxes.svelte";
-    import {Center, Button, ActionIcon} from '@svelteuidev/core'
+    import {Center, Button, ActionIcon} from "@svelteuidev/core";
     import Icon from "@iconify/svelte";
 //
 

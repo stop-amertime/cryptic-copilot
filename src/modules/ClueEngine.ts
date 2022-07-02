@@ -8,7 +8,7 @@ const enum WordDirection {
 }
 
 const trivialEndings = ["ER", "ED", "S", "ING", "ABLE"]; 
-const averageScore = (arr) => {return arr.reduce((partialsum, x) => partialsum + DICTIONARY?.get(x)?.score || 0, 0) / arr.length;}
+const averageScore = (arr: IWord[]) => {return arr.reduce((partialsum, x) => partialsum + DICTIONARY?.get(x.word)?.score || 0, 0) / arr.length;}
 
 
 ////// HELPERS  
@@ -297,21 +297,20 @@ function rateDevice(wordarray: Array<IWord>) {
 
     let comp = 0;  //complexity
     let score = 0; //scoreofwords
-    let abouts = 0; //number of 'about' indicators used.
 
     // flatten
     for (let i = 0; i < wordarray.length; i++) {
         if (wordarray[i].contains != null) {
             wordarray.concat(wordarray[i].contains);
-            comp += 1 + (abouts * 40);  // ABOUT factor - first is free, subsequent are heavily punished.
-            abouts += 1;
+            comp += 1;  // ABOUT factor - first is free, subsequent are heavily punished.
         }
 
         if (wordarray[i].direction == WordDirection.Reverse) { comp += 1 } // REVERSE factor.
-        else if (wordarray[i].direction == WordDirection.Anagram) { comp += 2 } // SCRAMBLED factor.
+        else if (wordarray[i].direction == WordDirection.Anagram) { comp += 1 } // SCRAMBLED factor.
 
-        score += wordarray[i].score;
-        score += wordarray[i].word.length * 0.5;
+        wordarray[i].score = DICTIONARY.get(wordarray[i].word).score;
+        score += wordarray[i].score
+        score += wordarray[i].word.length * 2;
     }
 
     //// Take average of Word Scores
@@ -320,8 +319,6 @@ function rateDevice(wordarray: Array<IWord>) {
     let out = ~~(score / wordarray.length) - 5 * wordarray.length - 3 * comp;
 
     return out;
-
-
 }
 
 function categoriseAsDevices(anagramList: any[], targetword: string ) : IDeviceSet {
@@ -353,8 +350,8 @@ function sortDevices(devices: IDeviceSet){
     
     if (devices.anagrams){
         devices.anagrams.sort((a, b) => {
-            return averageScore(b.words) - averageScore(a.words)
-                || b.words.length - a.words.length
+            return a.words.length - b.words.length
+                || averageScore(a.words) - averageScore(b.words)
         });
     }
 

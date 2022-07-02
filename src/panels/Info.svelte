@@ -1,33 +1,45 @@
 <script lang="ts">
         import { activeWord } from "../StateMediator.svelte";
         import { Devices }  from '../modules/ClueEngine';
-        import VirtualList from '@sveltejs/svelte-virtual-list'
         import DeviceList from "./subcomponents/DeviceList.svelte";
         import Anagram from './subcomponents/Anagram.svelte';
         import Container from './subcomponents/Container.svelte';
 
 
-let isActive = true;
 $: deviceSetPromise = (!!$activeWord) ? Devices.get($activeWord) : null
+
+let pageHeight;
+
+function closeOthers(event){
+        event.preventDefault();
+        let elementId = event.detail;
+        let items = document.getElementsByTagName('details');
+        for (let i=0; i<items.length;i++){
+                if (i!=elementId) 
+                        items[i].removeAttribute("open")}
+}
+
 </script>
 
-<div id="page">
+<div id="page" bind:clientHeight={pageHeight}>
         {#await deviceSetPromise}
         <div> Loading Devices.. </div>
 
         {:then deviceSet}        
                 <DeviceList 
-                name="Anagrams" index={1}
+                name="Anagrams" index={0}
                 list={deviceSet?.anagrams || []}
                 subComponent={Anagram}
-                opened={true}
+                maxHeight={pageHeight}
+                on:opened={closeOthers}
                 />
 
                 <DeviceList 
-                name="Containers" index={2}
+                name="Containers" index={1}
                 list={deviceSet?.containers || []}
+                maxHeight={pageHeight}
                 subComponent={Container}
-                opened={true}
+                on:opened={closeOthers}
                 />    
         {/await}
 </div>

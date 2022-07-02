@@ -1,7 +1,7 @@
 <script>
 import { createEventDispatcher} from "svelte";
 import { fly, slide } from 'svelte/transition';
-import { cubicIn, cubicOut } from 'svelte/easing';
+import { quadInOut, quadIn, quadOut } from 'svelte/easing';
 import {activeCellAnimations} from './StateMediator.svelte'
 
 export let id;
@@ -17,13 +17,13 @@ const dispatch = createEventDispatcher();
 $: myOrder = $activeCellAnimations.order?.[id] ?? Math.random() * 7;
 
 $: animStyle = {
-    duration:500, 
-    delay:(myOrder  * 150) //ms
+    duration:200, 
+    delay:(myOrder  * 100) //ms
 };
 
 $: animation = $activeCellAnimations.orientation == "A" 
-    ? {in: {y:300, ...animStyle, easing:cubicOut}, out:{y:-300, ...animStyle, easing: cubicIn}}
-    : {in: {x:-300, ...animStyle,easing:cubicOut}, out:{x:300 , ...animStyle, easing: cubicIn}};
+    ? {in: {y:200, ...animStyle, easing:quadOut}, out:{y:-200, ...animStyle, easing: quadIn}}
+    : {in: {x:-200, ...animStyle,easing:quadOut}, out:{x:200 , ...animStyle, easing: quadIn}};
 
 </script>
 

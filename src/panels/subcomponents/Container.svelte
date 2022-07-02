@@ -1,5 +1,7 @@
 <script lang="ts">
 import { WordInfo } from "../../modules/ClueEngine";
+import Popover from 'svelte-popover';
+
 export let device : IDevice =
     {words: [
         {word:"ABC", score:50, direction:"word"},
@@ -17,6 +19,7 @@ function wordProps(node: HTMLButtonElement, {word, dir, pos} ) {
     node.classList.add("word", dir, pos);
 }
 
+
 </script>
 <div class="device"> 
     {#each device.words as i}
@@ -32,6 +35,8 @@ function wordProps(node: HTMLButtonElement, {word, dir, pos} ) {
         </button>
     {/each}
 </div> 
+
+
 
 <style lang="scss">
 
@@ -61,7 +66,7 @@ function wordProps(node: HTMLButtonElement, {word, dir, pos} ) {
         line-height: 40px;
         box-shadow: inset 0px 3px 10px rgba(54, 54, 54, 0.39);
         padding: 0px 10px;
-    }
+}
 
 :global(.word.abbr){
     font-style: italic;
