@@ -4,6 +4,7 @@ import { writable } from 'svelte/store';
 import Cell from './Cell.svelte';
 import {fly} from 'svelte/transition'
 import {cells, activeSlotId} from './StateMediator.svelte';
+import Event from './StateMediator.svelte' //REUSE 
 
 $: rowsize = Math.sqrt($cells.length) as number; 
 

@@ -480,14 +480,14 @@ export const validWordFinder = {
         
         if (generateMatchRegex(cells).test(filterTerm)){
             isValidSearch = true;
-            [userMessage, colour]  = [`'${filterTerm}' can be entered as a custom word.`, "green"];
+            [userMessage, colour]  = [`'${filterTerm}' can be entered as a custom word.`, "#44D62C"];
         }
 
         else{
             isValidSearch = false; 
             [userMessage, colour] = (filterTerm.length != slotLength) 
-                ? [`${searchLength} / ${slotLength} letters needed to be a custom word.`, "orangered"]
-                : [`'${filterTerm}' doesn't fit with the letters on the grid.`, "red"];
+                ? [`${searchLength} / ${slotLength} letters needed to be a custom word.`, "#FA4616"]
+                : [`'${filterTerm}' doesn't fit with the letters on the grid.`, "#E40046"];
         }
         return [isValidSearch, userMessage, colour];
     },
@@ -507,6 +507,7 @@ export const validWordFinder = {
     },
 
 }
+//TODO: Remove incomplete anagrams. 
 
 async function generateDevices(targetword){         //== THE NEW DEVICE SEARCHER WITH PRIME-HASHING! 
             
@@ -598,7 +599,7 @@ export const Devices = {
             ThesaurusDTO.push({ "part": D.fl, "senses": senses });
         }
 
-        return {"ThesaurusDTO": ThesaurusDTO,"matches": matches}; //TODO: IThesaurusEntry
+        return {"ThesaurusDTO": ThesaurusDTO,"matches": matches}; //TODO: IThesaurusEntry, then thesaurus fetch
     }
 };
 
