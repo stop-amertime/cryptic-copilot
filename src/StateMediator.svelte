@@ -2,9 +2,9 @@
 
 /*---------------------------------------------------*/
 import {writable, derived} from 'svelte/store'
-import {makeCells, makeWordSlots, mapCellsToSlots} from './modules/GridGenerator'
+import {makeCells, makeWordSlots, mapCellsToSlots} from './lib/GridGenerator'
 import {setDictionary} from './lib/ClueEngine'
-import { Save } from './modules/FileManager';
+import { Save } from './lib/FileManager';
 /*---------------------------------------------------*/
 
 //======= MAIN STORES 
@@ -27,6 +27,12 @@ export const activePossibleWords = writable([] as string[])
 </script>
 
 <script lang="ts">
+const WordWorker = new Worker(new URL('./lib/WordWorker', import.meta.url),{type:"module"});
+
+interface IWorkerMessage {
+    function: string;
+    
+}
 
 /////////////////////======== EVENTS
 
@@ -59,7 +65,7 @@ activeWord.subscribe( (newWord: string) => {
 
 // @ new Slot selected -> 
 activeSlotId.subscribe( async (id : number) => {
-
+    WordWorker.postMessage("the active slot is: "+ id);
     highlightSlotCells(id);
     refreshActiveSlotProps(id);
     refreshOrGetDevices(id);
