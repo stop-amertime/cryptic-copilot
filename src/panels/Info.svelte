@@ -1,8 +1,8 @@
 <script lang="ts">
         import { activeWord } from "../StateMediator.svelte";
-        import { Devices }  from '../modules/ClueEngine';
+        import { Devices }  from '../lib/ClueEngine';
         import DeviceList from "./subcomponents/DeviceList.svelte";
-        import Anagram from './subcomponents/Anagram.svelte';
+        import Anagram from '../lib-sv/Anagram.svelte';
         import Container from './subcomponents/Container.svelte';
 
 
@@ -21,7 +21,9 @@ function closeOthers(event){
 
 </script>
 
-<div id="page" bind:clientHeight={pageHeight}>
+<div id="page" 
+bind:clientHeight={pageHeight}
+>
         {#await deviceSetPromise}
         <div> Loading Devices.. </div>
 
