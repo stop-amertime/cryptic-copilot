@@ -1,5 +1,5 @@
 <script lang="ts">
-import { WordInfo } from "../../lib/ClueEngine";
+import { WordInfo } from "../lib/ClueEngine";
 import Popover from 'svelte-popover';
 
 export let device : IDevice =
@@ -21,16 +21,22 @@ function wordProps(node: HTMLButtonElement, {word, dir, pos} ) {
 
 
 </script>
-<div class="device"> 
-    {#each device.words as i}
-        <button use:wordProps={{"word": i.word, "dir": i.direction, "pos": "outer"}}>
-        {i.word} 
+<div 
+class="device"> 
 
-            {#if i.contains}{#each i.contains as j}
-                    
-                    <button use:wordProps={{"word": j.word, "dir": j.direction, "pos": "inner"}}>
-                        {j.word}
-                    </button>
+    {#each device.words as i}
+        <button 
+        use:wordProps={{"word": i.word, "dir": i.direction, "pos": "outer"}}>
+
+            {i.word} 
+
+            {#if i.contains}{#each i.contains as j}       
+                <button 
+                use:wordProps={{"word": j.word, "dir": j.direction, "pos": "inner"}}>
+
+                    {j.word}
+
+                </button>
             {/each}{/if}
         </button>
     {/each}

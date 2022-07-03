@@ -4,7 +4,7 @@
     import VirtualList from "@sveltejs/svelte-virtual-list";
     import { activeCells, activeWord, activeSlotId } from "../StateMediator.svelte";
     import { validWordFinder } from '../lib/ClueEngine';
-    import LetterBoxes from "./subcomponents/LetterBoxes.svelte";
+    import LetterBoxes from "../lib-sv/LetterBoxes.svelte";
     import {Center, Button, ActionIcon} from "@svelteuidev/core";
     import Icon from "@iconify/svelte";
 //
@@ -46,7 +46,8 @@ $: [isValidSearch, searchSubMessage, messageColour] = (!!searchInput) ?
 <div id="wrapper">
 
     <div id="topArea">
-        <LetterBoxes letters={$activeCells}/>
+        <LetterBoxes 
+        letters={$activeCells}/>
 
         <ActionIcon color="dark" size="xl" variant="outline"
         disabled={!$activeWord} 
@@ -138,9 +139,9 @@ $: [isValidSearch, searchSubMessage, messageColour] = (!!searchInput) ?
         margin: 5px 0px; 
     }
 
-    .possword{
+    /* .possword{
         background-color: red;
-    }
+    } */
 
     #noPossibleWords {
         flex: 1 0 auto; 

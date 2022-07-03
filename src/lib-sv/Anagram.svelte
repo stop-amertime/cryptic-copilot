@@ -1,6 +1,7 @@
 <script lang="ts">
-import { WordInfo } from "../../lib/ClueEngine";
-import Popover from 'svelte-popover';
+	import WordPopover from './WordPopover.svelte';
+    import { WordInfo } from "../lib/ClueEngine";
+    import {popover} from '../lib/wordPopover';
 
 export let device : IDevice =
     {words: [
@@ -19,20 +20,35 @@ function wordScore(node: HTMLButtonElement, {word} ) {
     node.classList.add("word");
 }
 
+// function makePopover(event){
+//     console.log("Trying to make popover. word: " + event.target.innerText);
+//     popover(event, {component: WordPopover, word:event.target.innerText});
+// }
+
 
 </script>
-<div class="device"> 
+<div 
+class="device"
+> 
     {#each device.words as i,index}
-        <button use:wordScore={{"word": i.word}} class="word">
-        {i.word}
+
+        <button 
+        use:wordScore={{"word": i.word}} 
+        use:popover={{component: WordPopover, word:i.word}}
+        class="word">
+
+            {i.word}
+        
         </button>
+        
         {#if index<device.words.length-1} & {/if}
+
     {/each}
 </div> 
 
 
 
-<style lang="scss">
+<style>
 
 .device{
     display: flex;
@@ -50,11 +66,13 @@ function wordScore(node: HTMLButtonElement, {word} ) {
     border-radius:2px;
     border:1px solid gray;
     cursor:pointer ;
-    &:hover{
-        opacity: 0.8;
-    }
     overflow:visible;
 }
+
+:global(.word:hover){
+        opacity: 0.8;
+    }
+
 
 :global(.word.abbr){
     font-style: italic;

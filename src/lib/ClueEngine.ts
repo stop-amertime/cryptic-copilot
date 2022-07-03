@@ -520,9 +520,7 @@ console.timeEnd('Crawl Anagram Tree');
 export const Devices = {
 
     async get(word){
-        let deviceSet = generateDevices(word);
-        deviceSet.then(d => console.log(d));
-        
+        let deviceSet = await generateDevices(word);        
              // LET THESAURUS ENTRY = GET THESAURUS ENTRY 
         return deviceSet; 
     },

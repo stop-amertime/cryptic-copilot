@@ -130,7 +130,7 @@ else {
     }
 
     .selected{
-        z-index: 4;
+        z-index: 0;
         margin-top: 0px;
         padding-top: 5px;
         background: white;

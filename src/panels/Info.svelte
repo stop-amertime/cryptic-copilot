@@ -1,9 +1,9 @@
 <script lang="ts">
         import { activeWord } from "../StateMediator.svelte";
         import { Devices }  from '../lib/ClueEngine';
-        import DeviceList from "./subcomponents/DeviceList.svelte";
+        import DeviceList from "../lib-sv/DeviceList.svelte";
         import Anagram from '../lib-sv/Anagram.svelte';
-        import Container from './subcomponents/Container.svelte';
+        import Container from '../lib-sv/Container.svelte';
 
 
 $: deviceSetPromise = (!!$activeWord) ? Devices.get($activeWord) : null

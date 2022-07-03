@@ -2,10 +2,11 @@
 
 import Grid from './Grid.svelte'
 import Panel from './Panel.svelte'
-import {Load} from './modules/FileManager.js'
+import {Load} from './lib/FileManager'
 import {fade} from 'svelte/transition'
 import {writable, derived} from 'svelte/store'
 import StateMediator, {dictionary, gridTemplate, wordSlots} from './StateMediator.svelte'
+
 
 // Startup 
 $wordSlots = Load.lastSlots as IWordSlot[] | null;
@@ -52,6 +53,7 @@ let pallete = {
 
 
 <style lang="scss">
+
 * {
   box-sizing: border-box;
 }
@@ -86,10 +88,10 @@ let pallete = {
     height: 100%;
   }
 
-  #gridLoading {
-    font-size: 100px; 
-    /* LOL */
-  }
+  // #gridLoading {
+  //   font-size: 100px; 
+  //   /* LOL */
+  // }
 }
 @media (max-width: 799px) {
   
