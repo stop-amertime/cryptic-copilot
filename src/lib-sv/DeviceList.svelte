@@ -2,13 +2,13 @@
     import VirtualList from "@sveltejs/svelte-virtual-list";
     import { createEventDispatcher } from "svelte";
 
-
 export let name = "";
 export let subComponent;
 export let index: number; 
 export let list = [];
 export let number = list?.length || 0; 
 export let useVirtualList = true; 
+
 export let maxHeight;
 let isOpen;
 let dispatch = createEventDispatcher()
@@ -28,12 +28,15 @@ disabled='{number != 0 ? true : false}'>
 
     <div class="listContainer" 
     style:height={listHeight}>
+
     {#if useVirtualList}
         <VirtualList items={list} let:item>
             <svelte:component this={subComponent} device={item}/>
         </VirtualList>
+
     {:else}
         <svelte:component this={subComponent} content={list}/>
+    
     {/if}
     </div>
 

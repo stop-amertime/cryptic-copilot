@@ -3,7 +3,7 @@
     import { derived, writable } from "svelte/store";
     import VirtualList from "@sveltejs/svelte-virtual-list";
     import { activeCells, activeWord, activeSlotId } from "../StateMediator.svelte";
-    import { validWordFinder } from '../modules/ClueEngine';
+    import { validWordFinder } from '../lib/ClueEngine';
     import LetterBoxes from "./subcomponents/LetterBoxes.svelte";
     import {Center, Button, ActionIcon} from "@svelteuidev/core";
     import Icon from "@iconify/svelte";

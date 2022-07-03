@@ -3,7 +3,7 @@
 /*---------------------------------------------------*/
 import {writable, derived} from 'svelte/store'
 import {makeCells, makeWordSlots, mapCellsToSlots} from './modules/GridGenerator'
-import {setDictionary} from './modules/ClueEngine'
+import {setDictionary} from './lib/ClueEngine'
 import { Save } from './modules/FileManager';
 /*---------------------------------------------------*/
 

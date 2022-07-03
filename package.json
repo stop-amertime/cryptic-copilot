@@ -22,6 +22,7 @@
     "vite": "^2.9.9"
   },
   "dependencies": {
+    "@popperjs/core": "^2.11.5",
     "@sveltejs/svelte-virtual-list": "^3.0.1",
     "@svelteuidev/composables": "^0.6.9",
     "@svelteuidev/core": "^0.6.9",

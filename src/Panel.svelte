@@ -9,6 +9,7 @@ import {activeWord} from './StateMediator.svelte'
 
 import { writable } from 'svelte/store'
 import { fly } from 'svelte/transition';
+import { quadIn, quadOut } from 'svelte/easing';
 
 
 // Display the correct page based on Tab Selection
@@ -58,8 +59,8 @@ else {
     <div id="panelPageBorder">
         {#key currentPage}
             <div id="panelPage" 
-            in:fly={{x:50,duration:200,delay:200}} 
-            out:fly={{x:-50, duration:200}}>
+            in:fly={{x:50,duration:200,delay:200, easing: quadIn}} 
+            out:fly={{x:-50, duration:200, easing: quadOut}}>
                 
                 <svelte:component  this={currentPage}/>
             
@@ -94,10 +95,10 @@ else {
 }
 
 #panelPage {
-    padding: 20px;
+    padding: 0px;
     width: 100%;
     height: 100%;
-    overflow-y: auto; 
+    overflow: hidden; 
 }
 
 /* TABS  */

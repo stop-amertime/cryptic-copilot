@@ -1,5 +1,5 @@
 <script lang="ts">
-import { WordInfo } from "../../modules/ClueEngine";
+import { WordInfo } from "../../lib/ClueEngine";
 import Popover from 'svelte-popover';
 
 export let device : IDevice =
