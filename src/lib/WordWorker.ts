@@ -1,10 +1,40 @@
+
 let DICTIONARY = new Map(); 
 
-self.onmessage = function handleMessageFromMain(msg) {
-    
-    console.log("WORKER RECEIVED:", msg.data);
-    console.log("SIZE OF MY DICTIONARY IS: ", DICTIONARY.size);
+self.onmessage = function handleMessageFromMain(event) {
+
+    const {id, request, payload} = event.data;
+
+    const respond = (response) => postMessage({id, request, response});
+    const respondError = (error) => postMessage({id, request, error});
+
+    if (!event.data.payload){ return; }
+
+    switch (event.data?.request){
+        case "setDictionary" : {
+
+            DICTIONARY = payload;
+
+            console.time("Sorting Workers Dictionary")
+            DICTIONARY = new Map(Array.from(DICTIONARY).sort((a) => a[1]?.score || 0))
+            console.timeEnd("Sorting Workers Dictionary")
+
+            respond('Done.');break;
+        }
+
+        case "getPossibleWords" : {
+            respond(validWordFinder.search(payload));break;
+        }
+
+        case "getDevices" : {
+            let deviceSet = generateDevices(payload);
+            respond(deviceSet);break;
+        }
+
+        default: {  respondError('Invalid Request Type: ' +request);    return;   }
+    }
 }
+
 
 const enum WordDirection {
     Forward = "forward",
@@ -511,11 +541,14 @@ export const validWordFinder = {
 }
 //TODO: Remove incomplete anagrams. 
 
-async function generateDevices(targetword){         //== THE NEW DEVICE SEARCHER WITH PRIME-HASHING! 
+function generateDevices(targetword){         //== THE NEW DEVICE SEARCHER WITH PRIME-HASHING! 
             
 console.time('Crawl Anagram Tree');
     let uncategorisedAnagrams = crawlAnagramTree(targetword, DICTIONARY);
 console.timeEnd('Crawl Anagram Tree');
+
+    //SHOW ME THE BROKEN ONES
+    console.table(uncategorisedAnagrams.filter(a => a.join("").length != targetword.length));
 
     let devices = categoriseAsDevices(uncategorisedAnagrams, targetword); //Categorise
     sortDevices(devices); //Sort
@@ -525,7 +558,7 @@ console.timeEnd('Crawl Anagram Tree');
 export const Devices = {
 
     async get(word){
-        let deviceSet = await generateDevices(word);        
+        let deviceSet = generateDevices(word);        
              // LET THESAURUS ENTRY = GET THESAURUS ENTRY 
         return deviceSet; 
     },

@@ -1,15 +1,14 @@
 <script lang="ts">
+    import PossibleWords from './panels/PossibleWords.svelte'
+    import Info from './panels/Info.svelte'
+    import Clues from './panels/Clues.svelte'
+    import Settings from './panels/Settings.svelte'
 
-import PossibleWords from './panels/PossibleWords.svelte'
-import Info from './panels/Info.svelte'
-import Clues from './panels/Clues.svelte'
-import Settings from './panels/Settings.svelte'
+    import {activeWord} from './StateMediator.svelte'
 
-import {activeWord} from './StateMediator.svelte'
-
-import { writable } from 'svelte/store'
-import { fly } from 'svelte/transition';
-import { quadIn, quadOut } from 'svelte/easing';
+    import { writable } from 'svelte/store'
+    import { fly } from 'svelte/transition';
+    import { quadIn, quadOut } from 'svelte/easing';
 
 
 // Display the correct page based on Tab Selection
@@ -25,8 +24,18 @@ let displayPage = {
 };
 
 let currentTab = 'Word';
-$: currentPage = displayPage[currentTab];
+let currentPage = PossibleWords;
+let previousTab = $tabs[-1];
+let pageChangeDirection = 1; // 1:Right, -1:Left
 
+$: changePage(currentTab); //currentTab bound to selected Radio. 
+
+function changePage(newTabLabel){
+    let newTab = $tabs.find(s=>s.label == newTabLabel)
+    pageChangeDirection = ($tabs.indexOf(newTab) <  $tabs.indexOf(previousTab)) ? -1 : 1;
+    currentPage = displayPage[newTab.label]
+    previousTab = newTab;
+}
 
 // Toggle disabling Tab 2 (Word Info) when word is null.
 $: if (!$activeWord) {
@@ -36,9 +45,8 @@ $: if (!$activeWord) {
 else {
     $tabs[1].disabled = false;
 }
+
 </script>
-
-
 
 
 <div id="panelWrapper">
@@ -59,8 +67,8 @@ else {
     <div id="panelPageBorder">
         {#key currentPage}
             <div id="panelPage" 
-            in:fly={{x:50,duration:200,delay:200, easing: quadIn}} 
-            out:fly={{x:-50, duration:200, easing: quadOut}}>
+            in:fly={{x:500 * pageChangeDirection,duration:500, delay:250, easing: quadOut}} 
+            out:fly={{x:-500 * pageChangeDirection, duration:500, easing: quadIn}}>
                 
                 <svelte:component  this={currentPage}/>
             
@@ -72,8 +80,17 @@ else {
 
 
 
-<style>
+<style lang="scss">
+@mixin staticTransitionParent{
+    display: grid;
+    grid-template-rows: 1fr;
+    grid-template-columns: 1fr;
+}
 
+@mixin staticTransitionChild{
+    grid-column: 1;
+    grid-row: 1;
+}
 
 #panelWrapper {
     width: 100%;
@@ -92,13 +109,16 @@ else {
     border-bottom: 1px solid grey;
     border-radius: 0px 0px 5px 5px;
     overflow: hidden;
+    @include staticTransitionParent()
 }
 
 #panelPage {
     padding: 0px;
     width: 100%;
     height: 100%;
-    overflow: hidden; 
+    overflow: hidden;
+    @include staticTransitionParent(); 
+    @include staticTransitionChild(); 
 }
 
 /* TABS  */

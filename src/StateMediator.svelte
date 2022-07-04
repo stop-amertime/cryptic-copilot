@@ -22,29 +22,64 @@ export const activeSlotId = writable(null as number);
 export const activeWord = writable(null as string);
 export const activeCells = writable(null as ISlotCellStates);
 export const activeCellAnimations = writable({orientation: "A",order:{}});
-export const activeDeviceList = writable([] as IDeviceSet)
-export const activePossibleWords = writable([] as string[])
+export const activeDeviceList = writable(Promise.resolve([]) as Promise<IDeviceSet>);
+export const activePossibleWords = writable((Promise.resolve([])) as Promise<string[]>);
+
 </script>
 
 <script lang="ts">
+
+///////////======= ASYNC WORKER MANAGEMENT. 
+
+let workerPromises = {};
+let nonce = 0;
+let dictionaryValid = null;
 const WordWorker = new Worker(new URL('./lib/WordWorker', import.meta.url),{type:"module"});
 
-interface IWorkerMessage {
-    function: string;
-    
+const workerRequest = (request: string, payload: any) => {
+    let id = ++nonce; 
+    console.log(`Posting request to worker- id:${id} request:${request} payload:${payload}`);
+    WordWorker.postMessage({ id, request, payload});
+    return new Promise(function(resolve,reject){
+        let resolver = resolve;
+        let rejecter = reject;
+        workerPromises[id] = {resolver, rejecter};
+    })
+}
+
+WordWorker.onmessage = (event) => {
+
+    let {id, response, error} = event.data;
+    if (!workerPromises[id]) {console.error("Invalid ID Reply from Worker" + id); return}
+
+    if (error) {
+        workerPromises[id].rejecter(error)
+    }
+
+    else {
+        workerPromises[id].resolver(response)
+    }
+    delete workerPromises[id];
 }
 
 /////////////////////======== EVENTS
-
-// @ new Dictionary -> set Dictionary
-dictionary.subscribe( (dict) => { if(dict) setDictionary(dict)} );
 
 
 // @ new Template -> intialise or load slots, cells. 
 gridTemplate.subscribe( (template) => initGrid(template));
 
-//TODO: Reload/calculate possible words & devices on CHANGE slot. 
-//TODO: Calculate possible words centrally on NEW WORD. 
+// @ new Dictionary -> set Dictionary
+dictionary.subscribe( (dict) => { 
+    if(dict) {
+        setDictionary(dict);
+        let validDictionary = workerRequest('setDictionary',$dictionary)
+        validDictionary.then((r) => console.log("Worker Dictionary Update: " + r));
+    }
+});
+
+function requestWorkerDevices(word: string){
+    $activeDeviceList = workerRequest('getDevices', word)
+}
 
 
 // @ new Word Entered -> update wordSlot & cells, save state. 
@@ -57,20 +92,17 @@ activeWord.subscribe( (newWord: string) => {
     let updatedCells = calculateUpdatedCells(newWord)
     activeCells.set(updatedCells);
     refreshGridLetters($wordSlots[$activeSlotId], updatedCells );
+    $activeDeviceList = workerRequest('getDevices', newWord) as Promise<IDeviceSet>
 
     //Quicksave 
     Save.slots($wordSlots);
-    //TODO: Calcualate possibility of intersecting wordslots.
 });
 
 // @ new Slot selected -> 
 activeSlotId.subscribe( async (id : number) => {
-    WordWorker.postMessage("the active slot is: "+ id);
     highlightSlotCells(id);
     refreshActiveSlotProps(id);
-    refreshOrGetDevices(id);
-    refreshOrGetPossibleWords(id);
-
+    $activePossibleWords = workerRequest('getPossibleWords', $activeCells) as Promise<string[]>
 });
 
     // Functions.
@@ -97,7 +129,6 @@ function refreshActiveSlotProps(slotId: number) :void {
     let slot = $wordSlots?.[slotId] as IWordSlot;
     let mycells = [] as ISlotCellState[];
     let i = 0; 
-    let animationOrder = {};
 
     for (let cellId of slot?.cells || []) {
         let isOverwritable = true; 
@@ -118,7 +149,7 @@ function refreshActiveSlotProps(slotId: number) :void {
     };
     $activeWord = slot?.word || null;
     $activeCells = mycells;
-    $activeCellAnimations = {order: animationOrder, orientation: slot?.orientation}; 
+    $activeCellAnimations = {order: {}, orientation: slot?.orientation}; 
 };
 
 function loadGridLetters(slot: IWordSlot, word: string) {

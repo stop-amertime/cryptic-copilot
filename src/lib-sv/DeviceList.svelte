@@ -10,18 +10,23 @@ export let number = list?.length || 0;
 export let useVirtualList = true; 
 
 export let maxHeight;
-let isOpen;
+export let isOpen = false;
 let dispatch = createEventDispatcher()
 function onClick(){
     dispatch('opened', index);
 }
 
-$: listHeight = (maxHeight - (40 * 2)) + "px"
+$: listHeight = (maxHeight - (30 * 2)) + "px"
+
+let animate = ""; 
+
 </script>
 
 <details 
-class="deviceDropdown"
+bind:open={isOpen}
+class="deviceDropdown {animate}"
 on:click={onClick} 
+on:introend="{() =>animate="animate"}"
 disabled='{number != 0 ? true : false}'>
 
     <summary> <span>{name} ({list.length})</summary> 
@@ -48,31 +53,33 @@ disabled='{number != 0 ? true : false}'>
 details {
     height: 30px;
     width: 100%;
-    padding-top: 10px;
-    transition: height 300ms ease;
     overflow:hidden;
 }
 
+details.animate {
+    transition: all 200ms ease;
+}
+
 details[open]{
-    height: calc(100% - 50px);
-    transition: height 300ms ease;
+    height: calc(100% - 30px);
+    border-radius: 2px;
+}
+
+details:not([open]){
+    /* transition: none; */
+    background-color: rgb(225, 225, 225);
 }
 
 
 summary {
     width: 100%;
-    height: 30px;
-}
-
-span {
-    padding: 5px 10px;
-    width: 100%;
+    height: 10px;
+    padding: 10px;
 }
 
 .listContainer {
     width: 100%;
     padding: 5px;
-    transition:height 1000ms ease-out;
 }
 
 </style>

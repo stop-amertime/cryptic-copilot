@@ -93,6 +93,33 @@ interface IStateRecord {
     // Could add remembering the current selection?
 }
 
+//= Event Messages to/from Worker 
+
+interface IWorkerMessage {
+    id?: number
+    request: string
+    payload?: any
+    response?: any
+    error?: string
+}
+
+interface IPossibleWordsMessage extends IWorkerMessage {
+    request: 'possibleWords'
+    payload?: ISlotCellStates
+    response?: string[] 
+}
+
+interface IDeviceMessage extends IWorkerMessage {
+    request: 'devices'
+    payload?: string
+    response?: IDeviceSet
+}
+
+interface IDictionaryMessage extends IWorkerMessage {
+    request: 'setDictionary'
+    payload?: IDictionary
+    response?: string
+}
 
 
 

@@ -1,45 +1,63 @@
 <script lang="ts">
 //
+    import {fly} from 'svelte/transition'
+    import { quadIn, quadOut } from 'svelte/easing';
     import { derived, writable } from "svelte/store";
     import VirtualList from "@sveltejs/svelte-virtual-list";
-    import { activeCells, activeWord, activeSlotId } from "../StateMediator.svelte";
+    import { activeCells, activeWord, activeSlotId, activePossibleWords } from "../StateMediator.svelte";
     import { validWordFinder } from '../lib/ClueEngine';
     import LetterBoxes from "../lib-sv/LetterBoxes.svelte";
     import {Center, Button, ActionIcon} from "@svelteuidev/core";
-    import Icon from "@iconify/svelte";
+    import Icon, { loadIcon } from "@iconify/svelte";
 //
 
-let rawSearchInput = "";
-$: searchInput = (rawSearchInput) ? rawSearchInput.toUpperCase().replaceAll( /[^A-Z]/g , "") : "";
-
-$: possibleWords = ($activeCells) ? validWordFinder.search($activeCells) : [];
-
-$: filteredPossibleWords = (!!searchInput) ? 
-    possibleWords.filter( w => w.includes(searchInput))
-    : possibleWords;
-
-$: chunkedPossibleWords = filteredPossibleWords.reduce((output, item, index) => { 
-    const chunk = Math.floor(index/12)
-    if(!output[chunk]) {output[chunk] = []}
-    output[chunk].push(item)
-    return output;
-}, [])
-
-
-let wrapperWidth: number; //bound to wrapper, below. 
-$: wordWidth = $activeCells?.length * 15 + 70 || 200; //12px per letter?
-$: colCount = maxColumns(wrapperWidth, wordWidth);
+////// Calculate number of rows to display words in. 
 const maxColumns = (box, item) => {
     let ideal = box/item; 
     for (let n of [6,4,3,2]) {if (ideal > n) return n;}
     return 1;
 }
+let wrapperWidth: number; //bound to wrapper, below. 
+let wordWidth = $activeCells?.length * 15 + 70 || 200; //12px per letter?
+let colCount = maxColumns(wrapperWidth, wordWidth);
+
+
+///// Filtering/using Search Input 
+
+let rawSearchInput = "";
+$: searchInput = (rawSearchInput) ? rawSearchInput.toUpperCase().replaceAll( /[^A-Z]/g , "") : "";
 
 $: [isValidSearch, searchSubMessage, messageColour] = (!!searchInput) ? 
-    validWordFinder.checkValidNewWord(searchInput, $activeCells)
-    : [false, "", "black"];
+validWordFinder.checkValidNewWord(searchInput, $activeCells)
+: [false, "", "black"];
+
+///// Await, filter and chunk possible words. 
+let possibleWords = []; 
+activePossibleWords.subscribe((promise) => {
+    promise.then( (list) => {
+        rawSearchInput= "";
+        possibleWords = list || [];
+        wordWidth = $activeCells?.length * 15 + 70 || 200
+        colCount = maxColumns(wrapperWidth, wordWidth);
+    })
+});
+
+$: filteredPossibleWords = (searchInput) ? 
+    possibleWords?.filter( w => w.includes(searchInput)) ?? []
+    : possibleWords ?? [];
+
+$: chunkedPossibleWords = filteredPossibleWords?.reduce((output, item, index) => { 
+        const chunk = Math.floor(index/12)
+        if(!output[chunk]) {output[chunk] = []}
+        output[chunk].push(item)
+        return output;
+    }, []) 
+    ?? [];
+
+
 
 </script>
+
 <!---->
 
 {#if $activeSlotId!==null}
@@ -55,7 +73,7 @@ $: [isValidSearch, searchSubMessage, messageColour] = (!!searchInput) ?
         <Icon icon="tabler:backspace" width="50" height="50" /> </ActionIcon>
 
         <input id="searchInput" bind:value={rawSearchInput}
-        placeholder="🔎︎  Search or add a new word.."/>
+        placeholder="Search or add a new word.."/>
 
         <ActionIcon color="dark" size="xl" variant="outline"
         disabled={!isValidSearch} 
@@ -63,40 +81,47 @@ $: [isValidSearch, searchSubMessage, messageColour] = (!!searchInput) ?
         <Icon icon="tabler:pencil-plus" width="50" height="50" /> </ActionIcon>
 
         {#if filteredPossibleWords.length > 0}
-            <span id="matchText"> {filteredPossibleWords.length} matching words. </span>
+            <span id="matchText"> <strong>{filteredPossibleWords.length}</strong>
+            matching word{filteredPossibleWords.length != 1 ? "s" : ""}. </span>
         {:else if searchInput}
-            <span id="noWordsText"  style:color={messageColour}> {searchSubMessage}</span>
+            <span id="matchText"  style:color={messageColour}> {searchSubMessage}</span>
         {/if}
     </div>
-
-    {#if filteredPossibleWords && filteredPossibleWords.length > 0}
-
-        <div id="possibleWordsWrapper" bind:clientWidth={wrapperWidth}>
+    <div id="possibleWordsArea">
+        {#key possibleWords}
+            <div id="possibleWordsWrapper" 
+            bind:clientWidth={wrapperWidth}
+            in:fly={{y:1000, duration:300, easing: quadOut}}
+            out:fly|local={{y:-1000, duration:300, easing: quadIn}}>
             
-            <VirtualList items={chunkedPossibleWords} let:item>
-                <div class="wordRow" style="--cols:{colCount}">
-                {#each item as possibleWord}
-                    <Button ripple variant="outline" class="possword" override={{
-                        fontFamily:'monospace',
-                        width: "100%" 
-                    }}
-                    on:click={() => $activeWord = possibleWord}>{possibleWord}</Button>
-                {/each} <!--TODO: change to event -->
-                </div>
-            </VirtualList>
-        </div>
+                {#if filteredPossibleWords && filteredPossibleWords.length > 0}  
+                    <VirtualList items={chunkedPossibleWords} let:item>
+                        <div class="wordRow" style="--cols:{colCount}">
+                        {#each item as possibleWord}
+                            <Button ripple color="dark" variant="outline" class="possword" override={{
+                                fontFamily:'monospace',
+                                width: "100%" 
+                            }}
+                            on:click={() => $activeWord = possibleWord}>{possibleWord}</Button>
+                        {/each} <!--TODO: change to event -->
+                        </div>
+                    </VirtualList>
 
-    {:else}
-        <div id="noPossibleWords">
-            <img 
-                id="noWordsIcon" 
-                src="/src/assets/icons/nomatches.png" 
-                alt="No matching words.">
+                {:else}
+                    <div id="noPossibleWords">
+                        <img 
+                            id="noWordsIcon" 
+                            src="/src/assets/icons/nomatches.png" 
+                            alt="No matching words.">
 
-            <h3>No matching words in our dictionary - sorry.</h3>
-            <p>You can type new words into the bar above.</p>
-        </div>
-    {/if}
+                        <p class="noWordsText"><strong>No matching words in our dictionary - sorry.</strong><br>
+                        You can type new words into the bar above.</p>
+                    </div>
+                {/if}
+            
+            </div>
+        {/key}
+    </div>
 
 </div>
 
@@ -105,7 +130,18 @@ $: [isValidSearch, searchSubMessage, messageColour] = (!!searchInput) ?
 {/if}
 
 <!---->
-<style>
+<style lang=scss>
+
+    @mixin staticTransitionParent{
+        display: grid;
+        grid-template-rows: 1fr;
+        grid-template-columns: 1fr;
+    }
+
+    @mixin staticTransitionChild{
+        grid-column: 1;
+        grid-row: 1;
+    }
 
     #wrapper {
         display: block;
@@ -115,6 +151,7 @@ $: [isValidSearch, searchSubMessage, messageColour] = (!!searchInput) ?
     }
 
     #topArea {
+        padding: 15px;
         height: 148px;
         width: 100%;
         display: grid;
@@ -124,12 +161,21 @@ $: [isValidSearch, searchSubMessage, messageColour] = (!!searchInput) ?
         grid-row-gap: 15px;
     }
 
-    #possibleWordsWrapper {
+    #possibleWordsArea {
+        padding: 15px;
         flex: 1 0 auto; 
         min-height: 200px;
         width: 100%;
         height: calc(100% - 148px);
+        overflow: hidden;
+        @include staticTransitionParent();
+    }
+
+    #possibleWordsWrapper {
+        height: 100%;
+        width: 100%;
         overflow: auto;
+        @include staticTransitionChild();
     }
 
     .wordRow {
@@ -144,13 +190,15 @@ $: [isValidSearch, searchSubMessage, messageColour] = (!!searchInput) ?
     } */
 
     #noPossibleWords {
-        flex: 1 0 auto; 
         display: flex;
         flex-direction: column; 
         min-height: 200px;
         width: 100%;
         height: calc(100% - 148px);
         overflow: auto;
+        justify-content: center;
+        align-items: center;
+
     }
 
     #noWordsIcon {
@@ -158,8 +206,25 @@ $: [isValidSearch, searchSubMessage, messageColour] = (!!searchInput) ?
         height: 50px;
     }
 
-    #noWordsText{
+    .noWordsText{
         font-size: 75%;
+    }
+
+    #searchInput {
+        padding: 0px 20px;
+        &:after{
+            margin-top: -5px;
+            margin-left: -5px;
+            content: '🔎︎';
+            color: black;
+            font-size:larger;
+        }
+    }
+
+    #matchText {
+        column-span: all;
+        font-size: 80%; 
+        margin-left: 10px;
     }
 
 </style>
