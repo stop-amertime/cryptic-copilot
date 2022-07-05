@@ -1,0 +1,106 @@
+/// Colours 
+$col-primary: black;
+$col-highlight: rgb(230, 230, 230);
+
+/// Sizing 
+$gap-S: 10px;
+$gap-M: 20px;
+$gap-L: 30px;
+$gap-XL: 50px;
+
+$S: 20px;
+$M: 30px;
+$L: 50px;
+$XL: 100px;
+
+@mixin size($width, $height:$width){
+    width: $width;
+    height: $height;
+}
+
+//Dynamic Styling 
+@mixin colorByWordScore($wordScore:40){
+    $hueValue: $wordScore * 2; 
+    background-color: hsl($hueValue, 75%, 85%);
+}
+
+@mixin hoverColour($colour: $col-highlight){
+    &:hover {
+        background-color: $colour;
+        transition: background-color .2s ease-in-out;
+    }
+}
+
+@mixin hoverScale($scale: 1.1){
+    &:hover {
+        transform: scale($scale);
+        transition: scale 0.2s ease-in-out;
+    }
+}
+
+
+//Flex
+@mixin flex-col($widthAlign:stretch, $heightAlign:center){
+    display:flex;
+    flex-direction:column;
+    align-items: $widthAlign;
+    justify-content: $heightAlign;
+}
+
+@mixin flex-row($widthAlign:center, $heightAlign:stretch, $canWrap:false){
+    align-items: $heightAlign;
+    justify-content: $widthAlign;
+    @if $canWrap == true{
+        flex-wrap: wrap;
+    }
+}
+
+@mixin fillParent{
+    width: 100%;
+    height: 100%;
+}
+
+@mixin centeredParent{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@mixin scroll($isVertical:true, $isHorizontal:false){
+    @if $isVertical {
+        overflow-y:auto;
+    }
+    @else {
+        overflow-y:hidden;
+    }
+
+    @if isHorizontal {
+        overflow-x:auto;
+    }
+    @else {
+        overflow-x:hidden;
+    }
+}
+
+
+/// Static Transition
+@mixin staticTransitionParent{
+    display: grid;
+    grid-template-rows: 1fr;
+    grid-template-columns: 1fr;
+}
+
+@mixin staticTransitionWrapper{
+    display: grid;
+    grid-template-rows: 1fr;
+    grid-template-columns: 1fr;
+    & > div{
+        grid-column: 1;
+        grid-row: 1;
+    }
+}
+
+@mixin staticTransitionChild{
+    grid-column: 1;
+    grid-row: 1;
+}

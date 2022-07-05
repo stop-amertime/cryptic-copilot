@@ -7,20 +7,20 @@ import {setDictionary} from './lib/ClueEngine'
 import { Save } from './lib/FileManager';
 /*---------------------------------------------------*/
 
-//======= MAIN STORES 
+//======= Stores 
 
 /// Dictionary
-export const dictionary = writable(null as IDictionary);
+export const dictionary = writable(null as IDictionary); 
 
 /// Grid 
-export const gridTemplate = writable(null as IGridLayout);
+export const gridTemplate = writable(null as IGridLayout); 
 export const wordSlots = writable(null as IWordSlot[]);
 export const cells = writable([] as ICell[]);
 
 /// Active Slot State
-export const activeSlotId = writable(null as number);
-export const activeWord = writable(null as string);
-export const activeCells = writable(null as ISlotCellStates);
+export const activeSlotId = writable(null as number); 
+export const activeWord = writable(null as string);  
+export const activeCells = writable(null as ISlotCellStates); 
 export const activeCellAnimations = writable({orientation: "A",order:{}});
 export const activeDeviceList = writable(Promise.resolve([]) as Promise<IDeviceSet>);
 export const activePossibleWords = writable((Promise.resolve([])) as Promise<string[]>);
@@ -29,16 +29,14 @@ export const activePossibleWords = writable((Promise.resolve([])) as Promise<str
 
 <script lang="ts">
 
-///////////======= ASYNC WORKER MANAGEMENT. 
+/////////////////////======== WebWorker Requests.  
 
+const WordWorker = new Worker(new URL('./lib/WordWorker', import.meta.url),{type:"module"});
 let workerPromises = {};
 let nonce = 0;
-let dictionaryValid = null;
-const WordWorker = new Worker(new URL('./lib/WordWorker', import.meta.url),{type:"module"});
 
 const workerRequest = (request: string, payload: any) => {
     let id = ++nonce; 
-    console.log(`Posting request to worker- id:${id} request:${request} payload:${payload}`);
     WordWorker.postMessage({ id, request, payload});
     return new Promise(function(resolve,reject){
         let resolver = resolve;
@@ -47,28 +45,22 @@ const workerRequest = (request: string, payload: any) => {
     })
 }
 
+/////////////////////======== Event Handling
+
 WordWorker.onmessage = (event) => {
 
     let {id, response, error} = event.data;
-    if (!workerPromises[id]) {console.error("Invalid ID Reply from Worker" + id); return}
+    if (!workerPromises[id]) {return}
 
-    if (error) {
-        workerPromises[id].rejecter(error)
-    }
+    if (error) workerPromises[id].rejecter(error)
+    else workerPromises[id].resolver(response) ;
 
-    else {
-        workerPromises[id].resolver(response)
-    }
     delete workerPromises[id];
 }
 
-/////////////////////======== EVENTS
-
-
-// @ new Template -> intialise or load slots, cells. 
 gridTemplate.subscribe( (template) => initGrid(template));
 
-// @ new Dictionary -> set Dictionary
+
 dictionary.subscribe( (dict) => { 
     if(dict) {
         setDictionary(dict);
@@ -77,12 +69,14 @@ dictionary.subscribe( (dict) => {
     }
 });
 
-function requestWorkerDevices(word: string){
-    $activeDeviceList = workerRequest('getDevices', word)
-}
+
+let timeoutId;
+wordSlots.subscribe((val) => {
+    clearTimeout(timeoutId); 
+    timeoutId = setTimeout(() => {timeoutId = null, Save.slots(val)}, 2000);
+});
 
 
-// @ new Word Entered -> update wordSlot & cells, save state. 
 activeWord.subscribe( (newWord: string) => {
 
     if ($activeSlotId === null) {return;}
@@ -93,19 +87,17 @@ activeWord.subscribe( (newWord: string) => {
     activeCells.set(updatedCells);
     refreshGridLetters($wordSlots[$activeSlotId], updatedCells );
     $activeDeviceList = workerRequest('getDevices', newWord) as Promise<IDeviceSet>
-
-    //Quicksave 
-    Save.slots($wordSlots);
 });
 
-// @ new Slot selected -> 
+
 activeSlotId.subscribe( async (id : number) => {
     highlightSlotCells(id);
     refreshActiveSlotProps(id);
     $activePossibleWords = workerRequest('getPossibleWords', $activeCells) as Promise<string[]>
 });
 
-    // Functions.
+
+// Functions.
 
 function initGrid(template: IGridLayout) {
     if (template){
@@ -189,12 +181,6 @@ function highlightSlotCells(id:number): void {
     for (let cell of $cells){
         $cells[cell.id].isSelected = (cell.slots.includes(id));
     };
-}
-
-function refreshOrGetDevices(id){
-}
-
-function refreshOrGetPossibleWords(id){
 }
     
 </script>

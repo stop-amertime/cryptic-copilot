@@ -7,8 +7,9 @@
     import {activeWord} from './StateMediator.svelte'
 
     import { writable } from 'svelte/store'
-    import { fly } from 'svelte/transition';
-    import { quadIn, quadOut } from 'svelte/easing';
+    import { fly, slide } from 'svelte/transition';
+    import {slideReplaceIn, slideReplaceOut} from './lib/utils'
+    import { quadIn, quadInOut, quadOut } from 'svelte/easing';
 
 
 // Display the correct page based on Tab Selection
@@ -26,13 +27,14 @@ let displayPage = {
 let currentTab = 'Word';
 let currentPage = PossibleWords;
 let previousTab = $tabs[-1];
-let pageChangeDirection = 1; // 1:Right, -1:Left
+let pageChangeDirection: "up"|"down"|"left"|"right" = "right"; 
 
 $: changePage(currentTab); //currentTab bound to selected Radio. 
 
 function changePage(newTabLabel){
     let newTab = $tabs.find(s=>s.label == newTabLabel)
-    pageChangeDirection = ($tabs.indexOf(newTab) <  $tabs.indexOf(previousTab)) ? -1 : 1;
+    // pageChangeDirection = ($tabs.indexOf(newTab) <  $tabs.indexOf(previousTab)) ? -1 : 1;
+    pageChangeDirection = ($tabs.indexOf(newTab) <  $tabs.indexOf(previousTab)) ? "left" : "right";
     currentPage = displayPage[newTab.label]
     previousTab = newTab;
 }
@@ -67,9 +69,9 @@ else {
     <div id="panelPageBorder">
         {#key currentPage}
             <div id="panelPage" 
-            in:fly={{x:500 * pageChangeDirection,duration:500, delay:250, easing: quadOut}} 
-            out:fly={{x:-500 * pageChangeDirection, duration:500, easing: quadIn}}>
-                
+            in:slideReplaceIn={{direction:pageChangeDirection, easing:quadInOut}}
+            out:slideReplaceOut={{direction:pageChangeDirection, easing:quadInOut}}>
+
                 <svelte:component  this={currentPage}/>
             
             </div>
@@ -81,47 +83,35 @@ else {
 
 
 <style lang="scss">
-@mixin staticTransitionParent{
-    display: grid;
-    grid-template-rows: 1fr;
-    grid-template-columns: 1fr;
-}
 
-@mixin staticTransitionChild{
-    grid-column: 1;
-    grid-row: 1;
-}
+    #panelWrapper {
+        width: 100%;
+        height:100%;
+        display: flex; 
+        flex-direction: column;
+        overflow:hidden;
+    }
 
-#panelWrapper {
-    width: 100%;
-    height:100%;
-    display: flex; 
-    flex-direction: column;
-    overflow:hidden;
-}
+    /* Static border, doesn't move while internal panel animates. */
+    #panelPageBorder { 
+        width: 100%;
+        flex: 1 0 300px;
+        border-right: 1px solid grey;
+        border-left: 1px solid grey;
+        border-bottom: 1px solid grey;
+        border-radius: 0px 0px 5px 5px;
+        overflow: hidden;
+        @include staticTransitionParent()
+    }
 
-/* Static border, doesn't move while internal panel animates. */
-#panelPageBorder { 
-    width: 100%;
-    flex: 1 0 300px;
-    border-right: 1px solid grey;
-    border-left: 1px solid grey;
-    border-bottom: 1px solid grey;
-    border-radius: 0px 0px 5px 5px;
-    overflow: hidden;
-    @include staticTransitionParent()
-}
-
-#panelPage {
-    padding: 0px;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    @include staticTransitionParent(); 
-    @include staticTransitionChild(); 
-}
-
-/* TABS  */
+    :global(#panelPage) {
+        padding: 0px;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        @include staticTransitionWrapper(); 
+        @include staticTransitionChild();
+    }
 
     #panelTabs{
 
@@ -131,42 +121,35 @@ else {
         display: flex;
         flex-direction: row;
         flex-wrap: nowrap; 
+
+        label{
+            flex: 1 0 auto;
+            margin: 0;
+            padding: 10px 10px;
+            border-radius: 5px 5px 0 0;
+            border-width: 1px 1px 1px 1px;
+            border-style: solid;
+            border-color: rgb(184, 184, 184);
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            -webkit-transition: all 0.2s ease-in-out;
+            transition: all 0.2s ease-in-out;
+            text-align: center;
+        }
+
+        .selected{
+            z-index: 0;
+            margin-top: 0px;
+            padding-top: 5px;
+            background: white;
+            border-color: rgb(184, 184, 184) rgb(184, 184, 184) white rgb(184, 184, 184);
+        }
+
+        .disabled{
+            background-color: grey;
+            opacity: 0.4;
+        }
     }
-
-    label{
-        flex: 1 0 auto;
-        margin: 0;
-        padding: 10px 10px;
-        border-radius: 5px 5px 0 0;
-        border-width: 1px 1px 1px 1px;
-        border-style: solid;
-        border-color: rgb(184, 184, 184);
-        font-size: 14px;
-        font-weight: bold;
-        cursor: pointer;
-        -webkit-transition: all 0.2s ease-in-out;
-        transition: all 0.2s ease-in-out;
-        text-align: center;
-    }
-
-    .selected{
-        z-index: 0;
-        margin-top: 0px;
-        padding-top: 5px;
-        background: white;
-        border-color: rgb(184, 184, 184) rgb(184, 184, 184) white rgb(184, 184, 184);
-    }
-
-    .disabled{
-        background-color: grey;
-        opacity: 0.4;
-    }
-
-  
-/*  */
-
-
-
-
 
 </style>

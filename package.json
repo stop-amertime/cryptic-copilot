@@ -30,6 +30,7 @@
     "@svelteuidev/motion": "^0.6.9",
     "lz-string": "^1.4.4",
     "node-sass": "^7.0.1",
+    "pug": "^3.0.2",
     "rxjs": "^7.5.5",
     "sass": "^1.53.0",
     "svelte-icons-pack": "^1.4.6"

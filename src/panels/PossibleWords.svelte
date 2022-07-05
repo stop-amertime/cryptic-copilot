@@ -1,7 +1,8 @@
 <script lang="ts">
 //
-    import {fly} from 'svelte/transition'
-    import { quadIn, quadOut } from 'svelte/easing';
+    import {fade, fly, slide, SlideParams} from 'svelte/transition'
+    import {slideReplaceIn, slideReplaceOut} from '../lib/utils'
+    import { quadIn, quadOut, quadInOut } from 'svelte/easing';
     import { derived, writable } from "svelte/store";
     import VirtualList from "@sveltejs/svelte-virtual-list";
     import { activeCells, activeWord, activeSlotId, activePossibleWords } from "../StateMediator.svelte";
@@ -20,10 +21,10 @@ const maxColumns = (box, item) => {
 let wrapperWidth: number; //bound to wrapper, below. 
 let wordWidth = $activeCells?.length * 15 + 70 || 200; //12px per letter?
 let colCount = maxColumns(wrapperWidth, wordWidth);
+let possibleWordsHeight;
 
 
-///// Filtering/using Search Input 
-
+        //Search filter, sort
 let rawSearchInput = "";
 $: searchInput = (rawSearchInput) ? rawSearchInput.toUpperCase().replaceAll( /[^A-Z]/g , "") : "";
 
@@ -31,7 +32,7 @@ $: [isValidSearch, searchSubMessage, messageColour] = (!!searchInput) ?
 validWordFinder.checkValidNewWord(searchInput, $activeCells)
 : [false, "", "black"];
 
-///// Await, filter and chunk possible words. 
+        ///// Await, filter and chunk possible words. 
 let possibleWords = []; 
 activePossibleWords.subscribe((promise) => {
     promise.then( (list) => {
@@ -54,11 +55,13 @@ $: chunkedPossibleWords = filteredPossibleWords?.reduce((output, item, index) =>
     }, []) 
     ?? [];
 
+$: pluralString = filteredPossibleWords.length != 1 ? " matching words" : " matching word";
 
 
 </script>
 
 <!---->
+
 
 {#if $activeSlotId!==null}
 <div id="wrapper">
@@ -81,19 +84,20 @@ $: chunkedPossibleWords = filteredPossibleWords?.reduce((output, item, index) =>
         <Icon icon="tabler:pencil-plus" width="50" height="50" /> </ActionIcon>
 
         {#if filteredPossibleWords.length > 0}
-            <span id="matchText"> <strong>{filteredPossibleWords.length}</strong>
-            matching word{filteredPossibleWords.length != 1 ? "s" : ""}. </span>
+            <span id="matchText"> <b>{filteredPossibleWords.length}</b>{pluralString}</span>
         {:else if searchInput}
             <span id="matchText"  style:color={messageColour}> {searchSubMessage}</span>
         {/if}
     </div>
-    <div id="possibleWordsArea">
+
+    <div id="possibleWordsArea" bind:clientHeight={possibleWordsHeight}>
         {#key possibleWords}
             <div id="possibleWordsWrapper" 
             bind:clientWidth={wrapperWidth}
-            in:fly={{y:1000, duration:300, easing: quadOut}}
-            out:fly|local={{y:-1000, duration:300, easing: quadIn}}>
-            
+            transition:fade>
+                <!-- in:fly={{y:possibleWordsHeight, duration:300, easing: quadOut}} -->
+                <!-- out:slide={{ duration:300, easing: quadIn}}> -->
+
                 {#if filteredPossibleWords && filteredPossibleWords.length > 0}  
                     <VirtualList items={chunkedPossibleWords} let:item>
                         <div class="wordRow" style="--cols:{colCount}">
@@ -103,11 +107,11 @@ $: chunkedPossibleWords = filteredPossibleWords?.reduce((output, item, index) =>
                                 width: "100%" 
                             }}
                             on:click={() => $activeWord = possibleWord}>{possibleWord}</Button>
-                        {/each} <!--TODO: change to event -->
+                        {/each} 
                         </div>
                     </VirtualList>
 
-                {:else}
+                {:else if !filteredPossibleWords || filteredPossibleWords.length == 0}
                     <div id="noPossibleWords">
                         <img 
                             id="noWordsIcon" 
@@ -131,17 +135,6 @@ $: chunkedPossibleWords = filteredPossibleWords?.reduce((output, item, index) =>
 
 <!---->
 <style lang=scss>
-
-    @mixin staticTransitionParent{
-        display: grid;
-        grid-template-rows: 1fr;
-        grid-template-columns: 1fr;
-    }
-
-    @mixin staticTransitionChild{
-        grid-column: 1;
-        grid-row: 1;
-    }
 
     #wrapper {
         display: block;
@@ -182,7 +175,9 @@ $: chunkedPossibleWords = filteredPossibleWords?.reduce((output, item, index) =>
         display: grid;
         grid-template-columns: repeat(var(--cols), 1fr);
         grid-gap: 10px;
-        margin: 5px 0px; 
+        margin: 5px 0px;
+        padding-left: 5px; 
+        padding-right: 20px;
     }
 
     /* .possword{
@@ -198,7 +193,6 @@ $: chunkedPossibleWords = filteredPossibleWords?.reduce((output, item, index) =>
         overflow: auto;
         justify-content: center;
         align-items: center;
-
     }
 
     #noWordsIcon {

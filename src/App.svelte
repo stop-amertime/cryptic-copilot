@@ -3,7 +3,6 @@
 import Grid from './Grid.svelte'
 import Panel from './Panel.svelte'
 import {Load} from './lib/FileManager'
-import {fade} from 'svelte/transition'
 import {writable, derived} from 'svelte/store'
 import StateMediator, {dictionary, gridTemplate, wordSlots} from './StateMediator.svelte'
 
@@ -16,12 +15,6 @@ lastTemplate.then( (t) => $gridTemplate = t);
 
 let lastDictionary   = Load.lastOrDefaultDictionary();
 lastDictionary.then( (d) => $dictionary = d);
-
-//TODO: Colour pallete?
-let pallete = {
-  primary: "rgb(0,0,0)",
-  subtle: "rgb(200,200,200)"
-}
 
 </script>
 
@@ -53,16 +46,9 @@ let pallete = {
 
 
 <style lang="scss">
-
 * {
   box-sizing: border-box;
-}
-
-:global(*) {
   font-family:'Courier New', Courier, monospace; 
-  $primary-color: hsl(0, 0%, 100%);
-  $highlight: rgba(242, 242, 242, 0.716);
-  $normal-shadow: 5px 5px;
 }
 
 @media (min-width: 800px) {
@@ -80,6 +66,7 @@ let pallete = {
 
   #gridArea{
     flex: 1 0 400px;
+    max-width: 800px;
     padding-right: 15px;
   }
 

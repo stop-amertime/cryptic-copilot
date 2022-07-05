@@ -162,7 +162,8 @@ export const Load = {
 export const Save = {
 
     slots : async (wordSlots: Array<IWordSlot>) => {
-
+        
+        console.log("Saving Slot State");
         localStorage.setItem('wordSlots', JSON.stringify(wordSlots));
 
         if (activeFile) {

@@ -29,16 +29,15 @@ function closeOthers(event){
 </script>
 {#key $activeWord}
 <div id="page" 
-transition:fade
 bind:clientHeight={pageHeight}
 >
     {#await $activeDeviceList}
-    <div class='centre' transition:fade> 
+    <div class='centre' transition:fade={{duration:100}}> 
         <Wave size="60" color="#111111" unit="px" duration="1s"/> 
     </div>
 
     {:then deviceSet}
-    <div class = "deviceLists" transition:fade>       
+    <div class = "deviceLists" transition:fade={{duration:100}}>       
         <DeviceList 
         name="Anagrams" index={0}
         list={deviceSet?.anagrams || []}
@@ -64,19 +63,7 @@ bind:clientHeight={pageHeight}
 
 <style lang="scss">
 
-@mixin staticTransitionParent{
-    display: grid;
-    grid-template-rows: 1fr;
-    grid-template-columns: 1fr;
-}
-
-@mixin staticTransitionChild{
-    grid-column: 1;
-    grid-row: 1;
-}
-
 #page {
-    @include staticTransitionChild();
     @include staticTransitionParent();
     height: 100%; 
     width: 100%;
@@ -84,7 +71,6 @@ bind:clientHeight={pageHeight}
 
 
 .centre {
-    @include staticTransitionChild();
     width: 100%;
     height: 100%;
     display: flex;
@@ -93,7 +79,6 @@ bind:clientHeight={pageHeight}
 }
 
 .deviceLists{
-    @include staticTransitionChild();
     width: 100%;
     height: 100%;
 }
