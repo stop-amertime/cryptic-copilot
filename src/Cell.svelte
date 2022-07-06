@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 import { createEventDispatcher } from 'svelte';
 import { fly, slide } from 'svelte/transition';
 import { quadInOut, quadIn, quadOut } from 'svelte/easing';
@@ -11,17 +11,21 @@ export let letter = '';
 export let isSelected = false;
 export let isNumbered = false;
 export let slots = [];
+
+const animationDuration = 200; //ms
+const animationTimingGap = 100; //ms
+const dispatch = createEventDispatcher();
+
 $: num = isNumbered ? 'numbered' : '';
 $: sel = isSelected ? 'selected' : '';
-
-const dispatch = createEventDispatcher();
-$: myOrder = $activeCellAnimations.order?.[id] ?? Math.random() * 7;
+$: myOrder = $activeCellAnimations.order?.[id] ?? Math.random() * 9;
 
 $: animStyle = {
-	duration: 200,
-	delay: myOrder * 100, //ms
+	duration: animationDuration,
+	delay: myOrder * animationTimingGap, //ms
 };
 
+//todo slidereplace
 $: animation =
 	$activeCellAnimations.orientation == 'A'
 		? {
@@ -32,36 +36,28 @@ $: animation =
 				in: { x: -200, ...animStyle, easing: quadOut },
 				out: { x: 200, ...animStyle, easing: quadIn },
 		  };
-/* ========================================================================== */
 </script>
 
-{#if isValid}
-	<div
-		id={id.toString()}
-		class="valid {sel} {num}"
-		on:click={() => dispatch('clicked', slots)}
-	>
-		<svg
-			class="letter"
-			width="100%"
-			height="100%"
-			viewBox="-25 -75 100 100"
-			preserveAspectRatio="none"
-		>
-			{#key letter}
-				<text in:fly={animation.in} out:fly={animation.out} x="0" y="0">
-					{letter}
-				</text>
-			{/key}
-		</svg>
-	</div>
-{:else}
-	<div id={id.toString()} class="invalid" />
-{/if}
+<!----------------------------------------------------------------------HTML--->
 
-<style>
-/* ========================================================================== */
-* {
+<template lang="pug">
+
++if("isValid")
+
+    .cell(id="{id+''}" class!="valid {sel} {num}" on:click!="{() => dispatch('clicked', slots)}")
+        svg.letter(width="100%", height!="100%", viewBox!="-25 -75 100 100", preserveAspectRatio="none")
+            +key("letter")
+                text(in:fly="{animation.in}", out:fly="{animation.out}", x="0", y="0") {letter}
+    
+    +else()
+    .cell.invalid(id="{id+''}")
+
+</template>
+
+<!----------------------------------------------------------------------CSS----->
+<style global>
+.valid,
+.invalid {
 	aspect-ratio: 1;
 	overflow: hidden;
 }
@@ -82,11 +78,6 @@ svg text {
 }
 
 .letter {
-	/* position: absolute 0 0 0 0; */
-	/* font-size: calc(150%); */
-	/* width: 100%; */
-	/* height: 100%; */
-	/* text-align: center; */
 	text-justify: center;
 }
 

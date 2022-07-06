@@ -13,17 +13,18 @@
     "@iconify/svelte": "^2.2.1",
     "@sveltejs/vite-plugin-svelte": "^1.0.0-next.30",
     "@tsconfig/svelte": "^2.0.1",
-    "eslint-plugin-svelte3": "^4.0.0",
     "install": "^0.13.0",
     "npm": "^8.13.2",
     "prettier-eslint": "^15.0.1",
+    "pug": "^3.0.2",
     "svelte": "^3.44.0",
-    "svelte-check": "^2.2.7",
+    "svelte-check": "^2.8.0",
     "svelte-loading-spinners": "^0.1.7",
     "svelte-popover": "^2.0.8",
-    "svelte-preprocess": "^4.9.8",
+    "svelte-preprocess": "^4.10.7",
     "tslib": "^2.3.1",
-    "typescript": "^4.5.4",
+    "typescript": "^4.7.4",
+    "typescript-svelte-plugin": "^0.3.5",
     "vite": "^2.9.9"
   },
   "dependencies": {
@@ -36,9 +37,9 @@
     "@typescript-eslint/parser": "^5.30.5",
     "lz-string": "^1.4.4",
     "node-sass": "^7.0.1",
-    "pug": "^3.0.2",
     "rxjs": "^7.5.5",
     "sass": "^1.53.0",
-    "svelte-icons-pack": "^1.4.6"
+    "svelte-icons-pack": "^1.4.6",
+    "svelte-language-server": "^0.14.29"
   }
 }

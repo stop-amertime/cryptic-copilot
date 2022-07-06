@@ -118,7 +118,6 @@ $: pluralString =
 		</div>
 
 		<div id="possibleWordsArea" bind:clientHeight={possibleWordsHeight}>
-			{#key possibleWords}
 				<div
 					id="possibleWordsWrapper"
 					bind:clientWidth={wrapperWidth}
@@ -162,7 +161,6 @@ $: pluralString =
 						</div>
 					{/if}
 				</div>
-			{/key}
 		</div>
 	</div>
 {:else}

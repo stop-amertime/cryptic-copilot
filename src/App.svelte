@@ -9,39 +9,29 @@ import StateMediator, {
 	wordSlots,
 } from './StateMediator.svelte';
 import { Square } from 'svelte-loading-spinners';
-/* -------------------------------------------------------------------------- */
 
-// Startup
-$wordSlots = Load.lastSlots as IWordSlot[] | null;
+console.log("--- COMPILED! ----");
 
-let templatePromise = Load.lastOrDefaultLayout();
-templatePromise.then(t => ($gridTemplate = t));
+let loaded = false;
+$wordSlots = Load.lastSlots;
+Load.lastOrDefaultLayout().then(t => {$gridTemplate = t; loaded = true;});
+Load.lastOrDefaultDictionary().then(d => $dictionary = d);
 
-let dictionaryPromise = Load.lastOrDefaultDictionary();
-dictionaryPromise.then(d => ($dictionary = d));
-/* ------------------------------------------------------------------------ */
 </script>
+<!----------------------------------------------------------------------HTML--->
+<template lang="pug">
 
-<StateMediator />
+StateMediator
++if('!loaded')
+    .centre: Square(size="60" color="#000000" unit="px" duration="1s")
+    +else()
+    #main
+        #gridArea: Grid
+        #panelArea: Panel
+</template>
 
-{#await Promise.all([dictionaryPromise, templatePromise])}
-	<div class="centre">
-		<Square size="60" color="#000000" unit="px" duration="1s" />
-	</div>
-{:then}
-	<div id="main">
-		<div id="gridArea">
-			<Grid />
-		</div>
-
-		<div id="panelArea">
-			<Panel />
-		</div>
-	</div>
-{/await}
-
-<style lang="scss">
-/* -------------------------------------------------------------------------- */
+<!----------------------------------------------------------------------CSS----->
+<style lang="scss" global>
 
 * {
 	box-sizing: border-box;

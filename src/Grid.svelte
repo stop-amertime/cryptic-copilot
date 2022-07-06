@@ -1,23 +1,19 @@
 <script lang="ts">
-import { writable } from 'svelte/store';
 import Cell from './Cell.svelte';
 import { fly } from 'svelte/transition';
 import { cells, activeSlotId } from './StateMediator.svelte';
-import Event from './StateMediator.svelte'; //REUSE
-
 /* -------------------------------------------------------------------------- */
 
 $: rowsize = Math.sqrt($cells.length) as number;
 
 // A cell is clicked - select the appropriate wordSlot.
-function updateSelectedSlot(event: { detail: number[] }) {
+function updateSelectedSlot(event: CustomEvent): void {
 	let slotIds = event.detail;
+
 	if (slotIds == null || slotIds.length < 1) {
 		return;
 	}
-
 	if (slotIds.length >= 2) {
-		// If multiple slots for that cell, toggle between.
 		$activeSlotId = $activeSlotId == slotIds[0] ? slotIds[1] : slotIds[0];
 	} else if (slotIds.length == 1 && $activeSlotId != slotIds[0]) {
 		$activeSlotId = slotIds[0];
@@ -26,7 +22,7 @@ function updateSelectedSlot(event: { detail: number[] }) {
 </script>
 
 <div
-	id="Grid"
+	id="GridDiv"
 	transition:fly={{ duration: 1000 }}
 	style="--dimension:{rowsize}"
 >
@@ -41,7 +37,7 @@ function updateSelectedSlot(event: { detail: number[] }) {
 	box-sizing: border-box;
 }
 /* @media (min-width: 800px) { */
-#Grid {
+#GridDiv {
 	max-height: 100%;
 	max-width: 100%;
 	height: 100%;

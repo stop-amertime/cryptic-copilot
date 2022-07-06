@@ -1,4 +1,5 @@
 <script lang="ts">
+import Meanings from './../lib-sv/Meanings.svelte';
 import { activeWord, activeDeviceList } from '../StateMediator.svelte';
 import DeviceList from '../lib-sv/DeviceList.svelte';
 import Anagram from '../lib-sv/Anagram.svelte';
@@ -8,49 +9,63 @@ import { fade } from 'svelte/transition';
 /* -------------------------------------------------------------------------- */
 
 let pageHeight: number;
-let dropdownIsOpen = [true, false];
+let dropdownIsOpen = [true, false, false];
+let deviceSet; 
 
 function closeOthers(event: CustomEvent) {
+    console.log("ID: `{event.target} -- Closing Others");
 	event.preventDefault();
 	let elementId = event.detail;
 	for (let i = 0; i < dropdownIsOpen.length; i++) {
 		if (i != elementId) dropdownIsOpen[i] = false;
 	}
 }
+
+
 /* -------------------------------------------------------------------------- */
 </script>
 
-{#key $activeWord}
-	<div id="page" bind:clientHeight={pageHeight}>
-		{#await $activeDeviceList}
-			<div class="centre" transition:fade={{ duration: 100 }}>
-				<Wave size="60" color="#111111" unit="px" duration="1s" />
-			</div>
-		{:then deviceSet}
-			<div class="deviceLists" transition:fade={{ duration: 100 }}>
-				<DeviceList
-					name="Anagrams"
-					index={0}
-					list={deviceSet?.anagrams || []}
-					subComponent={Anagram}
-					maxHeight={pageHeight}
-					on:opened={closeOthers}
-					bind:isOpen={dropdownIsOpen[0]}
-				/>
+<template lang="pug">
++key('$activeWord')
 
-				<DeviceList
-					name="Containers"
-					index={1}
-					list={deviceSet?.containers || []}
-					maxHeight={pageHeight}
-					subComponent={Container}
-					on:opened={closeOthers}
-					bind:isOpen={dropdownIsOpen[1]}
-				/>
-			</div>
-		{/await}
-	</div>
-{/key}
+    div#page(bind:clientHeight='{pageHeight}')
+
+    +await('$activeDeviceList')
+        .centre(transition:fade!="{{ duration: 100, }}")
+            Wave(size="60" color="#111111" unit="px" duration="1s")
+
+        +then('deviceSet')
+
+            .deviceLists(transition:fade='{{duration:100}}')
+
+                DeviceList(
+                    name="Meanings" index="{0}"
+                    list!="{deviceSet?.meanings || []}"
+                    subComponent="{Meanings}" 
+                    maxHeight="{pageHeight}"
+                    on:opened="{closeOthers}"
+                    bind:isOpen="{dropdownIsOpen[0]}"
+                    useVirtualList="{false}"
+                )
+
+                DeviceList(
+                    name="Anagrams" index="{1}"
+                    list!="{deviceSet?.anagrams || []}"
+                    subComponent="{Anagram}" 
+                    maxHeight="{pageHeight}"
+                    on:opened="{closeOthers}"
+                    bind:isOpen="{dropdownIsOpen[1]}"
+                )
+
+                DeviceList(
+                    name="Containers" index="{2}"
+                    list!="{deviceSet?.containers || []}"
+                    maxHeight="{pageHeight}"
+                    subComponent="{Container}"
+                    on:opened="{closeOthers}"
+                    bind:isOpen='{dropdownIsOpen[2]}'
+                ).
+</template>
 
 <style lang="scss">
 /* -------------------------------------------------------------------------- */

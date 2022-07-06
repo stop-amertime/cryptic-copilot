@@ -17,7 +17,7 @@ export const cells = writable([] as ICell[]);
 /// Active Slot State
 export const activeSlotId = writable(null as number);
 export const activeWord = writable(null as string);
-export const activeCells = writable(null as ISlotCellStates);
+export const activeCells = writable(null as ISlotCellState[]);
 export const activeCellAnimations = writable({ orientation: 'A', order: {} });
 export const activeDeviceList = writable(
 	Promise.resolve([]) as Promise<IDeviceSet>
@@ -25,7 +25,6 @@ export const activeDeviceList = writable(
 export const activePossibleWords = writable(
 	Promise.resolve([]) as Promise<string[]>
 );
-/* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 </script>
 
 <script lang="ts">
@@ -65,10 +64,7 @@ gridTemplate.subscribe(template => initGrid(template));
 dictionary.subscribe(dict => {
 	if (dict) {
 		setDictionary(dict);
-		let validDictionary = workerRequest('setDictionary', $dictionary);
-		validDictionary.then(r =>
-			console.log('Worker Dictionary Update: ' + r)
-		);
+		workerRequest('setDictionary', $dictionary);
 	}
 });
 
@@ -86,14 +82,10 @@ activeWord.subscribe((newWord: string) => {
 	}
 	$wordSlots[$activeSlotId].word = newWord;
 
-	/// Update Cells.
-	let updatedCells = calculateUpdatedCells(newWord);
-	activeCells.set(updatedCells);
-	refreshGridLetters($wordSlots[$activeSlotId], updatedCells);
-	$activeDeviceList = workerRequest(
-		'getDevices',
-		newWord
-	) as Promise<IDeviceSet>;
+	let newCells = calculateUpdatedCells(newWord);
+	activeCells.set(newCells);
+	refreshGridLetters($wordSlots[$activeSlotId], newCells);
+	$activeDeviceList = workerRequest('getDevices', newWord);
 });
 
 activeSlotId.subscribe(async (id: number) => {
@@ -176,7 +168,7 @@ function refreshGridLetters(slot: IWordSlot, cellStates: ISlotCellState[]) {
 	$cells = $cells;
 }
 
-function calculateUpdatedCells(newWord: string): ISlotCellStates {
+function calculateUpdatedCells(newWord: string): ISlotCellState[] {
 	return $activeCells.map((cellOfSlot, i) => {
 		return cellOfSlot.isOverwritable
 			? { ...cellOfSlot, letter: newWord?.[i] || '' }

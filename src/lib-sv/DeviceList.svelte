@@ -19,7 +19,7 @@ function onClick() {
 	dispatch('opened', index);
 }
 
-$: listHeight = maxHeight - 30 * 2 + 'px';
+$: listHeight = maxHeight - 30 * 3 + 'px';
 
 let animate = '';
 /* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
@@ -40,7 +40,7 @@ let animate = '';
 				<svelte:component this={subComponent} device={item} />
 			</VirtualList>
 		{:else}
-			<svelte:component this={subComponent} content={list} />
+			<svelte:component this={subComponent} meanings={list} />
 		{/if}
 	</div>
 </details>
@@ -58,7 +58,7 @@ details.animate {
 }
 
 details[open] {
-	height: calc(100% - 30px);
+	height: calc(100% - 70px);
 	border-radius: 2px;
 }
 
