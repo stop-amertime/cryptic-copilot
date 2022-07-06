@@ -1,101 +1,120 @@
-<script lang=ts>
-import {wordSlots, activeSlotId} from '../StateMediator.svelte'
+<script lang="ts">
+/* -------------------------------------------------------------------------- */
+import { wordSlots, activeSlotId } from '../StateMediator.svelte';
 
-console.log($wordSlots);
-
-$: if ($activeSlotId!==null){
-    document.querySelector('.selectedClue')?.classList.remove('selectedClue');
-    document.getElementById($wordSlots[$activeSlotId]?.clueIndex)?.classList.add('selectedClue');
+$: if ($activeSlotId !== null) {
+	document.querySelector('.selectedClue')?.classList.remove('selectedClue');
+	document
+		.getElementById($wordSlots[$activeSlotId]?.clueIndex)
+		?.classList.add('selectedClue');
 }
 
-const sizeMe = (node, id) => {let elem = document.getElementById(id); elem.style.height = "auto"; elem.style.height = elem.scrollHeight+"px";}
-const selectMe = (event) => {$activeSlotId = $wordSlots.findIndex(s => s.clueIndex == event.target.id)};
-const resizeMe = (event) => sizeMe(null,event.target.id);
+const sizeMe = (node, id) => {
+	let elem = document.getElementById(id);
+	elem.style.height = 'auto';
+	elem.style.height = elem.scrollHeight + 'px';
+};
+const selectMe = event => {
+	$activeSlotId = $wordSlots.findIndex(s => s.clueIndex == event.target.id);
+};
+
+const resizeMe = event => sizeMe(null, event.target.id);
+/* ------------------------------------------------------------------------ */
 </script>
 
-<div id="page"> 
-    <div class="column"> 
-        <h3> Across </h3>
-            {#each $wordSlots.filter(s => s.orientation == "A") as slot}
-            <div class="clue">
+<div id="page">
+	<div class="column">
+		<h3>Across</h3>
+		{#each $wordSlots.filter(s => s.orientation == 'A') as slot}
+			<div class="clue">
+				<p class="label">{slot.number}.</p>
 
-                <p class="label">{slot.number}.</p>
+				<textarea
+					id={slot.clueIndex}
+					contenteditable
+					use:sizeMe={slot.clueIndex}
+					bind:value={slot.clue}
+					on:focus={selectMe}
+					on:input={resizeMe}
+				/>
+			</div>
+		{/each}
+	</div>
 
-                <textarea id={slot.clueIndex}
-                contenteditable 
-                use:sizeMe={slot.clueIndex}
-                bind:value={slot.clue}
-                on:focus={selectMe}
-                on:input={resizeMe}></textarea>
-            </div>
-            {/each}
-    </div>
+	<div class="column">
+		<h3>Down</h3>
+		{#each $wordSlots.filter(s => s.orientation == 'D') as slot}
+			<div class="clue">
+				<p class="label">{slot.number}.</p>
 
-
-    <div class="column"> 
-        <h3> Down </h3>
-            {#each $wordSlots.filter(s => s.orientation == "D") as slot}
-            <div class="clue">
-
-                <p class="label">{slot.number}.</p>
-                
-                <textarea 
-                id={slot.clueIndex}
-                contenteditable
-                use:sizeMe={slot.clueIndex}
-                bind:value={slot.clue}
-                on:focus={selectMe}
-                on:input={resizeMe}></textarea>
-
-            </div>
-            {/each}
-    </div>
-
+				<textarea
+					id={slot.clueIndex}
+					contenteditable
+					use:sizeMe={slot.clueIndex}
+					bind:value={slot.clue}
+					on:focus={selectMe}
+					on:input={resizeMe}
+				/>
+			</div>
+		{/each}
+	</div>
 </div>
 
-
 <style lang="scss">
-    #page {
-        padding: 20px;
-        display: flex;
-        flex-direction: row;
-        flex-wrap: wrap;
-        width: 100%;
-        height: 100%;
-        overflow-y:auto;
-    }
+/* -------------------------------------------------------------------------- */
+#page {
+	padding: 20px;
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	width: 100%;
+	height: 100%;
+	@include scroll();
+	max-width: 100%;
+}
 
-    .column {  
-        flex: 1 0 300px;
-        display: block;
-        padding: 10; 
-    }
+.column {
+	flex: 1 0 300px;
+	display: block;
+	padding: 10;
+}
 
-    .column h3{
-        font-size: 16px;
-    }
+.column h3 {
+	font-size: 20px;
+}
 
-    .clue {
-        display: flex;
-        flex-direction: row;
-    }
+.clue {
+	//wrapper
+	display: flex;
+	flex-direction: row;
+	align-items: flex-start;
+	justify-content: center;
+	font-weight: 600;
+}
 
-    .label {
-        flex: 0 0 30px;
-    }
+.label {
+	flex: 0 0 10px;
+	line-height: 0px;
+	font-size: 14px;
+	padding-top: 5px;
+}
 
-    textarea {
-        border: none;
-        flex: 1 0 auto;
-        margin: 10px;
-        resize: none; 
-        font-weight: normal;
-        padding: 1px;
-        transition: all 0.2s fade; 
-    }
+textarea {
+	font-family: 'Courier New', Courier, monospace;
+	border: none;
+	flex: 1 0 auto;
+	margin-bottom: 15px;
+	padding: 10px !important;
+	resize: none;
+	font-weight: normal;
+	padding: 1px;
+	transition: all 0.2s fade;
+	overflow: hidden;
+	max-width: 40ch;
+}
 
-    :global(.selectedClue) {
-        background-color: rgb(220, 255, 220);
-    }
-    
+:global(.selectedClue) {
+	outline-color: rgb(220, 255, 220) !important;
+	border: 1px solid !important;
+}
 </style>

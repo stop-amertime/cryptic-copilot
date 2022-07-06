@@ -55,12 +55,12 @@ $XL: 100px;
     }
 }
 
-@mixin fillParent{
+@mixin fillParent(){
     width: 100%;
     height: 100%;
 }
 
-@mixin centeredParent{
+@mixin centredParent(){
     display: flex;
     align-items: center;
     justify-content: center;

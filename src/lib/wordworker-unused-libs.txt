@@ -1,0 +1,97 @@
+
+function wordArraytoHashMap(array) {
+     let hashMap = new Map();
+     for (let word of array) {
+          hashMap.set(word, { hash: getHash(word) });
+     }
+     return hashMap;
+}
+
+function dedupeUnordered(array) {
+     let sortedarray = array.map(w => w.sort());
+     let cleanarray = [];
+
+     for (let i = 0; i < sortedarray.length; i++) {
+          if (!cleanarray.some(e => arraysEqual(e, sortedarray[i]))) {
+               cleanarray.push(sortedarray[i]);
+          }
+     }
+     return cleanarray;
+}
+
+function dedupeOrdered(arr) {
+     var a = [];
+     for (var i = 0, l = arr.length; i < l; i++)
+          if (a.indexOf(arr[i]) === -1 && arr[i] !== '') a.push(arr[i]);
+     return a;
+}
+
+
+
+
+function arraysEqual(a, b) {
+     if (a === b) return true;
+     if (a == null || b == null) return false;
+     if (a.length !== b.length) return false;
+
+     for (var i = 0; i < a.length; ++i) {
+          if (a[i] !== b[i]) return false;
+     }
+     return true;
+}
+
+function locationInSortedArray(
+     element,
+     array,
+     comparer,
+     start = 0,
+     end = array.length
+) {
+     if (array.length === 0) return -1;
+
+     var pivot = (start + end) >> 1; // should be faster than dividing by 2
+
+     var c = comparer(element, array[pivot]);
+     if (end - start <= 1) return c == -1 ? pivot - 1 : pivot;
+
+     switch (c) {
+          case -1:
+               return locationInSortedArray(
+                    element,
+                    array,
+                    comparer,
+                    start,
+                    pivot
+               );
+          case 0:
+               return pivot;
+          case 1:
+               return locationInSortedArray(element, array, comparer, pivot, end);
+     }
+}
+
+
+
+function groupByLength(list: Array<any>) {
+     const map = new Map();
+
+     for (let item of list) {
+          if (typeof item != null && item != null) {
+               const key = item.length;
+               const collection = map.get(key);
+               if (!collection) {
+                    map.set(key, [item]);
+               } else {
+                    collection.push(item);
+               }
+          }
+     }
+     return map;
+}
+
+
+// const compareTupleAlpha = function (a, b) {
+//     if (a.word < b.word) return -1;
+//     if (a.word > b.word) return 1;
+//     return 0;
+// };

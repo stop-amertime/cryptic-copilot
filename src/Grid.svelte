@@ -1,59 +1,57 @@
 <script lang="ts">
-
 import { writable } from 'svelte/store';
 import Cell from './Cell.svelte';
-import {fly} from 'svelte/transition'
-import {cells, activeSlotId} from './StateMediator.svelte';
-import Event from './StateMediator.svelte' //REUSE 
+import { fly } from 'svelte/transition';
+import { cells, activeSlotId } from './StateMediator.svelte';
+import Event from './StateMediator.svelte'; //REUSE
 
-$: rowsize = Math.sqrt($cells.length) as number; 
+/* -------------------------------------------------------------------------- */
 
-// A cell is clicked - select the appropriate wordSlot. 
-function updateSelectedSlot(event: {    detail: number[]    }){
+$: rowsize = Math.sqrt($cells.length) as number;
 
-    let slotIds = event.detail; 
-    if (slotIds ==null || slotIds.length<1) {return;}
+// A cell is clicked - select the appropriate wordSlot.
+function updateSelectedSlot(event: { detail: number[] }) {
+	let slotIds = event.detail;
+	if (slotIds == null || slotIds.length < 1) {
+		return;
+	}
 
-    if (slotIds.length >= 2){ // If multiple slots for that cell, toggle between.
-            $activeSlotId = $activeSlotId == slotIds[0] ? slotIds[1] :slotIds[0]
-    }
-
-    else if (slotIds.length == 1 && $activeSlotId != slotIds[0])    {  
-        $activeSlotId = slotIds[0]
-    }
+	if (slotIds.length >= 2) {
+		// If multiple slots for that cell, toggle between.
+		$activeSlotId = $activeSlotId == slotIds[0] ? slotIds[1] : slotIds[0];
+	} else if (slotIds.length == 1 && $activeSlotId != slotIds[0]) {
+		$activeSlotId = slotIds[0];
+	}
 }
-
 </script>
 
-        <div id="Grid"
-        transition:fly={{duration:1000}}
-        style="--dimension:{rowsize}">
-
-        {#each $cells as cell}
-                <Cell {...cell} on:clicked={updateSelectedSlot}></Cell>
-        {/each}
-
-    </div>
+<div
+	id="Grid"
+	transition:fly={{ duration: 1000 }}
+	style="--dimension:{rowsize}"
+>
+	{#each $cells as cell}
+		<Cell {...cell} on:clicked={updateSelectedSlot} />
+	{/each}
+</div>
 
 <style>
-
-    * {
-        box-sizing:border-box;
-    }
+/* -------------------------------------------------------------------------- */
+* {
+	box-sizing: border-box;
+}
 /* @media (min-width: 800px) { */
-    #Grid{
-        max-height: 100%;
-        max-width: 100%;
-        height: 100%;
-        aspect-ratio: 1;
-        display: grid;
-        grid-template-columns: repeat(var(--dimension),1fr);
-        grid-template-rows: repeat(var(--dimension),1fr);
-    }
+#Grid {
+	max-height: 100%;
+	max-width: 100%;
+	height: 100%;
+	aspect-ratio: 1;
+	display: grid;
+	grid-template-columns: repeat(var(--dimension), 1fr);
+	grid-template-rows: repeat(var(--dimension), 1fr);
+}
 
 /* @media (max-width: 799px) {
 
     } */
-
 </style>
-
