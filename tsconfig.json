@@ -14,8 +14,23 @@
      */
     "allowJs": true,
     "checkJs": true,
-    "isolatedModules": false
-  },
-  "include": ["src/**/*.d.ts", "src/**/*.ts", "src/**/*.js", "src/**/*.svelte"],
+    "isolatedModules": false,
+    "plugins": [
+            {
+                "name": "typescript-svelte-plugin"
+            }
+        ]
+    },
+
+//   "include": ["src/**/*.d.ts", "src/**/*.ts", "src/**/*.js", "src/**/*.svelte"],
+"include": [
+    "src/**/*",
+    "src/node_modules"
+],
+"exclude": [
+    "node_modules/*",
+    "__sapper__/*",
+    "public/*"
+],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

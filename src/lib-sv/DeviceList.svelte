@@ -4,13 +4,17 @@ import { createEventDispatcher } from 'svelte';
 /* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 /* -------------------------------------------------------------------- Props */
 export let name = '';
-export let subComponent;
+export let subComponent: any;
 export let index: number;
-export let list = [];
-export let number = list?.length || 0;
+export let list: IDevice[]; 
+export let defs: IThesaurusEntry;
 export let useVirtualList = true;
 export let maxHeight;
 export let isOpen = false;
+let numberOfEntries: number|IDevice[];
+$: numberOfEntries == (list) ? list.length : defs?.numberOfSenses || 0
+$: isEnabled = numberOfEntries == 0 ? "disabled" : "";
+$: listHeight = maxHeight - 30 * 3 + 'px';
 
 /* -------------------------------------------------------- Events, Animation */
 
@@ -18,19 +22,15 @@ let dispatch = createEventDispatcher();
 function onClick() {
 	dispatch('opened', index);
 }
-
-$: listHeight = maxHeight - 30 * 3 + 'px';
-
 let animate = '';
-/* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 </script>
+<!----------------------------------------------------------------------HTML--->
 
 <details
 	bind:open={isOpen}
-	class="deviceDropdown {animate}"
+	class="deviceDropdown {animate} {isEnabled}"
 	on:click={onClick}
 	on:introend={() => (animate = 'animate')}
-	disabled={number != 0 ? true : false}
 >
 	<summary> <span>{name} ({list.length})</span></summary>
 
@@ -40,41 +40,54 @@ let animate = '';
 				<svelte:component this={subComponent} device={item} />
 			</VirtualList>
 		{:else}
-			<svelte:component this={subComponent} meanings={list} />
+			<svelte:component this={subComponent} meanings={defs} />
 		{/if}
 	</div>
 </details>
 
-<style>
-/* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+<!----------------------------------------------------------------------CSS----->
+<style lang="scss" global>
+
 details {
 	height: 30px;
 	width: 100%;
 	overflow: hidden;
-}
 
-details.animate {
-	transition: all 200ms ease;
-}
+    &.animate {
+        transition: all 200ms ease;
+    }
 
-details[open] {
-	height: calc(100% - 70px);
-	border-radius: 2px;
-}
+    &[open] {
+	    height: calc(100% - 70px);
+	    border-radius: 2px;
+    }
 
-details:not([open]) {
+    &:not([open]) {
 	/* transition: none; */
-	background-color: rgb(225, 225, 225);
+	    background-color: rgb(225, 225, 225);
+    }
+
+    &.disabled {
+        max-height: 30px;
+        background-color: grey;
+        opacity: 0.3;
+        pointer-events: none;
+    }
 }
+
 
 summary {
 	width: 100%;
 	height: 10px;
 	padding: 10px;
+    cursor:pointer;
+    user-select:none;
 }
 
 .listContainer {
 	width: 100%;
 	padding: 5px;
 }
+
+
 </style>

@@ -11,7 +11,7 @@ const enum WordDirection {
 
 //= Word
 
-interface IDictionaryEntry {
+type IDictionaryEntry = {
 	isAbbreviation?: boolean;
 	hash?: number;
 	abbreviationFor?: Array<string>;
@@ -20,7 +20,7 @@ interface IDictionaryEntry {
 	contains?: Array<IWord>;
 }
 
-interface IWord extends IDictionaryEntry {
+type IWord = IDictionaryEntry & {
 	word: string;
 }
 
@@ -28,35 +28,35 @@ interface IWord extends IDictionaryEntry {
 
 type IDictionary = Map<string, IDictionaryEntry>;
 
-interface IThesaurusEntry {
+type IThesaurusEntry = {
     partsOfSpeech: Array<IThesaurusPart>
     numberOfSenses: number
     abbreviationFor?: string[]
 }
 
-interface IThesaurusPart {
+type IThesaurusPart = {
     partOfSpeech: string
     senses: Array<IThesaurusSense>
 }
 
-interface IThesaurusSense {
+type IThesaurusSense = {
     definition: string,
     synonyms: Array<IThesaurusSynonym>
 }
 
-interface IThesaurusSynonym {
+type IThesaurusSynonym = {
     mainWord: string;
     relatedWords: string[]
 }
 
 //= Device (Set of Words)
 //todo: Do I need to include the score here, or just sort?
-interface IDevice {
+type IDevice = {
 	words: Array<IWord>;
 	score?: number;
 }
 
-interface IDeviceSet{
+type IDeviceSet = {
     thesaurus?: IThesaurusEntry;
 	anagrams?: IDevice[];
 	containers?: IDevice[];
@@ -104,7 +104,7 @@ interface IStateRecord {
 
 //= Event Messages to/from Worker
 
-interface IWorkerTask<Input, Output> {
+type IWorkerTask<Input, Output> = {
 	id?: number;
 	request: string;
 	payload?: Input;

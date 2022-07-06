@@ -27,44 +27,41 @@ function closeOthers(event: CustomEvent) {
 
 <template lang="pug">
 +key('$activeWord')
-
-    div#page(bind:clientHeight='{pageHeight}')
-
     +await('$activeDeviceList')
         .centre(transition:fade!="{{ duration: 100, }}")
             Wave(size="60" color="#111111" unit="px" duration="1s")
 
         +then('deviceSet')
+            div#page(bind:clientHeight='{pageHeight}')
+                .deviceLists(transition:fade='{{duration:100}}')
 
-            .deviceLists(transition:fade='{{duration:100}}')
+                    DeviceList(
+                        name="Meanings" index="{0}"
+                        list!="{deviceSet?.thesaurus || []}"
+                        subComponent="{Meanings}" 
+                        maxHeight="{pageHeight}"
+                        on:opened="{closeOthers}"
+                        bind:isOpen="{dropdownIsOpen[0]}"
+                        useVirtualList="{false}"
+                    )
 
-                DeviceList(
-                    name="Meanings" index="{0}"
-                    list!="{deviceSet?.meanings || []}"
-                    subComponent="{Meanings}" 
-                    maxHeight="{pageHeight}"
-                    on:opened="{closeOthers}"
-                    bind:isOpen="{dropdownIsOpen[0]}"
-                    useVirtualList="{false}"
-                )
+                    DeviceList(
+                        name="Anagrams" index="{1}"
+                        list!="{deviceSet?.anagrams || []}"
+                        subComponent="{Anagram}" 
+                        maxHeight="{pageHeight}"
+                        on:opened="{closeOthers}"
+                        bind:isOpen="{dropdownIsOpen[1]}"
+                    )
 
-                DeviceList(
-                    name="Anagrams" index="{1}"
-                    list!="{deviceSet?.anagrams || []}"
-                    subComponent="{Anagram}" 
-                    maxHeight="{pageHeight}"
-                    on:opened="{closeOthers}"
-                    bind:isOpen="{dropdownIsOpen[1]}"
-                )
-
-                DeviceList(
-                    name="Containers" index="{2}"
-                    list!="{deviceSet?.containers || []}"
-                    maxHeight="{pageHeight}"
-                    subComponent="{Container}"
-                    on:opened="{closeOthers}"
-                    bind:isOpen='{dropdownIsOpen[2]}'
-                ).
+                    DeviceList(
+                        name="Containers" index="{2}"
+                        list!="{deviceSet?.containers || []}"
+                        maxHeight="{pageHeight}"
+                        subComponent="{Container}"
+                        on:opened="{closeOthers}"
+                        bind:isOpen='{dropdownIsOpen[2]}'
+                    ).
 </template>
 
 <style lang="scss">
