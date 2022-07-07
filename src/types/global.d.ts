@@ -9,6 +9,8 @@ const enum WordDirection {
 	Anagram = 'anagram',
 }
 
+type detailsHeightTuple = [open: number, closed: number];
+
 //= Word
 
 type IDictionaryEntry = {

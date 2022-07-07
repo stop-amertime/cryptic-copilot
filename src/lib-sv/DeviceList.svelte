@@ -1,55 +1,54 @@
 <script lang="ts">
 import VirtualList from '@sveltejs/svelte-virtual-list';
 import { createEventDispatcher } from 'svelte';
-/* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 /* -------------------------------------------------------------------- Props */
-export let name = '';
-export let subComponent: any;
-export let index: number;
-export let list: IDevice[]; 
-export let defs: IThesaurusEntry;
-export let useVirtualList = true;
-export let maxHeight;
-export let isOpen = false;
-let numberOfEntries: number|IDevice[];
-$: numberOfEntries == (list) ? list.length : defs?.numberOfSenses || 0
-$: isEnabled = numberOfEntries == 0 ? "disabled" : "";
-$: listHeight = maxHeight - 30 * 3 + 'px';
-
-/* -------------------------------------------------------- Events, Animation */
-
-let dispatch = createEventDispatcher();
-function onClick() {
-	dispatch('opened', index);
-}
+export let listProps;
+export let listHeights : {head:number, inner:number};
+export let list = null as IDevice[];  
+export let definition = null as IThesaurusEntry;
+export let isOpen;
+const dispatch = createEventDispatcher();
 let animate = '';
+const {name, subComponent, index} = listProps;
+$: numberOfEntries = list ? list.length : definition?.numberOfSenses ?? 0
+$: disabledClass = (numberOfEntries == 0) ? "disabled" : "";
+
+console.table({listHeights,numberOfEntries, isOpen: isOpen })
+
+
+const clicked = (event) => {
+    dispatch('opened', index);
+    console.table({listHeights, numberOfEntries, isOpen: isOpen })
+}
 </script>
 <!----------------------------------------------------------------------HTML--->
 
 <details
 	bind:open={isOpen}
-	class="deviceDropdown {animate} {isEnabled}"
-	on:click={onClick}
+	class="deviceDropdown {animate} {disabledClass}"
+	on:click="{clicked}"
 	on:introend={() => (animate = 'animate')}
 >
-	<summary> <span>{name} ({list.length})</span></summary>
+        <summary style:height={listHeights.head +"px"}> <span>{name} ({numberOfEntries})</span></summary>
 
-	<div class="listContainer" style:height={listHeight}>
-		{#if useVirtualList}
-			<VirtualList items={list} let:item>
-				<svelte:component this={subComponent} device={item} />
-			</VirtualList>
-		{:else}
-			<svelte:component this={subComponent} meanings={defs} />
-		{/if}
-	</div>
+        <div class="listContainer" style:height="{listHeights.inner + "px"}">
+            {#if !!list}
+                <VirtualList items={list} let:item>
+                    <svelte:component this={subComponent} device={item} />
+                </VirtualList>
+
+            {:else if !!definition}
+                <svelte:component this={subComponent} meanings={definition} />
+
+            {/if}
+        </div>
+
 </details>
 
 <!----------------------------------------------------------------------CSS----->
 <style lang="scss" global>
 
 details {
-	height: 30px;
 	width: 100%;
 	overflow: hidden;
 
@@ -58,17 +57,14 @@ details {
     }
 
     &[open] {
-	    height: calc(100% - 70px);
 	    border-radius: 2px;
     }
 
     &:not([open]) {
-	/* transition: none; */
 	    background-color: rgb(225, 225, 225);
     }
 
     &.disabled {
-        max-height: 30px;
         background-color: grey;
         opacity: 0.3;
         pointer-events: none;
@@ -78,7 +74,7 @@ details {
 
 summary {
 	width: 100%;
-	height: 10px;
+	height: 30px;
 	padding: 10px;
     cursor:pointer;
     user-select:none;
@@ -87,6 +83,7 @@ summary {
 .listContainer {
 	width: 100%;
 	padding: 5px;
+    overflow-y: hidden;
 }
 
 

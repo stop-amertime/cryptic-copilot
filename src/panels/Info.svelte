@@ -6,21 +6,30 @@ import Anagram from '../lib-sv/Anagram.svelte';
 import Container from '../lib-sv/Container.svelte';
 import { Wave } from 'svelte-loading-spinners';
 import { fade } from 'svelte/transition';
+import { writable } from 'svelte/store';
 /* -------------------------------------------------------------------------- */
 
-let pageHeight: number;
 let dropdownIsOpen = [true, false, false];
-let deviceSet; 
+let pageHeight: number;
+const numberOfDropdowns = 3;
+const listHeaderHeight = 30; //px
+$: listHeights = {
+	head: listHeaderHeight,
+	inner: pageHeight - listHeaderHeight * numberOfDropdowns,
+};
 
-function closeOthers(event: CustomEvent) {
-    console.log("ID: `{event.target} -- Closing Others");
+$: listProps = [
+	{ ...listHeights, index: 0, name: 'Meanings', subComponent: Meanings },
+	{ ...listHeights, index: 1, name: 'Anagrams', subComponent: Anagram },
+	{ ...listHeights, index: 2, name: 'Containers', subComponent: Container },
+];
+
+const closeOthers = (event: CustomEvent) => {
 	event.preventDefault();
-	let elementId = event.detail;
 	for (let i = 0; i < dropdownIsOpen.length; i++) {
-		if (i != elementId) dropdownIsOpen[i] = false;
+		if (i!=event.detail) dropdownIsOpen[i] = false; //index.
 	}
-}
-
+};
 
 /* -------------------------------------------------------------------------- */
 </script>
@@ -32,44 +41,41 @@ function closeOthers(event: CustomEvent) {
             Wave(size="60" color="#111111" unit="px" duration="1s")
 
         +then('deviceSet')
-            div#page(bind:clientHeight='{pageHeight}')
-                .deviceLists(transition:fade='{{duration:100}}')
+        div#page(bind:clientHeight!='{pageHeight}')
+            .deviceLists(transition:fade='{{duration:100}}')
 
-                    DeviceList(
-                        name="Meanings" index="{0}"
-                        list!="{deviceSet?.thesaurus || []}"
-                        subComponent="{Meanings}" 
-                        maxHeight="{pageHeight}"
-                        on:opened="{closeOthers}"
-                        bind:isOpen="{dropdownIsOpen[0]}"
-                        useVirtualList="{false}"
-                    )
+                DeviceList(
+                    definition!="{deviceSet?.thesaurus || []}"
+                    on:opened="{closeOthers}"
+                    "{listHeights}"
+                    listProps="{listProps[0]}"
+                    bind:isOpen!="{dropdownIsOpen[0]}"                        
+                )
 
-                    DeviceList(
-                        name="Anagrams" index="{1}"
-                        list!="{deviceSet?.anagrams || []}"
-                        subComponent="{Anagram}" 
-                        maxHeight="{pageHeight}"
-                        on:opened="{closeOthers}"
-                        bind:isOpen="{dropdownIsOpen[1]}"
-                    )
+                DeviceList(
+                    list!="{deviceSet?.anagrams || []}"
+                    "{listHeights}"
+                    listProps="{listProps[1]}"
+                    on:opened="{closeOthers}"
+                    bind:isOpen!="{dropdownIsOpen[1]}"
+                )
 
-                    DeviceList(
-                        name="Containers" index="{2}"
-                        list!="{deviceSet?.containers || []}"
-                        maxHeight="{pageHeight}"
-                        subComponent="{Container}"
-                        on:opened="{closeOthers}"
-                        bind:isOpen='{dropdownIsOpen[2]}'
-                    ).
+                DeviceList(
+                    list!="{deviceSet?.containers || []}"
+                    on:opened="{closeOthers}"
+                    "{listHeights}"
+                    listProps="{listProps[2]}"
+                    bind:isOpen!='{dropdownIsOpen[2]}'
+                ).
 </template>
 
 <style lang="scss">
 /* -------------------------------------------------------------------------- */
 #page {
 	@include staticTransitionParent();
-	height: 100%;
-	width: 100%;
+	max-height: 100%;
+	max-width: 100%;
+    overflow:hidden;
 }
 
 .centre {
@@ -81,7 +87,10 @@ function closeOthers(event: CustomEvent) {
 }
 
 .deviceLists {
-	width: 100%;
+    width: 100%;
 	height: 100%;
+	max-width: 100%;
+	max-height: 100%;
+    overflow:hidden;
 }
 </style>
