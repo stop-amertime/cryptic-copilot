@@ -1,17 +1,14 @@
 <script lang="ts">
 export let word = 'NO WORD ENTERED';
-/* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 </script>
 
+<!----------------------------------------------------------------------HTML--->
 <div class="popover">
-	Your Word Was: {word}
-
-	<div id="arrow" data-popper-arrow />
+	<div class {word} <div id="arrow" data-popper-arrow />
 </div>
 
+<!----------------------------------------------------------------------CSS----->
 <style lang="scss">
-/* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-
 $popovercolor: white;
 .popover {
 	box-shadow: 10px 0px 15px rgba(0, 0, 0, 0.435);
