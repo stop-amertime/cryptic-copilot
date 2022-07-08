@@ -118,49 +118,48 @@ $: pluralString =
 		</div>
 
 		<div id="possibleWordsArea" bind:clientHeight={possibleWordsHeight}>
-				<div
-					id="possibleWordsWrapper"
-					bind:clientWidth={wrapperWidth}
-					transition:fade
-				>
-					{#if filteredPossibleWords && filteredPossibleWords.length > 0}
-						<VirtualList items={chunkedPossibleWords} let:item>
-							<div class="wordRow" style="--cols:{colCount}">
-								{#each item as possibleWord}
-									<Button
-										ripple
-										color="dark"
-										variant="outline"
-										class="possword"
-										override={{
-											fontFamily: 'monospace',
-											width: '100%',
-										}}
-										on:click={() =>
-											($activeWord = possibleWord)}
-										>{possibleWord}</Button
-									>
-								{/each}
-							</div>
-						</VirtualList>
-					{:else if !filteredPossibleWords || filteredPossibleWords.length == 0}
-						<div id="noPossibleWords">
-							<img
-								id="noWordsIcon"
-								src="/src/assets/icons/nomatches.png"
-								alt="No matching words."
-							/>
-
-							<p class="noWordsText">
-								<strong
-									>No matching words in our dictionary -
-									sorry.</strong
-								><br />
-								You can type new words into the bar above.
-							</p>
+			<div
+				id="possibleWordsWrapper"
+				bind:clientWidth={wrapperWidth}
+				transition:fade
+			>
+				{#if filteredPossibleWords && filteredPossibleWords.length > 0}
+					<VirtualList items={chunkedPossibleWords} let:item>
+						<div class="wordRow" style="--cols:{colCount}">
+							{#each item as possibleWord}
+								<Button
+									ripple
+									color="dark"
+									variant="outline"
+									class="possword"
+									override={{
+										fontFamily: 'Courier Prime',
+										width: '100%',
+									}}
+									on:click={() =>
+										($activeWord = possibleWord)}
+									>{possibleWord}</Button
+								>
+							{/each}
 						</div>
-					{/if}
-				</div>
+					</VirtualList>
+				{:else if !filteredPossibleWords || filteredPossibleWords.length == 0}
+					<div id="noPossibleWords">
+						<img
+							id="noWordsIcon"
+							src="/src/assets/icons/nomatches.png"
+							alt="No matching words."
+						/>
+
+						<p class="noWordsText">
+							<strong
+								>No matching words in our dictionary - sorry.</strong
+							><br />
+							You can type new words into the bar above.
+						</p>
+					</div>
+				{/if}
+			</div>
 		</div>
 	</div>
 {:else}
@@ -189,6 +188,7 @@ $: pluralString =
 }
 
 #possibleWordsArea {
+	font-family: 'Courier Prime', 'Courier New', Courier, monospace;
 	padding: 15px;
 	flex: 1 0 auto;
 	min-height: 200px;

@@ -62,8 +62,9 @@ const resizeMe = event => sizeMe(null, event.target.id);
 
 <style lang="scss">
 /* -------------------------------------------------------------------------- */
+
 #page {
-	padding: 20px;
+	padding: 30px;
 	display: flex;
 	flex-direction: row;
 	flex-wrap: wrap;
@@ -76,31 +77,34 @@ const resizeMe = event => sizeMe(null, event.target.id);
 .column {
 	flex: 1 0 300px;
 	display: block;
-	padding: 10;
+	margin-bottom: 30px;
 }
 
 .column h3 {
-	font-size: 20px;
+	font-size: 20pt;
+	margin: 0px;
+	margin-bottom: 20px;
 }
 
 .clue {
 	//wrapper
+	width: 100%;
 	display: flex;
 	flex-direction: row;
 	align-items: flex-start;
-	justify-content: center;
+	justify-content: left;
+	padding-left: 30px;
 	font-weight: 600;
 }
 
 .label {
-	flex: 0 0 10px;
+	flex: 0 0 30px;
 	line-height: 0px;
 	font-size: 14px;
 	padding-top: 5px;
 }
 
 textarea {
-	font-family: 'Courier New', Courier, monospace;
 	border: none;
 	flex: 1 0 auto;
 	margin-bottom: 15px;
@@ -110,11 +114,12 @@ textarea {
 	padding: 1px;
 	transition: all 0.2s fade;
 	overflow: hidden;
-	max-width: 40ch;
+	max-width: 50ch;
 }
 
 :global(.selectedClue) {
-	outline-color: rgb(220, 255, 220) !important;
-	border: 1px solid !important;
+	border: 1px solid rgb(64, 150, 64) !important;
+	border-radius: 2px;
+	outline: none;
 }
 </style>

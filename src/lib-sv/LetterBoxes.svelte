@@ -1,49 +1,63 @@
 <script lang="ts">
 import { fly } from 'svelte/transition';
-export let letters = [];
-let mywidth;
-/* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
+export let letters = [] as ISlotCellState[];
+
+let wrapperWidth, wrapperHeight;
+$: maxBoxWidth = wrapperWidth / letters.length;
+$: maxBoxHeight = wrapperHeight;
+$: boxDimension = Math.min(maxBoxWidth, maxBoxHeight) + 'px';
 </script>
 
-<div id="letterBox">
+<!----------------------------------------------------------------------HTML--->
+
+<div
+	id="letterBox"
+	bind:clientWidth={wrapperWidth}
+	bind:clientHeight={wrapperHeight}
+>
 	{#each letters as l}
 		{#key l.letter}
 			<div
-				style="--number: {letters.length}; --size:{mywidth}"
-				class="letter {l.isOverwritable ? '' : 'fixed'}"
-				bind:clientWidth={mywidth}
+				style:--size={boxDimension}
+				class="letter"
+				class:fixed={l.isOverwritable}
 			>
-				{l.letter}
+				<span>{l.letter}</span>
 			</div>
 		{/key}
 	{/each}
 </div>
 
-<style>
-/* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+<!----------------------------------------------------------------------CSS----->
+<style lang="scss">
 #letterBox {
 	grid-area: 1 / 1 / 2 / 2;
 	display: block;
-	/* flex-direction: row;
-        flex-wrap: nowrap;
-        justify-items: center;
-        align-items: stretch; */
 }
 
 .letter {
-	display: inline-block;
+	float: left;
+	height: var(--size);
+	width: var(--size);
+	max-width: calc(var(--size) - 1px);
+	font-size: calc(var(--size) * 0.7);
+	line-height: calc(var(--size));
+	text-align: center;
+	font-weight: bold;
 	border: 1px solid black;
-	box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.205);
-	padding: 4px;
-	margin: 3px;
-	width: 6%;
-	aspect-ratio: 1;
-	font-size: --mywidth;
-	font-weight: 1000;
-}
+	// box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.205);
+	margin-right: -1px;
 
-.fixed {
-	background-color: grey;
-	opacity: 0.7;
+	span {
+		margin: 0px;
+		padding: 0px;
+	}
+
+	&.fixed {
+		background-color: rgb(219, 219, 219);
+		color: rgb(109, 109, 109);
+		border-style: dashed;
+	}
 }
 </style>

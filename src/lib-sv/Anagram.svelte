@@ -45,7 +45,7 @@ function wordScore(node: HTMLButtonElement, { word }) {
 	display: inline-block;
 	position: relative;
 	font-size: 16px;
-	font-family: 'Courier New', Courier, monospace;
+	font-family: 'Courier Prime', Courier, monospace;
 	margin: 2px 2px;
 	border-radius: 2px;
 	border: 1px solid gray;

@@ -27,7 +27,7 @@ $: listProps = [
 const closeOthers = (event: CustomEvent) => {
 	event.preventDefault();
 	for (let i = 0; i < dropdownIsOpen.length; i++) {
-		if (i!=event.detail) dropdownIsOpen[i] = false; //index.
+		if (i != event.detail) dropdownIsOpen[i] = false; //index.
 	}
 };
 
@@ -75,7 +75,8 @@ const closeOthers = (event: CustomEvent) => {
 	@include staticTransitionParent();
 	max-height: 100%;
 	max-width: 100%;
-    overflow:hidden;
+	overflow: hidden;
+	margin: 10px 0px;
 }
 
 .centre {
@@ -87,10 +88,10 @@ const closeOthers = (event: CustomEvent) => {
 }
 
 .deviceLists {
-    width: 100%;
+	width: 100%;
 	height: 100%;
 	max-width: 100%;
 	max-height: 100%;
-    overflow:hidden;
+	overflow: hidden;
 }
 </style>

@@ -10,20 +10,23 @@ import StateMediator, {
 } from './StateMediator.svelte';
 import { Square } from 'svelte-loading-spinners';
 
-console.log("--- COMPILED! ----");
+console.log('--- COMPILED! ----');
 
 let loaded = false;
 $wordSlots = Load.lastSlots;
-Load.lastOrDefaultLayout().then(t => {$gridTemplate = t; loaded = true;});
-Load.lastOrDefaultDictionary().then(d => $dictionary = d);
-
+Load.lastOrDefaultLayout().then(t => {
+	$gridTemplate = t;
+	loaded = true;
+});
+Load.lastOrDefaultDictionary().then(d => ($dictionary = d));
 </script>
+
 <!----------------------------------------------------------------------HTML--->
 <template lang="pug">
 
 StateMediator
 +if('!loaded')
-    .centre: Square(size="60" color="#000000" unit="px" duration="1s")
+    .centre: Square(size="60" color="#000000" unit="px" duration="2s")
     +else()
     #main
         #gridArea: Grid
@@ -32,10 +35,12 @@ StateMediator
 
 <!----------------------------------------------------------------------CSS----->
 <style lang="scss" global>
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&display=swap');
 
 * {
 	box-sizing: border-box;
-	font-family: 'Courier New', Courier, monospace;
+	font-family: 'Fira Code', monospace;
 }
 
 .centre {

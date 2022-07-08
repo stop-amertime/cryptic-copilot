@@ -61,9 +61,8 @@ $: if (!$activeWord) {
 	<div id="panelTabs">
 		{#each $tabs as tab}
 			<label
-				class="{tab.label == currentTab ? 'selected' : ''} {tab.disabled
-					? 'disabled'
-					: ''}"
+				class:selectedTab={tab.label == currentTab}
+				class:disabled={tab.disabled}
 			>
 				<input
 					type="radio"
@@ -99,6 +98,10 @@ $: if (!$activeWord) {
 <style lang="scss">
 /* -------------------------------------------------------------------------- */
 
+:global(#panelWrapper *) {
+	font-family: 'Fira Code', 'Courier New', Courier, monospace;
+}
+
 #panelWrapper {
 	width: 100%;
 	height: 100%;
@@ -111,9 +114,9 @@ $: if (!$activeWord) {
 #panelPageBorder {
 	width: 100%;
 	flex: 1 0 300px;
-	border-right: 1px solid grey;
-	border-left: 1px solid grey;
-	border-bottom: 1px solid grey;
+	border-right: 1px solid black;
+	border-left: 1px solid black;
+	border-bottom: 1px solid black;
 	border-radius: 0px 0px 5px 5px;
 	overflow: hidden;
 	@include staticTransitionParent();
@@ -144,26 +147,28 @@ $: if (!$activeWord) {
 		border-width: 1px 1px 1px 1px;
 		border-style: solid;
 		border-color: rgb(184, 184, 184);
+		border-bottom: 1px solid black;
 		font-size: 14px;
 		font-weight: bold;
 		cursor: pointer;
 		-webkit-transition: all 0.2s ease-in-out;
 		transition: all 0.2s ease-in-out;
 		text-align: center;
+		color: grey;
 	}
 
-	.selected {
+	.selectedTab {
 		z-index: 0;
 		margin-top: 0px;
 		padding-top: 5px;
 		background: white;
-		border-color: rgb(184, 184, 184) rgb(184, 184, 184) white
-			rgb(184, 184, 184);
+		border-color: black black white black;
 	}
 
 	.disabled {
-		background-color: grey;
-		opacity: 0.4;
+		background-color: rgb(209, 209, 209);
+		color: grey;
+		border-bottom: 1px solid black;
 	}
 }
 </style>

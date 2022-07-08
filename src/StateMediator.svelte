@@ -3,6 +3,10 @@ import { writable, derived } from 'svelte/store';
 import { makeCells, makeWordSlots, mapCellsToSlots } from './lib/GridGenerator';
 import { setDictionary } from './lib/ClueEngine';
 import { Save } from './lib/FileManager';
+import {
+	compareDevices,
+	setExperimentDictionary,
+} from './lib/ClueEngine-Experiment.svelte';
 
 /* ================================= STORES ================================= */
 
@@ -64,6 +68,7 @@ gridTemplate.subscribe(template => initGrid(template));
 dictionary.subscribe(dict => {
 	if (dict) {
 		setDictionary(dict);
+		setExperimentDictionary(dict);
 		workerRequest('setDictionary', $dictionary);
 	}
 });
@@ -77,15 +82,15 @@ wordSlots.subscribe(val => {
 });
 
 activeWord.subscribe((newWord: string) => {
-	if ($activeSlotId === null) {
-		return;
-	}
+	if ($activeSlotId === null) return;
+
 	$wordSlots[$activeSlotId].word = newWord;
 
 	let newCells = calculateUpdatedCells(newWord);
 	activeCells.set(newCells);
 	refreshGridLetters($wordSlots[$activeSlotId], newCells);
-	$activeDeviceList = workerRequest('getDevices', newWord);
+	//$activeDeviceList = workerRequest('getDevices', newWord);
+	if (newWord) compareDevices(newWord);
 });
 
 activeSlotId.subscribe(async (id: number) => {

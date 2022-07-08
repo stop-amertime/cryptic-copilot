@@ -1,12 +1,14 @@
 <script lang="ts">
+import { slideReplaceIn, slideReplaceOut, slideReplace } from './lib/utils';
+import type { ISlideParams } from './lib/utils';
 import { createEventDispatcher } from 'svelte';
 import { fly, slide } from 'svelte/transition';
 import { quadInOut, quadIn, quadOut } from 'svelte/easing';
 import { activeCellAnimations } from './StateMediator.svelte';
 /* ========================================================================== */
 
-export let id;
-export let isValid;
+export let id: number;
+export let isValid: boolean;
 export let letter = '';
 export let isSelected = false;
 export let isNumbered = false;
@@ -16,26 +18,22 @@ const animationDuration = 200; //ms
 const animationTimingGap = 100; //ms
 const dispatch = createEventDispatcher();
 
-$: num = isNumbered ? 'numbered' : '';
-$: sel = isSelected ? 'selected' : '';
+let cellWidth;
+$: fontSize = (() => {
+	return cellWidth + 'px';
+})();
 $: myOrder = $activeCellAnimations.order?.[id] ?? Math.random() * 9;
-
-$: animStyle = {
+$: animDirection = $activeCellAnimations.orientation == 'A' ? 'up' : 'right';
+$: animProps = {
 	duration: animationDuration,
 	delay: myOrder * animationTimingGap, //ms
+	direction: animDirection,
 };
 
-//todo slidereplace
-$: animation =
-	$activeCellAnimations.orientation == 'A'
-		? {
-				in: { y: 200, ...animStyle, easing: quadOut },
-				out: { y: -200, ...animStyle, easing: quadIn },
-		  }
-		: {
-				in: { x: -200, ...animStyle, easing: quadOut },
-				out: { x: 200, ...animStyle, easing: quadIn },
-		  };
+window.onresize = () => {
+	console.log('RESIZED!');
+	console.table({ cellWidth, fontSize });
+};
 </script>
 
 <!----------------------------------------------------------------------HTML--->
@@ -44,10 +42,19 @@ $: animation =
 
 +if("isValid")
 
-    .cell(id="{id+''}" class!="valid {sel} {num}" on:click!="{() => dispatch('clicked', slots)}")
-        svg.letter(width="100%", height!="100%", viewBox!="-25 -75 100 100", preserveAspectRatio="none")
-            +key("letter")
-                text(in:fly="{animation.in}", out:fly="{animation.out}", x="0", y="0") {letter}
+    .cell.valid(
+    id="{id+''}" 
+    class:selected="{isSelected}"
+    class:numbered="{isNumbered}" 
+    on:click!="{() => dispatch('clicked', slots)}"
+    bind:clientWidth="{cellWidth}"
+    )
+        +key("letter")
+            .letterWrapper(
+            style:--size!="{fontSize}"
+            in:slideReplace="{{...animProps, easing:quadInOut}}",
+            out:slideReplace="{{...animProps,out:true, easing:quadInOut}}"
+            )   {letter} 
     
     +else()
     .cell.invalid(id="{id+''}")
@@ -55,30 +62,22 @@ $: animation =
 </template>
 
 <!----------------------------------------------------------------------CSS----->
-<style global>
-.valid,
-.invalid {
+<style global lang="scss">
+.cell {
 	aspect-ratio: 1;
 	overflow: hidden;
+	@include staticTransitionParent();
 }
 
-svg {
-	display: block;
+.letterWrapper {
+	@include staticTransitionChild();
 	width: 100%;
 	height: 100%;
-	position: fixed 0 0 0 0;
-}
-
-svg text {
-	width: 100%;
-	height: 100%;
-	font-size: 500%;
-	font-weight: 800;
-	font-family: 'Courier New', Courier, monospace;
-}
-
-.letter {
-	text-justify: center;
+	font-family: 'Courier Prime', Courier, monospace;
+	text-align: center;
+	font-weight: bold;
+	font-size: calc(var(--size) * 0.8);
+	line-height: var(--size);
 }
 
 .valid {
@@ -98,7 +97,7 @@ svg text {
 
 .selected {
 	opacity: 0.5;
-	background-color: hsl(120, 30%, 70%);
+	background-color: hsl(120, 100%, 85%);
 }
 
 .valid:hover:not(.selected) {
@@ -115,9 +114,9 @@ svg text {
 	line-height: 4px;
 	font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
 	font-weight: bolder;
-	width: 0px;
-	float: left;
-	height: 0px;
 	text-align: left;
+	position: absolute;
+	top: 3px;
+	left: 3px;
 }
 </style>

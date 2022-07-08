@@ -1,19 +1,18 @@
 // @ts-nocheck
-import LZString from 'lz-string'
+import LZString from 'lz-string';
 import { TestScheduler } from 'rxjs/testing';
 import { src_url_equal } from 'svelte/internal';
 
-//== SETTINGS 
+//== SETTINGS
 let DICT_VERSION = 'dict-5.0';
 let DICT_SAVECOMPRESSION = 'minified';
 let DICT_CACHECOMPRESSION = 'minified';
 let DICT_URL = {
-    'raw': `./src/data/${DICT_VERSION}.json`,
-    'minified': `./src/data/${DICT_VERSION}.min.txt`,
-    'compressed': `./src/data/${DICT_VERSION}.lz.txt`
+	raw: `./src/data/${DICT_VERSION}.json`,
+	minified: `./src/data/${DICT_VERSION}.min.txt`,
+	compressed: `./src/data/${DICT_VERSION}.lz.txt`,
 };
-let DEFAULT_LAYOUTURL = "./src/data/gridtemplates.json";
-
+let DEFAULT_LAYOUTURL = './src/data/gridtemplates.json';
 
 //== LAST STATE
 let lastDictionary = localStorage.getItem('dictionary') || null;
@@ -26,221 +25,232 @@ let activeFile = null;
 // }
 // else {              // Load default blank layout //____ EDIT: TO CACHE 'DEFAULT' LAYOUT TOO.
 
+function stringifyDictionary(dictionary, compression = 'compressed') {
+	switch (compression) {
+		case 'raw':
+			return JSON.stringify(Array.from(dictionary.entries()));
 
-function stringifyDictionary(dictionary, compression = "compressed") {
+		case 'minified':
+			return minifyDictionary(dictionary);
 
-    switch (compression) {
-        case "raw": return JSON.stringify(Array.from(dictionary.entries()));
+		case 'compressed':
+			return LZString.compressToUTF16(minifyDictionary(dictionary));
 
-        case "minified": return minifyDictionary(dictionary);
-
-        case "compressed": return LZString.compressToUTF16(minifyDictionary(dictionary));
-
-        default: console.error("Incorrect Compression Level Entered!!");
-    }
+		default:
+			console.error('Incorrect Compression Level Entered!!');
+	}
 }
 
+function parseAndLoadDictionary(string: string, compression = 'compressed') {
+	// todo: move parsing into webworker, load grid before dict.
+	switch (compression) {
+		case 'raw':
+			return new Map(JSON.parse(string)) as IDictionary;
 
-function parseAndLoadDictionary(string: string, compression = "compressed") {
+		case 'minified':
+			return unminifyDictionary(string);
 
-    switch (compression) {
-        case "raw": return new Map(JSON.parse(string)) as IDictionary;
+		case 'compressed':
+			return unminifyDictionary(LZString.decompressFromUTF16(string));
 
-        case "minified": return unminifyDictionary(string);
-
-        case "compressed": return unminifyDictionary(LZString.decompressFromUTF16(string));
-
-        default: console.error('Unable to decompress dictionary!!');
-    }
+		default:
+			console.error('Unable to decompress dictionary!!');
+	}
 }
 
 function minifyDictionary(dictionary) {
-    let string = "";
-    for (let [key, value] of dictionary) {
-        if (value.abbreviationFor) {
-            string += `${key} ${value.score} ${value.hash};${value.abbreviationFor.join()}#`;
-        }
-        else {
-            string += `${key} ${value.score} ${value.hash}#`;
-        }
-    }
-    return string;
+	let string = '';
+	for (let [key, value] of dictionary) {
+		if (value.abbreviationFor) {
+			string += `${key} ${value.score} ${
+				value.hash
+			};${value.abbreviationFor.join()}#`;
+		} else {
+			string += `${key} ${value.score} ${value.hash}#`;
+		}
+	}
+	return string;
 }
 function unminifyDictionary(minifiedstring: string) {
+	let temp_DICTIONARY = new Map() as IDictionary;
+	let wordarray = minifiedstring.split('#');
+	for (let parsestring of wordarray) {
+		let isAbbreviation = false;
+		if (parsestring.includes(';')) {
+			isAbbreviation = true;
+		}
 
-    let temp_DICTIONARY = new Map() as IDictionary;
-    let wordarray = minifiedstring.split('#');
-    for (let parsestring of wordarray) {
+		parsestring = parsestring.split(';'); // is array ["key&props","defs"]
 
-        let isAbbreviation = false; 
-        if (parsestring.includes(';') ) {isAbbreviation = true};
+		let proparray = parsestring[0].split(' '); //  is [key,t(ype),score,hash]
 
-        parsestring = parsestring.split(';'); // is array ["key&props","defs"]
+		let wordobject = {
+			isAbbreviation,
+			score: proparray[1],
+			hash: proparray[2],
+		} as IDictionaryEntry;
 
-        let proparray = parsestring[0].split(' '); //  is [key,t(ype),score,hash]
+		if (parsestring.length > 1) {
+			wordobject['abbreviationFor'] = parsestring[1].split(',');
+		}
 
-        let wordobject = { isAbbreviation, "score": proparray[1], "hash": proparray[2] } as IDictionaryEntry;
-
-        if (parsestring.length > 1) { wordobject["abbreviationFor"] = parsestring[1].split(',') }
-
-        temp_DICTIONARY.set(proparray[0], wordobject);
-    }
-    return temp_DICTIONARY;
+		temp_DICTIONARY.set(proparray[0], wordobject);
+	}
+	return temp_DICTIONARY;
 }
 
 export const Load = {
+	lastOrDefaultLayout: async () => {
+		let response = await fetch(DEFAULT_LAYOUTURL);
+		let template = await response.json();
 
-    lastOrDefaultLayout: async () => {
+		lastLayout = template;
+		localStorage.setItem('currentLayout', JSON.stringify(lastLayout));
+		return lastLayout;
+	},
 
-        let response = await fetch(DEFAULT_LAYOUTURL);
-        let template = await response.json();
+	lastOrDefaultDictionary: async () => {
+		// let response = await fetch(DICT_URL[DICT_SAVECOMPRESSION])
+		// let fetchedString = await response.text();
 
-        lastLayout = template;
-        localStorage.setItem('currentLayout', JSON.stringify(lastLayout));
-        return lastLayout;
-    },
+		// let temp_DICTIONARY = new Map() as IDictionary;
+		// let wordarray = fetchedString.split('#');
+		// for (let parsestring of wordarray) {
 
-    lastOrDefaultDictionary: async () => {
+		//     let isAbbreviation = false;
+		//     if (parsestring.includes(';') ) {let isAbbreviation = true};
 
-        // let response = await fetch(DICT_URL[DICT_SAVECOMPRESSION])
-        // let fetchedString = await response.text();
+		//     parsestring = parsestring.split(';'); // is array ["key&props","defs"]
 
-        // let temp_DICTIONARY = new Map() as IDictionary;
-        // let wordarray = fetchedString.split('#');
-        // for (let parsestring of wordarray) {
+		//     let proparray = parsestring[0].split(' '); //  is [key,t(ype),score,hash]
 
-        //     let isAbbreviation = false; 
-        //     if (parsestring.includes(';') ) {let isAbbreviation = true};
+		//     let wordobject = { isAbbreviation, "score": proparray[2], "hash": proparray[3] } as IDictionaryEntry;
 
-        //     parsestring = parsestring.split(';'); // is array ["key&props","defs"]
+		//     if (parsestring.length > 1) { wordobject["abbreviationFor"] = parsestring[1].split(',') }
 
-        //     let proparray = parsestring[0].split(' '); //  is [key,t(ype),score,hash]
+		//     temp_DICTIONARY.set(proparray[0], wordobject);
+		//     }
 
-        //     let wordobject = { isAbbreviation, "score": proparray[2], "hash": proparray[3] } as IDictionaryEntry;
+		// document.body.addEventListener('click', () => {
+		// downloadUtf16(stringifyDictionary(temp_DICTIONARY,"compressed"))
+		// });
+		// },
 
-        //     if (parsestring.length > 1) { wordobject["abbreviationFor"] = parsestring[1].split(',') }
+		if (lastDictionary) {
+			return unminifyDictionary(lastDictionary);
+		} else {
+			let response = await fetch(DICT_URL[DICT_SAVECOMPRESSION]);
+			let fetchedString = await response.text();
+			let temp_dictionary = parseAndLoadDictionary(
+				fetchedString,
+				DICT_SAVECOMPRESSION
+			);
+			localStorage.setItem(
+				'dictionary',
+				minifyDictionary(temp_dictionary)
+			);
+			document.body.addEventListener('click', () =>
+				Save.textToFile(
+					LZString.compressToUTF16(minifyDictionary(temp_dictionary))
+				)
+			);
 
-        //     temp_DICTIONARY.set(proparray[0], wordobject);
-        //     }
+			return temp_dictionary;
+		}
+	},
 
-        // document.body.addEventListener('click', () => {
-        // downloadUtf16(stringifyDictionary(temp_DICTIONARY,"compressed"))
-        // });
-        // },
-        
-        if (lastDictionary) {
-            return unminifyDictionary(lastDictionary);
-        }
+	lastSlots,
 
-        else {
-            let response = await fetch(DICT_URL[DICT_SAVECOMPRESSION])
-            let fetchedString = await response.text();
-            let temp_dictionary = parseAndLoadDictionary(fetchedString, DICT_SAVECOMPRESSION);
-            localStorage.setItem('dictionary', minifyDictionary(temp_dictionary));
-            document.body.addEventListener('click', () => 
-            Save.textToFile(LZString.compressToUTF16(minifyDictionary(temp_dictionary))));
+	StateFromFile: async function () {
+		[activeFile] = await window.showOpenFilePicker();
+		const file = await activeFile.getFile();
+		const loadedFile = await file.text();
+		let StateFile = JSON.parse(loadedFile);
 
-            
-            return temp_dictionary; 
-        }
-    },
-    
-
-    lastSlots,
-
-    StateFromFile: async function () {
-        [activeFile] = await window.showOpenFilePicker();
-        const file = await activeFile.getFile();
-        const loadedFile = await file.text();
-        let StateFile = JSON.parse(loadedFile);
-
-        // Import the Grid Layout
-        //Grid.loadState(StateFile, false);
-    }
-}
+		// Import the Grid Layout
+		//Grid.loadState(StateFile, false);
+	},
+};
 
 export const Save = {
+	slots: async (wordSlots: Array<IWordSlot>) => {
+		console.log('Saving Slot State');
+		localStorage.setItem('wordSlots', JSON.stringify(wordSlots));
 
-    slots : async (wordSlots: Array<IWordSlot>) => {
-        
-        console.log("Saving Slot State");
-        localStorage.setItem('wordSlots', JSON.stringify(wordSlots));
+		if (activeFile) {
+			const writableStream = await activeFile.createWritable();
+			await writableStream.write(stringifyStateRecord()); ////////!!!!!
+			await writableStream.close();
+		}
+	},
 
-        if (activeFile) {
-            const writableStream = await activeFile.createWritable();
-            await writableStream.write(stringifyStateRecord()); ////////!!!!!
-            await writableStream.close();
-        }
-    },
+	stateToFile: async () => {
+		const saveOptions = {
+			types: [
+				{
+					description: 'Crossword File',
+					accept: { 'application/json': ['.cw'] },
+				},
+			],
+		};
+		activeFile = await window.showSaveFilePicker(saveOptions);
+		const writableStream = await activeFile.createWritable();
+		await writableStream.write(stringifyStateRecord());
+		await writableStream.close();
+	},
 
-    stateToFile: async () => {
-
-        const saveOptions =
-        {
-            types: [
-                {
-                    description: 'Crossword File',
-                    accept: { 'application/json': ['.cw'] },
-                }],
-        };
-        activeFile = await window.showSaveFilePicker(saveOptions);
-        const writableStream = await activeFile.createWritable();
-        await writableStream.write(stringifyStateRecord());
-        await writableStream.close();
-    },
-
-    textToFile: async (text: string) => {
-
-        const saveOptions =
-        {
-            types: [
-                {
-                    description: 'text',
-                    accepts: {'text/plain': ['.txt']}
-                }],
-        };
-        activeFile = await window.showSaveFilePicker(saveOptions);
-        const writableStream = await activeFile.createWritable();
-        await writableStream.write(text);
-        await writableStream.close();
-    }
-}
+	textToFile: async (text: string) => {
+		const saveOptions = {
+			types: [
+				{
+					description: 'text',
+					accepts: { 'text/plain': ['.txt'] },
+				},
+			],
+		};
+		activeFile = await window.showSaveFilePicker(saveOptions);
+		const writableStream = await activeFile.createWritable();
+		await writableStream.write(text);
+		await writableStream.close();
+	},
+};
 
 function downloadUtf16(str, filename) {
+	var charCode,
+		byteArray = [];
 
-    var charCode, byteArray = [];
+	// BE BOM
+	byteArray.push(254, 255);
 
-        // BE BOM
-    byteArray.push(254, 255);
+	// LE BOM
+	// byteArray.push(255, 254);
 
-        // LE BOM
-    // byteArray.push(255, 254);
+	for (var i = 0; i < str.length; ++i) {
+		charCode = str.charCodeAt(i);
 
-    for (var i = 0; i < str.length; ++i) {
-    
-        charCode = str.charCodeAt(i);
-        
-        // BE Bytes
-        byteArray.push((charCode & 0xFF00) >>> 8);
-        byteArray.push(charCode & 0xFF);
-        
-        // LE Bytes
-        // byteArray.push(charCode & 0xff);
-        // byteArray.push(charCode / 256 >>> 0);
-    }
+		// BE Bytes
+		byteArray.push((charCode & 0xff00) >>> 8);
+		byteArray.push(charCode & 0xff);
 
-    var blob = new Blob([new Uint8Array(byteArray)], {type:'text/plain;charset=UTF-16BE;'});
-    var blobUrl = URL.createObjectURL(blob);
+		// LE Bytes
+		// byteArray.push(charCode & 0xff);
+		// byteArray.push(charCode / 256 >>> 0);
+	}
 
-    var link = document.createElement('a');
-    link.href = blobUrl;
-    link.download = filename;
+	var blob = new Blob([new Uint8Array(byteArray)], {
+		type: 'text/plain;charset=UTF-16BE;',
+	});
+	var blobUrl = URL.createObjectURL(blob);
 
-    if (document.createEvent) {
-    var event = document.createEvent('MouseEvents');
-    event.initEvent('click', true, true);
-    link.dispatchEvent(event);
-    } else {
-    link.click();
-    }
+	var link = document.createElement('a');
+	link.href = blobUrl;
+	link.download = filename;
+
+	if (document.createEvent) {
+		var event = document.createEvent('MouseEvents');
+		event.initEvent('click', true, true);
+		link.dispatchEvent(event);
+	} else {
+		link.click();
+	}
 }

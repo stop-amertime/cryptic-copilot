@@ -1,71 +1,102 @@
 <script lang="ts">
-export let meanings = {
-    partsOfSpeech: [
-        {
-        partOfSpeech:"noun", 
-        senses:[
-            {
-            definition:"a thing", 
-            synonyms: [
-                    {
-                    mainWord:"a stuff",
-                    relatedWords:[
-                        "another stuff", 
-                        "a third stuff"
-                        ]
-                    }
-                ]
-            }
-        ]
-        }
-    ],
-    numberOfSenses: 2
- } as IThesaurusEntry; 
+import { slide } from 'svelte/transition';
+export let meanings: IThesaurusEntry;
 
-
-
+const rowSizer = node => {
+	let vertMargin = node.clientHeight * 0.1 + 'px';
+	node.style.marginTop = node.style.marginBottom = vertMargin;
+};
 </script>
 
 <template lang="pug">
-+each('meanings?.partsOfSpeech || [] as part')
-    .partOfSpeech '{part.partOfSpeech}'
-    +each('part?.senses|| [] as sense')
-        p.def '{sense.definition}'
-        +each('sense?.synonyms || [] as synonym')
-            .syn.main '{synonym.mainWord}'
-            +each('synonym?.relatedWords || [] as related')
-                .syn.related {'related'}
-    
+.scrollwrapper
+    +each('meanings?.partsOfSpeech || [] as part')
+        +each('part?.senses|| [] as sense')
+            details.partOfSpeech(open)
+                summary 
+                    .partName <b>{part.partOfSpeech}</b>
+                    .definition <i>{sense.definition}</i>
+                +each('sense?.synonyms || [] as synonym')
+                    .synonymsrow(use:rowSizer)
+                        .syn.main {synonym.mainWord}
+                        +each('synonym?.relatedWords || [] as related')
+                            .syn.related {related}
+
 </template>
 
 <style lang="scss" global>
-.partOfSpeech {
-    width: 100%;
-    height: 50px;
-    font-size: 16px;
+//- * {
+//- 	outline: 1px solid blue;
+//- }
+$indent: 15px;
 
-    p.def {
-    font-style: bold;
-    font-size: 12px;
-    }
+.scrollwrapper {
+	position: relative;
+	@include size(100%, 100%);
+	overflow-y: scroll;
+	display: block;
+	align-items: center;
+}
 
-    .syn {
+details.partOfSpeech {
+	width: 100%;
+	font-size: 12px;
+	display: block;
+	padding: 0px;
+	padding-left: $indent;
+	margin: 10px 0px;
+	background-color: white !important;
+	transition: height 0.2s ease;
+	transition: max-height 0.2s ease;
+	height: min-content;
 
-        padding: 5px;
-        border-radius: 3px;
-        
-        .main{
-        background-color: grey;
-        border: 1px solid black;
-        }
+	&[open] {
+		height: max-content;
+		padding-bottom: 20px;
+	}
 
-        .related {
-        background-color: blue;
-        border: 1px solid green; 
-        padding: 2px;
-        }
-    }
+	summary {
+		display: inline-flex;
+		flex-wrap: nowrap;
+		font-size: 14px;
+		padding: 5px 5px 5px 0px;
+		margin-bottom: 10px;
+		text-align: left;
+		height: max-content;
+		max-width: min(80ch, 90%);
 
+		.partName,
+		.definition {
+			flex: 0 1 auto;
+			padding: 5px;
+		}
+	}
 
+	.synonymsrow {
+		width: 100%;
+		display: inline-flex;
+		flex-wrap: wrap;
+		margin-top: 5px;
+		padding-left: $indent;
+		max-width: min(80ch, 90%);
+	}
+
+	.syn {
+		padding: 5px 7px;
+		border-radius: 3px;
+		text-align: center;
+		margin: 3px;
+		border: 1px solid grey;
+
+		&.main {
+			flex: 4 1 auto;
+			background-color: rgb(229, 229, 229);
+			color: black;
+		}
+
+		&.related {
+			flex: 2 1 auto;
+		}
+	}
 }
 </style>
