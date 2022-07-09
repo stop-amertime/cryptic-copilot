@@ -1,6 +1,6 @@
 # A copilot for creating cryptic crosswords. 
 
-Computers should help us, not replace us. Setterbot is designed to help you construct cryptic crosswords, by finding patterns of sub-words, anagrams and nested words - taking over the mechanical parts, setting you up to take over with the creative flair that only a human can provide. 
+Computers should help us, not replace us. Setterbot is designed to help you construct cryptic clues and grids, by finding valid words, patterns of sub-words, anagrams and nested words, and so on. It takes over the mechanical parts, like grinding through anagrams, giving you a starting point (or saving you the time of finding that out yourself) to unleash the creativity, misdirection and fun that makes humans unique. 
 
 ## What it does: 
 
