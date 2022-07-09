@@ -2,9 +2,8 @@
 
 ## What it does: 
 
-- Searches possible words for each space in a crossword. 
-
-- Finds: 
+Searches possible words for each space in a crossword. 
+Finds: 
 -   Double definitions.
 -   Single-word and compound anagrams.
 -   Containers and charades.
