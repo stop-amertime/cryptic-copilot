@@ -8,28 +8,33 @@ Changelog:
 
 - Added make hashmapping, filtering by length < grid letters. 
 ---- UPDATE THIS when grid is updated? 
-
-
-
 -----------------------------------------------*/
-
-type IHashMapping = Map<number, Set<string>>;
-let DICTIONARY: IDictionary = new Map();
-export const setExperimentDictionary = (input: IDictionary): void => {
-	console.time('Set experimental dictionary');
-	DICTIONARY = input;
-	createHashMapping();
-	console.timeEnd('Set experimental dictionary');
-};
-let HashMapping = new Map() as IHashMapping;
-let HashList: number[];
-
+type IWordHashMap = Map<number, Set<string>>;
 const enum WordDirection {
 	Forward = 'forward',
 	Reverse = 'reverse',
 	Anagram = 'anagram',
 }
 
+let HashMapping = new Map() as IWordHashMap;
+let HashList: number[];
+let DICTIONARY: IDictionary = new Map();
+
+export const setDict = (input: IDictionary): void => {
+	DICTIONARY = input;
+	createHashMapping();
+};
+let MIN_WORD_LENGTH: number, MIN_WORD_SCORE: number;
+//export method to set minimum word length and minimum word score
+export const setWordFilters = (
+	length: number = 15,
+	score: number = 45
+): void => {
+	MIN_WORD_LENGTH = length;
+	MIN_WORD_SCORE = score;
+};
+
+//export method to set
 /* ------------------------------------------------------------------ Hashing */
 
 const hashTable: Record<string, number> = {
@@ -76,7 +81,7 @@ function hash(word: string): number {
 }
 
 function createHashMapping(): void {
-	HashMapping = new Map() as IHashMapping;
+	HashMapping = new Map() as IWordHashMap;
 	for (let [key, value] of DICTIONARY) {
 		if (key.length < 15 && value.score > 46) {
 			let previous = HashMapping.get(value.hash);
@@ -365,13 +370,11 @@ function OLD_categoriseAsDevices(
 
 /* ----------------------------------------------------- NEW Generation Steps */
 let factorList;
-let factorList2;
 
-const unhash = (hash: number): string =>
-	//[...HashMapping.get(hash)].join('-') || reverseHash(hash);
-	HashMapping.get(hash)?.[0] || reverseHash(hash);
+const unhash = (hash: number): string[] =>
+	[...HashMapping.get(hash)] || hashToStrings(hash);
 
-const reverseHash = (hash: number): string => {
+const hashToStrings = (hash: number): string[] => {
 	let string = '';
 	for (let [key, value] of letterMap) {
 		while (hash % value == 0) {
@@ -379,30 +382,56 @@ const reverseHash = (hash: number): string => {
 			hash /= value;
 		}
 	}
-	return string;
+	return [string];
 };
 
 function getValidHashCombinations(
 	inputHash: number,
 	pos: number = 0,
-	depth: number = 0
+	maxdepth: number = 4
 ): number[][] {
-	factorList = [];
-
-	for (let i = 0; i < HashList.length; i++) {
-		if (inputHash % HashList[i] == 0) {
-			factorList.push(HashList[i]);
+	(function findFactorList() {
+		factorList = [];
+		for (let i = 0; i < HashList.length; i++) {
+			if (inputHash % HashList[i] == 0) {
+				factorList.push(HashList[i]);
+			}
 		}
-	}
+	})();
+
 	let listlen = factorList.length;
-	let maxdepth = 3;
-	let running = [];
-	let result = crawlTree(inputHash, 0, 1);
-	let resultAsWords: string[] = [];
-	for (let arraylet of result) {
-		resultAsWords.push(arraylet.map(n => unhash(n)).join('  &  '));
+	let hashArrays = crawlTree(inputHash, 0, 1);
+
+	function expandHashArrays(hashArrays: number[][]) {
+		let output = [] as string[][];
+		for (let hashArray of hashArrays) {
+			let arrayOfWordArrays: string[][] = hashArray.map(n => unhash(n));
+
+			//find the cartesian product of all the word arrays
+			let cartesianProduct = cartesianProductOfArrays(arrayOfWordArrays);
+			output.push(...cartesianProduct);
+
+			//remove duplicates
+			output = output.filter(
+				(item, index) => output.indexOf(item) === index
+			);
+		}
+
+		function cartesianProductOfArrays(arrays: string[][]) {
+			let result = [];
+			let temp = [];
+			for (let i = 0; i < arrays.length; i++) {
+				temp.push(arrays[i]);
+				result.push(temp.slice());
+				temp.pop();
+			}
+			return result;
+		}
+
+		return output;
 	}
-	console.table(resultAsWords);
+
+	return [[]];
 
 	function crawlTree(inputHash: number, start: number, depth: number) {
 		if (depth > maxdepth) {
@@ -418,8 +447,8 @@ function getValidHashCombinations(
 					x => x <= remaining
 				);
 				if (factorList[indexOfRemaining] == remaining) {
-					let pushy = [iter, remaining];
-					returnarray.push(pushy);
+					let validCombination = [iter, remaining]; //inline
+					returnarray.push(validCombination);
 				} else if (indexOfRemaining == -1) {
 					continue;
 				}
@@ -435,30 +464,6 @@ function getValidHashCombinations(
 		}
 		return returnarray;
 	}
-
-	return [[]];
-
-	// for let i = 0; i<factorList.length; i++
-
-	// let validFactors: number[] = [];
-	// let validCombinations: number[][] = [];
-
-	// for (let i = start; i < factorList.length; i++) {
-	// 	if (inputHash % searchList[i] == 0) {
-	// 		validFactors.push(searchList[i]);
-	// 	}
-	// }
-
-	// for (let f = 0; f < validFactors.length; f++) {
-	// 	let leftoverHash = inputHash / validFactors[f];
-	//     if (leftoverHash == 0) validCombinations.push([leftoverHash]);
-	// 	let validSubCombinations = getValidHashCombinations(leftoverHash,f);
-	// 	for (let subCombination of validSubCombinations) {
-	// 		subCombination.push(validFactors[f]);
-	// 		validCombinations.push(subCombination);
-	// 	}
-	// }
-	// return validCombinations;
 }
 
 function isDevice(

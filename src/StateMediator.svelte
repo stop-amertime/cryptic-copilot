@@ -3,10 +3,7 @@ import { writable, derived } from 'svelte/store';
 import { makeCells, makeWordSlots, mapCellsToSlots } from './lib/GridGenerator';
 import { setDictionary } from './lib/ClueEngine';
 import { Save } from './lib/FileManager';
-import {
-	compareDevices,
-	setExperimentDictionary,
-} from './lib/ClueEngine-Experiment.svelte';
+import { compareDevices, setDict } from './lib/ClueEngine-Experiment.svelte';
 
 /* ================================= STORES ================================= */
 
@@ -68,7 +65,7 @@ gridTemplate.subscribe(template => initGrid(template));
 dictionary.subscribe(dict => {
 	if (dict) {
 		setDictionary(dict);
-		setExperimentDictionary(dict);
+		setDict(dict);
 		workerRequest('setDictionary', $dictionary);
 	}
 });

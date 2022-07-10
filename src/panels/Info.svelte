@@ -26,6 +26,7 @@ $: listProps = [
 
 const closeOthers = (event: CustomEvent) => {
 	event.preventDefault();
+
 	for (let i = 0; i < dropdownIsOpen.length; i++) {
 		if (i != event.detail) dropdownIsOpen[i] = false; //index.
 	}

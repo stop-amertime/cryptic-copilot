@@ -46,15 +46,15 @@ $: boxDimension = Math.min(maxBoxWidth, maxBoxHeight) + 'px';
 	text-align: center;
 	font-weight: bold;
 	border: 1px solid black;
-	// box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.205);
 	margin-right: -1px;
+	z-index: 1;
 
 	span {
 		margin: 0px;
 		padding: 0px;
 	}
 
-	&.fixed {
+	&:not(.fixed) {
 		background-color: rgb(219, 219, 219);
 		color: rgb(109, 109, 109);
 		border-style: dashed;

@@ -10,9 +10,7 @@ import StateMediator, {
 } from './StateMediator.svelte';
 import { Square } from 'svelte-loading-spinners';
 
-console.log('--- COMPILED! ----');
-
-let loaded = false;
+let loaded;
 $wordSlots = Load.lastSlots;
 Load.lastOrDefaultLayout().then(t => {
 	$gridTemplate = t;
@@ -53,10 +51,10 @@ StateMediator
 		position: absolute 0 0;
 		width: 100vw;
 		height: 100vh;
+		padding: 30px 10%;
 		overflow-y: auto;
 		display: flex;
 		flex-wrap: nowrap;
-		padding: 20px;
 		align-items: center;
 	}
 

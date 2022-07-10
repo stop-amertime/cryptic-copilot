@@ -149,11 +149,11 @@ export const Load = {
 				'dictionary',
 				minifyDictionary(temp_dictionary)
 			);
-			document.body.addEventListener('click', () =>
-				Save.textToFile(
-					LZString.compressToUTF16(minifyDictionary(temp_dictionary))
-				)
-			);
+			// document.body.addEventListener('click', () =>
+			// 	Save.textToFile(
+			// 		LZString.compressToUTF16(minifyDictionary(temp_dictionary))
+			// 	)
+			// );
 
 			return temp_dictionary;
 		}

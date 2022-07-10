@@ -1,7 +1,3 @@
-//Todo: change to import * from clueEngine.ts
-// Besides the worker interface.
-
-
 /* ================================ CONSTANTS =============================== */
 const enum WordDirection {
 	Forward = 'forward',
@@ -24,10 +20,13 @@ let DICTIONARY: IDictionary = new Map();
 
 /* ================================ INTERFACE =============================== */
 
-self.onmessage = function handleMessageFromMain(event: { data: { payload: any; request: any; id?: any; }; }) {
+self.onmessage = function handleMessageFromMain(event: {
+	data: { payload: any; request: any; id?: any };
+}) {
 	const { id, request, payload } = event.data;
 
-	const respond = (response: string | string[] | IDeviceSet) => postMessage({ id, request, response });
+	const respond = (response: string | string[] | IDeviceSet) =>
+		postMessage({ id, request, response });
 	const respondError = (error: string) => postMessage({ id, request, error });
 
 	if (!event.data.payload) {
@@ -53,10 +52,10 @@ self.onmessage = function handleMessageFromMain(event: { data: { payload: any; r
 			break;
 		}
 
-        case 'getDevices': {
-            let thesaurus = Devices.fetchAndParseThesaurus( payload );
-            let deviceSet = generateDevices( payload );
-            thesaurus.then( ( thesaurus ) => respond( { thesaurus, ...deviceSet } ) );
+		case 'getDevices': {
+			let thesaurus = Devices.fetchAndParseThesaurus(payload);
+			let deviceSet = generateDevices(payload);
+			thesaurus.then(thesaurus => respond({ thesaurus, ...deviceSet }));
 			break;
 		}
 
@@ -74,7 +73,7 @@ export function setDictionary(dictionary: IDictionary): void {
 /* ================================= HELPERS ================================ */
 /* .................................................................. Hashing */
 
-const hashTable : Record<string,number> = {
+const hashTable: Record<string, number> = {
 	E: 2,
 	A: 3,
 	R: 5,
@@ -103,11 +102,11 @@ const hashTable : Record<string,number> = {
 	Q: 101,
 };
 
-const getHash = (word: string) :number => {
+const getHash = (word: string): number => {
 	return DICTIONARY.get(word)?.hash || hash(word);
 };
 
-function hash(word: string) :number {
+function hash(word: string): number {
 	let hash = 1;
 	for (let char of word) {
 		hash *= hashTable[char];
@@ -236,7 +235,7 @@ export const Devices = {
 							mainWord: syn[0].wd,
 							relatedWords: syn
 								.filter((x: any, index: number) => index != 0)
-								.map((x: { wd: any; }) => x.wd),
+								.map((x: { wd: any }) => x.wd),
 						});
 					}
 				} else {
@@ -254,12 +253,16 @@ export const Devices = {
 				partOfSpeech: D.fl,
 				senses,
 			});
-        }
+		}
 
-        let abbreviationFor = DICTIONARY?.get( word )?.abbreviationFor || null;
-        if ( abbreviationFor ) numberOfSenses += abbreviationFor?.length || 0;
+		let abbreviationFor = DICTIONARY?.get(word)?.abbreviationFor || null;
+		if (abbreviationFor) numberOfSenses += abbreviationFor?.length || 0;
 
-		return { partsOfSpeech, numberOfSenses, abbreviationFor } as IThesaurusEntry; //todo: IThesaurusEntry, then thesaurus fetch
+		return {
+			partsOfSpeech,
+			numberOfSenses,
+			abbreviationFor,
+		} as IThesaurusEntry; //todo: IThesaurusEntry, then thesaurus fetch
 	},
 };
 
@@ -277,12 +280,18 @@ function generateDevices(targetword: string) {
 		)
 	);
 
-	let devices = categoriseAsDevices(<string[]>uncategorisedAnagrams, <string>targetword); //Categorise
+	let devices = categoriseAsDevices(
+		<string[]>uncategorisedAnagrams,
+		<string>targetword
+	); //Categorise
 	sortDevices(devices); //Sort
 	return devices as IDeviceSet;
 }
 
-function crawlAnagramTree(inputword: string, searchList: Map<any, any> = DICTIONARY) {
+function crawlAnagramTree(
+	inputword: string,
+	searchList: Map<any, any> = DICTIONARY
+) {
 	let inputhash = getHash(inputword);
 	let mycompleteanagrams = [];
 	let mypartialanagrams = [];
@@ -331,7 +340,11 @@ function crawlAnagramTree(inputword: string, searchList: Map<any, any> = DICTION
 	return mycompleteanagrams;
 }
 
-function isDevice(origWord: string, subWordArray: any[], depth = 0): Array<IWord> {
+function isDevice(
+	origWord: string,
+	subWordArray: any[],
+	depth = 0
+): Array<IWord> {
 	let inputWord = origWord;
 
 	// TRIVIAL CASE - SINGLE WORD
