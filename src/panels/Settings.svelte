@@ -1,5 +1,4 @@
 <script lang="ts">
-//import settings writable from StateMediator
 import { Save } from '../lib/FileManager';
 
 const save = () => Save.stateToFile();
