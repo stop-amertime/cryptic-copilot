@@ -1,29 +1,19 @@
 <script lang="ts">
-/* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
+import { scoreToColour } from '../lib/DictionaryEngine';
 import WordPopover from './WordPopover.svelte';
-import { WordInfo } from '../lib/ClueEngine';
 import { popover } from '../lib/wordPopover';
 
 export let device: IDevice;
-
-function wordScore(node: HTMLButtonElement, { word }) {
-	let entry = WordInfo.get(word);
-	node.style.background = entry.colour;
-	if (entry.isAbbreviation) {
-		node.classList.add('abbr');
-	}
-	node.classList.add('word');
-}
-
-/* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 </script>
 
+<!----------------------------------------------------------------------HTML--->
 <div class="device">
 	{#each device.words as i, index}
 		<button
-			use:wordScore={{ word: i.word }}
 			use:popover={{ component: WordPopover, word: i.word }}
 			class="word"
+			class:abbr={i.isAbbreviation}
+			style:background-color={scoreToColour(i?.score)}
 		>
 			{i.word}
 		</button>
@@ -32,8 +22,8 @@ function wordScore(node: HTMLButtonElement, { word }) {
 	{/each}
 </div>
 
+<!----------------------------------------------------------------------CSS----->
 <style>
-/* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 .device {
 	display: flex;
 	align-items: stretch;

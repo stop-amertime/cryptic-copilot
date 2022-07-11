@@ -1,5 +1,4 @@
-let DICTIONARY = new Map() as IDictionary;
-
+/* ================================ CONSTANTS =============================== */
 const enum WordDirection {
 	Forward = 'forward',
 	Reverse = 'reverse',
@@ -10,20 +9,71 @@ const trivialEndings = ['ER', 'ED', 'S', 'ING', 'ABLE'];
 const averageScore = (arr: IWord[]) => {
 	return (
 		arr.reduce(
-			(partialsum, x) => partialsum + DICTIONARY?.get(x.word)?.score || 0,
+			(partialsum: number, x: IWord): any =>
+				partialsum + DICTIONARY?.get(x.word)?.score || 0,
 			0
 		) / arr.length
 	);
 };
-//todo: remove the thing.
-////// HELPERS
-// Hashing {
 
-const getHash = word => {
-	return DICTIONARY.get(word)?.hash || hash(word);
+let DICTIONARY: IDictionary = new Map();
+
+/* ================================ INTERFACE =============================== */
+
+self.onmessage = function handleMessageFromMain(event: {
+	data: { payload: any; request: any; id?: any };
+}) {
+	const { id, request, payload } = event.data;
+
+	const respond = (response: string | string[] | IDeviceSet) =>
+		postMessage({ id, request, response });
+	const respondError = (error: string) => postMessage({ id, request, error });
+
+	if (!event.data.payload) {
+		return;
+	}
+
+	switch (event.data?.request) {
+		case 'setDictionary': {
+			DICTIONARY = payload;
+
+			console.time('Sorting Workers Dictionary');
+			DICTIONARY = new Map(
+				Array.from(DICTIONARY).sort(a => a[1]?.score || 0)
+			);
+			console.timeEnd('Sorting Workers Dictionary');
+
+			respond('Done.');
+			break;
+		}
+
+		case 'getPossibleWords': {
+			respond(validWordFinder.search(payload));
+			break;
+		}
+
+		case 'getDevices': {
+			let thesaurus = Devices.fetchAndParseThesaurus(payload);
+			let deviceSet = generateDevices(payload);
+			thesaurus.then(thesaurus => respond({ thesaurus, ...deviceSet }));
+			break;
+		}
+
+		default: {
+			respondError('Invalid Request Type: ' + request);
+			return;
+		}
+	}
 };
 
-const hashTable = {
+export function setDictionary(dictionary: IDictionary): void {
+	DICTIONARY = dictionary;
+}
+
+/* ================================= HELPERS ================================ */
+/* .................................................................. Hashing */
+
+const hashTable: Record<string, number> = {
 	E: 2,
 	A: 3,
 	R: 5,
@@ -52,7 +102,11 @@ const hashTable = {
 	Q: 101,
 };
 
-function hash(word) {
+const getHash = (word: string): number => {
+	return DICTIONARY.get(word)?.hash || hash(word);
+};
+
+function hash(word: string): number {
 	let hash = 1;
 	for (let char of word) {
 		hash *= hashTable[char];
@@ -60,53 +114,15 @@ function hash(word) {
 	return hash;
 }
 
-function wordArraytoHashMap(array) {
-	let hashMap = new Map();
-	for (let word of array) {
-		hashMap.set(word, { hash: getHash(word) });
-	}
-	return hashMap;
-}
-//}
-// Array Helpers {
-function dedupeUnordered(array) {
-	let sortedarray = array.map(w => w.sort());
-	let cleanarray = [];
+/* ............................................................ Array Helpers */
 
-	for (let i = 0; i < sortedarray.length; i++) {
-		if (!cleanarray.some(e => arraysEqual(e, sortedarray[i]))) {
-			cleanarray.push(sortedarray[i]);
-		}
-	}
-	return cleanarray;
-}
-
-function dedupeOrdered(arr) {
-	var a = [];
-	for (var i = 0, l = arr.length; i < l; i++)
-		if (a.indexOf(arr[i]) === -1 && arr[i] !== '') a.push(arr[i]);
-	return a;
-}
-
-function arraysEqual(a, b) {
-	if (a === b) return true;
-	if (a == null || b == null) return false;
-	if (a.length !== b.length) return false;
-
-	for (var i = 0; i < a.length; ++i) {
-		if (a[i] !== b[i]) return false;
-	}
-	return true;
-}
-
-function getLeftoverLetters(array1, subword) {
-	//? -> Remaining letters after a partial anagram.
-	let array2 = Array.from(subword);
+function getLeftoverLetters(array1: string | string[], subword: string) {
+	let array2 = Array.from(subword) as string[];
 	if (typeof array1 == 'string') {
 		array1 = Array.from(array1);
 	}
 	array2 = array2.splice(0);
-	return array1.filter((v, i, a) => {
+	return array1.filter((v: string, i: number, a: any) => {
 		let index = array2.indexOf(v);
 		if (index > -1) {
 			array2.splice(index, 1);
@@ -116,60 +132,13 @@ function getLeftoverLetters(array1, subword) {
 	});
 }
 
-function groupByLength(list: Array<any>) {
-	const map = new Map();
-
-	for (let item of list) {
-		if (typeof item != null && item != null) {
-			const key = item.length;
-			const collection = map.get(key);
-			if (!collection) {
-				map.set(key, [item]);
-			} else {
-				collection.push(item);
-			}
-		}
-	}
-	return map;
-}
-
-function sortWordsByScoreThenRandomly(a, b) {
+function sortWordsByScoreThenRandomly(a: string, b: string) {
 	return (
 		DICTIONARY.get(b).score - DICTIONARY.get(a).score || 0.5 - Math.random()
 	);
 }
 
-function locationInSortedArray(
-	element,
-	array,
-	comparer,
-	start = 0,
-	end = array.length
-) {
-	if (array.length === 0) return -1;
-
-	var pivot = (start + end) >> 1; // should be faster than dividing by 2
-
-	var c = comparer(element, array[pivot]);
-	if (end - start <= 1) return c == -1 ? pivot - 1 : pivot;
-
-	switch (c) {
-		case -1:
-			return locationInSortedArray(
-				element,
-				array,
-				comparer,
-				start,
-				pivot
-			);
-		case 0:
-			return pivot;
-		case 1:
-			return locationInSortedArray(element, array, comparer, pivot, end);
-	}
-}
-//}
-// String Helpers {
+/* ........................................................... String Helpers */
 
 function findDirection(subword: string, baseword: string): WordDirection {
 	/**
@@ -192,27 +161,137 @@ function findDirection(subword: string, baseword: string): WordDirection {
 	}
 }
 
-// const compareTupleAlpha = function (a, b) {
-//     if (a.word < b.word) return -1;
-//     if (a.word > b.word) return 1;
-//     return 0;
-// };
-
-function toGridWord(word) {
+function toGridWord(word: string) {
 	return word.toUpperCase().replace(/[^A-Z]/, '');
 }
 //}
 
-function generateMatchRegex(cells: ISlotCellState[]): RegExp {
-	let searchstring = '';
-	cells.forEach(cell => {
-		searchstring += cell.isOverwritable ? '.' : cell.letter;
-	});
+/* ======================= ANAGRAM AND DEVICE SOLVING ======================= */
+/* ............................................................... Generation */
 
-	return new RegExp('(\\b|^)' + searchstring + '(\\b|$)');
+export const Devices = {
+	get(word: string) {
+		let deviceSet = generateDevices(word);
+		// LET THESAURUS ENTRY = GET THESAURUS ENTRY
+		return deviceSet;
+	},
+
+	async fetchAndParseThesaurus(word: string) {
+		const response = await fetch(
+			'https://dictionaryapi.com/api/v3/references/thesaurus/json/' +
+				word +
+				'?key=f6bff6bb-3ff1-42d4-9de7-86291d3e2b26'
+		);
+		const data = await response.json();
+
+		let partsOfSpeech = [];
+		let numberOfSenses = 0;
+		for (let D of data) {
+			// For each 'part' of speech (noun, verb...)
+			if (D.meta == undefined) {
+				partsOfSpeech = [];
+				break;
+			}
+
+			// CHECK CORRECT WORD.
+			let cleanword = toGridWord(D.meta.id);
+			if (cleanword != word) {
+				break;
+			}
+
+			let senses = [];
+
+			// CONVERT TO USEFUL FORMAT.
+
+			for (let sensearray of D.def[0].sseq) {
+				// For each 'sense' of the word (different definition)
+				let senseobj = sensearray[0][1];
+				let synonyms = [] as IThesaurusSynonym[];
+				let index = 0;
+
+				if (senseobj.syn_list) {
+					// If uses syn_list (noun?)
+					for (let syn of senseobj.syn_list[0]) {
+						let relatedWords = [];
+
+						if (senseobj.rel_list && senseobj.rel_list[index]) {
+							for (let rel of senseobj.rel_list[index]) {
+								// For each related word to synonym.
+								if (rel.wd) {
+									relatedWords.push(rel.wd);
+								}
+							}
+							synonyms.push({
+								mainWord: syn.wd,
+								relatedWords,
+							});
+							index++;
+						}
+					}
+				} else if (senseobj.sim_list) {
+					//IF uses sim_list (adjective?)
+					for (let syn of senseobj.sim_list) {
+						synonyms.push(<IThesaurusSynonym>{
+							mainWord: syn[0].wd,
+							relatedWords: syn
+								.filter((x: any, index: number) => index != 0)
+								.map((x: { wd: any }) => x.wd),
+						});
+					}
+				} else {
+					continue;
+				} //NEITHER : SKIP
+
+				senses.push(<IThesaurusSense>{
+					definition: senseobj.dt[0][1],
+					synonyms,
+				});
+				numberOfSenses++;
+			}
+
+			partsOfSpeech.push(<IThesaurusPart>{
+				partOfSpeech: D.fl,
+				senses,
+			});
+		}
+
+		let abbreviationFor = DICTIONARY?.get(word)?.abbreviationFor || null;
+		if (abbreviationFor) numberOfSenses += abbreviationFor?.length || 0;
+
+		return {
+			partsOfSpeech,
+			numberOfSenses,
+			abbreviationFor,
+		} as IThesaurusEntry;
+	},
+};
+
+function generateDevices(targetword: string) {
+	//== THE NEW DEVICE SEARCHER WITH PRIME-HASHING!
+
+	console.time('Crawl Anagram Tree');
+	let uncategorisedAnagrams = crawlAnagramTree(targetword, DICTIONARY);
+	console.timeEnd('Crawl Anagram Tree');
+
+	//SHOW ME THE BROKEN ONES
+	console.table(
+		uncategorisedAnagrams.filter(
+			a => a.join('').length != targetword.length
+		)
+	);
+
+	let devices = categoriseAsDevices(
+		<string[]>uncategorisedAnagrams,
+		<string>targetword
+	); //Categorise
+	sortDevices(devices); //Sort
+	return devices as IDeviceSet;
 }
 
-function crawlAnagramTree(inputword, searchList: Map<any, any> = DICTIONARY) {
+function crawlAnagramTree(
+	inputword: string,
+	searchList: Map<any, any> = DICTIONARY
+) {
 	let inputhash = getHash(inputword);
 	let mycompleteanagrams = [];
 	let mypartialanagrams = [];
@@ -261,7 +340,11 @@ function crawlAnagramTree(inputword, searchList: Map<any, any> = DICTIONARY) {
 	return mycompleteanagrams;
 }
 
-function isDevice(origWord, subWordArray, depth = 0): Array<IWord> {
+function isDevice(
+	origWord: string,
+	subWordArray: any[],
+	depth = 0
+): Array<IWord> {
 	let inputWord = origWord;
 
 	// TRIVIAL CASE - SINGLE WORD
@@ -283,7 +366,7 @@ function isDevice(origWord, subWordArray, depth = 0): Array<IWord> {
 
 		let charade = isCharade(subWordArray[i], inputWord);
 		if (charade == 'start') {
-			let matched,
+			let matched: string,
 				leftovers = '';
 			[matched, leftovers] = [
 				inputWord.slice(0, subword.length),
@@ -327,7 +410,7 @@ function isDevice(origWord, subWordArray, depth = 0): Array<IWord> {
 			//Try a container IF not already in a container (avoid double nesting)
 			let cont = isContainer(subword, inputWord);
 			if (cont != null) {
-				let matched,
+				let matched: string,
 					leftovers = '';
 				[matched, leftovers] = cont;
 				subWordArray.splice(i, 1);
@@ -348,7 +431,7 @@ function isDevice(origWord, subWordArray, depth = 0): Array<IWord> {
 	//NO MATCHES OF ANY KIND: RETURN NULL.
 	return null;
 
-	function isCharade(subword, baseword) {
+	function isCharade(subword: string, baseword: string) {
 		switch ([...subword].sort().join('')) {
 			case [...baseword.substring(0, subword.length)].sort().join(''):
 				return 'start';
@@ -361,7 +444,7 @@ function isDevice(origWord, subWordArray, depth = 0): Array<IWord> {
 		}
 	}
 
-	function isContainer(subword, baseword) {
+	function isContainer(subword: string, baseword: string) {
 		if (subword.length < 2) {
 			return null;
 		}
@@ -384,86 +467,7 @@ function isDevice(origWord, subWordArray, depth = 0): Array<IWord> {
 	}
 }
 
-function rateDevice(wordarray: Array<IWord>) {
-	let comp = 0; //complexity
-	let score = 0; //scoreofwords
-
-	// flatten
-	for (let i = 0; i < wordarray.length; i++) {
-		if (wordarray[i].contains != null) {
-			wordarray.concat(wordarray[i].contains);
-			comp += 1; // ABOUT factor - first is free, subsequent are heavily punished.
-		}
-
-		if (wordarray[i].direction == WordDirection.Reverse) {
-			comp += 1;
-		} // REVERSE factor.
-		else if (wordarray[i].direction == WordDirection.Anagram) {
-			comp += 1;
-		} // SCRAMBLED factor.
-
-		wordarray[i].score = DICTIONARY.get(wordarray[i].word).score;
-		score += wordarray[i].score;
-		score += wordarray[i].word.length * 2;
-	}
-
-	//// Take average of Word Scores
-	//// Each point of complexity should reduce average word score by 10
-
-	let out = ~~(score / wordarray.length) - 5 * wordarray.length - 3 * comp;
-
-	return out;
-}
-
-function categoriseAsDevices(
-	anagramList: any[],
-	targetword: string
-): IDeviceSet {
-	let containers = [] as IDevice[];
-	let anagrams = [] as IDevice[];
-
-	for (let anagramSet of anagramList) {
-		if (anagramSet.join('').length != targetword.length) {
-			continue;
-		}
-
-		let device = isDevice(targetword, anagramSet);
-
-		if (!device) {
-			//Filter out incomplete partials...
-			let anagramDevice = anagramSet.map(s => {
-				return { word: s } as IWord;
-			}) as Array<IWord>;
-			anagrams.push({ words: anagramDevice } as IDevice);
-		} else {
-			if (!trivialEndings.includes(device[device.length - 1].word))
-				//Filter out trivial endings, doesnt work??.
-				containers.push({ words: device } as IDevice);
-		}
-	}
-
-	return { anagrams, containers } as IDeviceSet;
-}
-
-function sortDevices(devices: IDeviceSet) {
-	if (devices.anagrams) {
-		devices.anagrams.sort((a, b) => {
-			return (
-				a.words.length - b.words.length ||
-				averageScore(a.words) - averageScore(b.words)
-			);
-		});
-	}
-
-	if (devices.containers) {
-		devices.containers.sort(function (a, b) {
-			//= sort devices
-			return rateDevice(b.words) - rateDevice(a.words);
-		});
-	}
-}
-
-function searchHiddenWords(searchWord) {
+function searchHiddenWords(searchWord: string) {
 	//= Find 2 words with word hidden inside.
 	/*
     for (let l=2; l+1<letterarray.length; l++)
@@ -548,12 +552,91 @@ function searchHiddenWords(searchWord) {
 	return hiddenSentences;
 }
 
+/* .................................................................. Sorting */
+
+function rateDevice(wordarray: Array<IWord>): number {
+	let comp = 0; //complexity
+	let score = 0; //scoreofwords
+
+	// flatten
+	for (let i = 0; i < wordarray.length; i++) {
+		if (wordarray[i].contains != null) {
+			wordarray.concat(wordarray[i].contains);
+			comp += 1; // ABOUT factor - first is free, subsequent are heavily punished.
+		}
+
+		if (wordarray[i].direction == WordDirection.Reverse) {
+			comp += 1;
+		} // REVERSE factor.
+		else if (wordarray[i].direction == WordDirection.Anagram) {
+			comp += 1;
+		} // SCRAMBLED factor.
+
+		wordarray[i].score = DICTIONARY.get(wordarray[i].word).score;
+		score += wordarray[i].score;
+		score += wordarray[i].word.length * 2;
+	}
+
+	//// Take average of Word Scores
+	//// Each point of complexity should reduce average word score by 10
+
+	let out = ~~(score / wordarray.length) - 5 * wordarray.length - 3 * comp;
+
+	return out;
+}
+
+function categoriseAsDevices(
+	anagramList: any[],
+	targetword: string
+): IDeviceSet {
+	let containers = [] as IDevice[];
+	let anagrams = [] as IDevice[];
+
+	for (let anagramSet of anagramList) {
+		if (anagramSet.join('').length != targetword.length) {
+			continue;
+		}
+
+		let device = isDevice(targetword, anagramSet);
+
+		if (!device) {
+			//Filter out incomplete partials...
+			let anagramDevice = anagramSet.map((s: any) => {
+				return { word: s } as IWord;
+			}) as Array<IWord>;
+			anagrams.push({ words: anagramDevice } as IDevice);
+		} else {
+			if (!trivialEndings.includes(device[device.length - 1].word))
+				//Filter out trivial endings, doesnt work??.
+				containers.push({ words: device } as IDevice);
+		}
+	}
+
+	return { anagrams, containers } as IDeviceSet;
+}
+
+function sortDevices(devices: IDeviceSet): void {
+	if (devices.anagrams) {
+		devices.anagrams.sort((a, b) => {
+			return (
+				a.words.length - b.words.length ||
+				averageScore(a.words) - averageScore(b.words)
+			);
+		});
+	}
+
+	if (devices.containers) {
+		devices.containers.sort(function (a, b) {
+			//= sort devices
+			return rateDevice(b.words) - rateDevice(a.words);
+		});
+	}
+}
+
+/* ========================= FINDING POSSIBLE WORDS ========================= */
+
 export const validWordFinder = {
-	//Pull out default options/ variables if adding user settings (e.g. search depth, dictionaries, etc.Obj)
-
 	search(cells: ISlotCellState[]): string[] {
-		//? -> Finds all valid words for template e.g. [ _ A B _ _ C ] -> [FABRIC, ..., ...]
-
 		let searchregex = generateMatchRegex(cells);
 		let searchlength = cells.length;
 
@@ -572,7 +655,7 @@ export const validWordFinder = {
 	checkValidNewWord(filterTerm: string, cells: ISlotCellState[]) {
 		let searchLength = filterTerm.length;
 		let slotLength = cells.length;
-		let isValidSearch, userMessage, colour;
+		let isValidSearch: boolean, userMessage: any, colour: any;
 
 		if (generateMatchRegex(cells).test(filterTerm)) {
 			isValidSearch = true;
@@ -593,12 +676,12 @@ export const validWordFinder = {
 							'#E40046',
 					  ];
 		}
-		return [isValidSearch, userMessage, colour];
+		return [isValidSearch, userMessage, colour]; //todo: Move Search Logic into Component?
 	},
 
-	anyPossibleWord(letters) {
+	anyPossibleWord(letters: ISlotCellState[]): boolean {
 		let searchregex = this.generateMatchRegex(letters);
-		let searchlength = letters.len;
+		let searchlength = letters.length;
 
 		// Test through the dictionary
 		for (let word of DICTIONARY.keys()) {
@@ -609,125 +692,29 @@ export const validWordFinder = {
 		return false;
 	},
 };
-//todo: Remove incomplete anagrams.
 
-async function generateDevices(targetword) {
-	//== THE NEW DEVICE SEARCHER WITH PRIME-HASHING!
+function generateMatchRegex(cells: ISlotCellState[]): RegExp {
+	let searchstring = '';
+	cells.forEach(cell => {
+		searchstring += cell.isOverwritable ? '.' : cell.letter;
+	});
 
-	console.time('Crawl Anagram Tree');
-	let uncategorisedAnagrams = crawlAnagramTree(targetword, DICTIONARY);
-	console.timeEnd('Crawl Anagram Tree');
-
-	let devices = categoriseAsDevices(uncategorisedAnagrams, targetword); //Categorise
-	sortDevices(devices); //Sort
-	return devices as IDeviceSet;
+	return new RegExp('(\\b|^)' + searchstring + '(\\b|$)');
 }
-
-export const Devices = {
-	async get(word) {
-		let deviceSet = await generateDevices(word);
-		// LET THESAURUS ENTRY = GET THESAURUS ENTRY
-		return deviceSet;
-	},
-
-	async fetchAndParseMWThesaurus(word) {
-		const response = await fetch(
-			'https://dictionaryapi.com/api/v3/references/thesaurus/json/' +
-				word +
-				'?key=f6bff6bb-3ff1-42d4-9de7-86291d3e2b26'
-		);
-		const data = await response.json();
-
-		let ThesaurusDTO = [];
-		let matches = 0;
-
-		for (let D of data) {
-			// For each 'part' of speech (noun, verb...)
-			if (D.meta == undefined) {
-				ThesaurusDTO = null;
-				break;
-			}
-
-			// CHECK CORRECT WORD.
-			let cleanword = toGridWord(D.meta.id);
-			if (cleanword != word) {
-				break;
-			}
-
-			let senses = [];
-
-			// CONVERT TO USEFUL FORMAT.
-
-			for (let sensearray of D.def[0].sseq) {
-				// For each 'sense' of the word (different definition)
-				let senseobj = sensearray[0][1];
-
-				let synonyms = [];
-				let index = 0;
-
-				if (senseobj.syn_list) {
-					// If uses syn_list (noun?)
-					for (let syn of senseobj.syn_list[0]) {
-						// For each synonym
-						let related = [];
-
-						if (senseobj.rel_list && senseobj.rel_list[index]) {
-							for (let rel of senseobj.rel_list[index]) {
-								// For each related word to synonym.
-								if (rel.wd) {
-									related.push(rel.wd);
-								}
-							}
-							synonyms.push({
-								synonym: syn.wd,
-								related: related,
-							});
-							index++;
-						}
-					}
-				} else if (senseobj.sim_list) {
-					//IF uses sim_list (adjective?)
-					for (let syn of senseobj.sim_list) {
-						synonyms.push({
-							synonym: syn[0].wd,
-							related: syn
-								.filter((x, index) => index != 0)
-								.map(x => x.wd),
-						});
-					}
-				} else {
-					continue;
-				} //NEITHER : SKIP
-
-				senses.push({
-					definition: senseobj.dt[0][1],
-					synonyms: synonyms,
-				});
-				matches++;
-			}
-
-			ThesaurusDTO.push({ part: D.fl, senses: senses });
-		}
-
-		return { ThesaurusDTO: ThesaurusDTO, matches: matches }; //todo: IThesaurusEntry, then thesaurus fetch
-	},
-};
 
 const scoreToColour = (score: number): string => {
 	if (score < 20) return 'hsl(0,75%,85%)';
 	else return `hsl(${score * 2}, 75%, 85%)`;
 };
 
+/* =========================== FETCHING WORD INFO =========================== */
+
 export const WordInfo = {
 	get(word: string) {
-		let entry = DICTIONARY.get(word) as IDictionaryEntry;
+		let entry: IDictionaryEntry = DICTIONARY.get(word);
 		return {
 			colour: scoreToColour(entry.score),
 			isAbbreviation: entry.isAbbreviation,
 		};
 	},
 };
-
-export function setDictionary(dictionary: IDictionary) {
-	DICTIONARY = dictionary;
-}

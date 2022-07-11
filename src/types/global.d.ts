@@ -4,14 +4,14 @@ const enum SlotOrientation {
 }
 
 const enum WordDirection {
-	Forward = '',
+	Forward = 'forward',
 	Reverse = 'reverse',
 	Anagram = 'anagram',
 }
 
 type detailsHeightTuple = [open: number, closed: number];
 
-//= Word
+/* --------------------------------------------------------------------- Word */
 
 type IDictionaryEntry = {
 	isAbbreviation?: boolean;
@@ -20,50 +20,50 @@ type IDictionaryEntry = {
 	score?: number;
 	direction?: string;
 	contains?: Array<IWord>;
-}
+};
 
 type IWord = IDictionaryEntry & {
 	word: string;
-}
+};
 
-//= Dictionary & Thesaurus
+/* -----------------------------------------------     Dictionary & Thesaurus */
 
 type IDictionary = Map<string, IDictionaryEntry>;
+type IWordHashMap = Map<number, string[]>;
 
 type IThesaurusEntry = {
-    partsOfSpeech: Array<IThesaurusPart>
-    numberOfSenses: number
-    abbreviationFor?: string[]
-}
+	partsOfSpeech: Array<IThesaurusPart>;
+	numberOfSenses: number;
+	abbreviationFor?: string[];
+};
 
 type IThesaurusPart = {
-    partOfSpeech: string
-    senses: Array<IThesaurusSense>
-}
+	partOfSpeech: string;
+	senses: Array<IThesaurusSense>;
+};
 
 type IThesaurusSense = {
-    definition: string,
-    synonyms: Array<IThesaurusSynonym>
-}
+	definition: string;
+	synonyms: Array<IThesaurusSynonym>;
+};
 
 type IThesaurusSynonym = {
-    mainWord: string;
-    relatedWords: string[]
-}
+	mainWord: string;
+	relatedWords: string[];
+};
 
-//= Device (Set of Words)
-//todo: Do I need to include the score here, or just sort?
+/* ---------------------------------------------------- Device (Set Of Words) */
 type IDevice = {
 	words: Array<IWord>;
 	score?: number;
-}
+};
 
 type IDeviceSet = {
-    thesaurus?: IThesaurusEntry;
+	thesaurus?: IThesaurusEntry;
 	anagrams?: IDevice[];
 	containers?: IDevice[];
 	hiddenwords?: IDevice[];
-}
+};
 
 //= Grid
 
@@ -79,7 +79,7 @@ type ICell = {
 	slots: number[];
 };
 
-//= WordSlot
+/* ----------------------------------------------------------------- WordSlot */
 
 type IWordSlot = {
 	number: number;
@@ -96,7 +96,7 @@ type ISlotCellState = {
 	isOverwritable: boolean;
 };
 
-//= Saving and Loading
+/* ------------------------------------------------------- Saving And Loading */
 
 interface IStateRecord {
 	layout: IGridLayout;
@@ -104,7 +104,7 @@ interface IStateRecord {
 	// Could add remembering the current selection?
 }
 
-//= Event Messages to/from Worker
+/* -------------------------------------------- Event Messages To/from Worker */
 
 type IWorkerTask<Input, Output> = {
 	id?: number;
@@ -112,7 +112,7 @@ type IWorkerTask<Input, Output> = {
 	payload?: Input;
 	response?: Output;
 	error?: string;
-}
+};
 
 interface IWorkerPossibleWordsTask
 	extends IWorkerTask<ISlotCellState[], string[]> {

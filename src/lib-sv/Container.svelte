@@ -1,5 +1,5 @@
 <script lang="ts">
-import { WordInfo } from '../lib/ClueEngine';
+import { scoreToColour } from './../lib/DictionaryEngine';
 import Popover from 'svelte-popover';
 /* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 export let device: IDevice = {
@@ -18,32 +18,22 @@ export let device: IDevice = {
 	],
 };
 
-function wordProps(node: HTMLButtonElement, { word, dir, pos }) {
-	let entry = WordInfo.get(word);
-	node.style.background = entry.colour;
-	if (entry.isAbbreviation) {
-		node.classList.add('abbr');
-	}
-	node.classList.add('word', dir, pos);
-}
-
 /* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 </script>
 
 <div class="device">
 	{#each device.words as i}
 		<button
-			use:wordProps={{ word: i.word, dir: i.direction, pos: 'outer' }}
+			style:background-color={scoreToColour(i?.score)}
+			class:abbr={i.isAbbreviation}
+			class="word {i.direction} outer"
 		>
 			{i.word}
 
 			{#if i.contains}{#each i.contains as j}
 					<button
-						use:wordProps={{
-							word: j.word,
-							dir: j.direction,
-							pos: 'inner',
-						}}
+						style:background-color={scoreToColour(j?.score)}
+						class="word {j.direction} inner"
 					>
 						{j.word}
 					</button>

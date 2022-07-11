@@ -1,40 +1,40 @@
 <script context="module" lang="ts">
-/*-----------------------------------------------
-Goals: 
---- Main: remove duplicate entries. 
---- Sub: improve performance? 
+import { dictionary } from '../StateMediator.svelte';
 
-Changelog: 
-
-- Added make hashmapping, filtering by length < grid letters. 
----- UPDATE THIS when grid is updated? 
------------------------------------------------*/
-type IWordHashMap = Map<number, Set<string>>;
+type IWordHashMap = Map<number, string[]>;
 const enum WordDirection {
 	Forward = 'forward',
 	Reverse = 'reverse',
 	Anagram = 'anagram',
 }
 
-let HashMapping = new Map() as IWordHashMap;
-let HashList: number[];
+// Lists
 let DICTIONARY: IDictionary = new Map();
+let HashMapping = new Map() as IWordHashMap;
+let HashList: number[] = [];
 
-export const setDict = (input: IDictionary): void => {
-	DICTIONARY = input;
+// Filters
+let MIN_WORD_LENGTH: number = 15;
+let MIN_WORD_SCORE: number = 45;
+let MAX_ANAGRAM_WORDS: number = 4;
+
+let TARGET_WORD: string = '';
+
+export const initialise = (dictionary: IDictionary): void => {
+	DICTIONARY = dictionary;
 	createHashMapping();
 };
-let MIN_WORD_LENGTH: number, MIN_WORD_SCORE: number;
-//export method to set minimum word length and minimum word score
-export const setWordFilters = (
-	length: number = 15,
-	score: number = 45
+
+export const updateWordFilters = (
+	length: number,
+	score: number,
+	maxWords: number
 ): void => {
-	MIN_WORD_LENGTH = length;
-	MIN_WORD_SCORE = score;
+	MIN_WORD_LENGTH = length || MIN_WORD_LENGTH;
+	MIN_WORD_SCORE = score || MIN_WORD_SCORE;
+	MAX_ANAGRAM_WORDS = maxWords || MAX_ANAGRAM_WORDS;
 };
 
-//export method to set
 /* ------------------------------------------------------------------ Hashing */
 
 const hashTable: Record<string, number> = {
@@ -81,18 +81,24 @@ function hash(word: string): number {
 }
 
 function createHashMapping(): void {
-	HashMapping = new Map() as IWordHashMap;
+	HashMapping = new Map();
+	HashList = [];
+
+	let temp = new Map() as Map<number, Set<string>>;
 	for (let [key, value] of DICTIONARY) {
 		if (key.length < 15 && value.score > 46) {
-			let previous = HashMapping.get(value.hash);
+			let previous = temp.get(value.hash);
 			if (previous) {
-				HashMapping.set(value.hash, previous.add(key));
+				temp.set(value.hash, previous.add(key));
 			} else {
-				HashMapping.set(value.hash, new Set([key]));
+				temp.set(value.hash, new Set([key]));
 			}
 		}
 	}
-	HashList = Array.from(HashMapping.keys());
+	for (let entry of temp) {
+		HashMapping.set(entry[0], [...entry[1]]);
+		HashList.push(entry[0]);
+	}
 	HashList.sort((a, b) => b - a);
 }
 
@@ -251,7 +257,7 @@ function OLD_isDevice(
 			if (recursive != null) {
 				return [
 					{
-						word: subword,
+						...stringToIWord(subword),
 						direction: findDirection(subword, matched),
 					},
 					...recursive,
@@ -274,7 +280,7 @@ function OLD_isDevice(
 				return [
 					...recursive,
 					{
-						word: subword,
+						...stringToIWord(subword),
 						direction: findDirection(subword, matched),
 					},
 				];
@@ -291,7 +297,7 @@ function OLD_isDevice(
 				if (recursive != null) {
 					return [
 						{
-							word: subword,
+							...stringToIWord(subword),
 							direction: findDirection(subword, matched),
 							contains: recursive,
 						} as IWord,
@@ -369,10 +375,10 @@ function OLD_categoriseAsDevices(
 }
 
 /* ----------------------------------------------------- NEW Generation Steps */
-let factorList;
 
-const unhash = (hash: number): string[] =>
-	[...HashMapping.get(hash)] || hashToStrings(hash);
+const unhash = (hash: number): string[] => {
+	return HashMapping?.get(hash) || hashToStrings(hash);
+};
 
 const hashToStrings = (hash: number): string[] => {
 	let string = '';
@@ -385,55 +391,68 @@ const hashToStrings = (hash: number): string[] => {
 	return [string];
 };
 
-function getValidHashCombinations(
-	inputHash: number,
-	pos: number = 0,
-	maxdepth: number = 4
+const stringToIWord = (word: string): IWord => {
+	return { word, ...DICTIONARY.get(word) };
+};
+
+function cartesianProductOfArrays(arrayOfWordArrays: string[][]): string[][] {
+	let cartesianProduct = [];
+	for (let i = 0; i < arrayOfWordArrays.length; i++) {
+		let currentArray = arrayOfWordArrays[i];
+		if (cartesianProduct.length === 0) {
+			cartesianProduct = currentArray;
+		} else {
+			cartesianProduct = cartesianProduct.map(item => {
+				return currentArray.map(item2 => [item, item2].flat());
+			});
+			cartesianProduct = [].concat(...cartesianProduct);
+		}
+	}
+	return cartesianProduct;
+}
+
+/* ::::::::::::::::::::::::::::: MAIN FUNCTIONS ::::::::::::::::::::::::::::: */
+
+function monad(input: any) {
+	let myMonad = {
+		value: input,
+		chain: (fn: (input: any) => any) => {
+			if (!(input && input.length))
+				console.log('Length at step: ', fn.name, ' is: ', input.length);
+			return monad(fn(input));
+		},
+	};
+	return myMonad;
+}
+
+export function getDevices(word: string): IDeviceSet {
+	TARGET_WORD = word;
+	return monad(word)
+		.chain(findValidHashCombinations)
+		.chain(inflateHashCombinations)
+		.chain(categoriseWordArraysAsDevices).value;
+}
+
+function findValidHashCombinations(
+	input: string | number,
+	maxdepth: number = MAX_ANAGRAM_WORDS
 ): number[][] {
-	(function findFactorList() {
-		factorList = [];
-		for (let i = 0; i < HashList.length; i++) {
-			if (inputHash % HashList[i] == 0) {
-				factorList.push(HashList[i]);
-			}
+	let inputHash = typeof input == 'number' ? input : hash(input);
+	let factorList = [];
+	for (let i = 0; i < HashList.length; i++) {
+		if (inputHash % HashList[i] == 0) {
+			factorList.push(HashList[i]);
 		}
-	})();
-
-	let listlen = factorList.length;
-	let hashArrays = crawlTree(inputHash, 0, 1);
-
-	function expandHashArrays(hashArrays: number[][]) {
-		let output = [] as string[][];
-		for (let hashArray of hashArrays) {
-			let arrayOfWordArrays: string[][] = hashArray.map(n => unhash(n));
-
-			//find the cartesian product of all the word arrays
-			let cartesianProduct = cartesianProductOfArrays(arrayOfWordArrays);
-			output.push(...cartesianProduct);
-
-			//remove duplicates
-			output = output.filter(
-				(item, index) => output.indexOf(item) === index
-			);
-		}
-
-		function cartesianProductOfArrays(arrays: string[][]) {
-			let result = [];
-			let temp = [];
-			for (let i = 0; i < arrays.length; i++) {
-				temp.push(arrays[i]);
-				result.push(temp.slice());
-				temp.pop();
-			}
-			return result;
-		}
-
-		return output;
 	}
 
-	return [[]];
+	let listlen = factorList.length;
+	return crawlTree(inputHash);
 
-	function crawlTree(inputHash: number, start: number, depth: number) {
+	function crawlTree(
+		inputHash: number,
+		start: number = 0,
+		depth: number = 0
+	) {
 		if (depth > maxdepth) {
 			return [];
 		}
@@ -466,22 +485,30 @@ function getValidHashCombinations(
 	}
 }
 
+function inflateHashCombinations(hashArrays: number[][]): string[][] {
+	let output = [] as string[][];
+	for (let hashArray of hashArrays) {
+		let arrayOfWordArrays: string[][] = hashArray.map(n => unhash(n));
+		let cartesianProduct = cartesianProductOfArrays(arrayOfWordArrays);
+		output.push(...cartesianProduct);
+	}
+	return output;
+}
+
 function isDevice(
-	origWord: string,
+	targetWord: string,
 	subWordArray: any[],
 	depth = 0
 ): Array<IWord> {
-	let inputWord = origWord;
-
 	// TRIVIAL CASE - SINGLE WORD
 	if (
 		subWordArray.length == 1 &&
-		subWordArray[0].length == inputWord.length
+		subWordArray[0].length == targetWord.length
 	) {
 		return [
 			{
-				word: subWordArray[0],
-				direction: findDirection(subWordArray[0], inputWord),
+				...stringToIWord(subWordArray[0]),
+				direction: findDirection(subWordArray[0], targetWord),
 			} as IWord,
 		];
 	}
@@ -490,21 +517,21 @@ function isDevice(
 	for (let i = 0; i < subWordArray.length; i++) {
 		let subword = subWordArray[i];
 
-		let charade = isCharade(subWordArray[i], inputWord);
+		let charade = isCharade(subWordArray[i], targetWord);
 		if (charade == 'start') {
 			let matched: string,
 				leftovers = '';
 			[matched, leftovers] = [
-				inputWord.slice(0, subword.length),
-				inputWord.slice(subword.length),
+				targetWord.slice(0, subword.length),
+				targetWord.slice(subword.length),
 			];
 			subWordArray.splice(i, 1);
 			i = -1;
 			let recursive = isDevice(leftovers, subWordArray, depth);
-			if (recursive != null) {
+			if (recursive) {
 				return [
 					{
-						word: subword,
+						...stringToIWord(subword),
 						direction: findDirection(subword, matched),
 					},
 					...recursive,
@@ -515,10 +542,10 @@ function isDevice(
 
 			let subword = subWordArray[i];
 
-			let matched = inputWord.slice(-1 * subword.length);
-			let leftovers = inputWord.slice(
+			let matched = targetWord.slice(-1 * subword.length);
+			let leftovers = targetWord.slice(
 				0,
-				inputWord.length - subword.length
+				targetWord.length - subword.length
 			);
 
 			subWordArray.splice(i, 1);
@@ -527,14 +554,14 @@ function isDevice(
 				return [
 					...recursive,
 					{
-						word: subword,
+						...stringToIWord(subword),
 						direction: findDirection(subword, matched),
 					},
 				];
 			}
 		} else if (depth == 0) {
 			//Try a container IF not already in a container (avoid double nesting)
-			let cont = isContainer(subword, inputWord);
+			let cont = isContainer(subword, targetWord);
 			if (cont != null) {
 				let matched: string,
 					leftovers = '';
@@ -544,7 +571,7 @@ function isDevice(
 				if (recursive != null) {
 					return [
 						{
-							word: subword,
+							...stringToIWord(subword),
 							direction: findDirection(subword, matched),
 							contains: recursive,
 						} as IWord,
@@ -593,25 +620,15 @@ function isDevice(
 	}
 }
 
-function categoriseAsDevices(
-	anagramList: string[][],
-	targetword: string
-): IDeviceSet {
+function categoriseWordArraysAsDevices(anagramList: string[][]): IDeviceSet {
 	let containers = [] as IDevice[];
 	let anagrams = [] as IDevice[];
 
 	for (let anagramSet of anagramList) {
-		if (anagramSet.join('').length != targetword.length) {
-			continue;
-		}
-
-		let device = isDevice(targetword, anagramSet);
+		let device = isDevice(TARGET_WORD, anagramSet);
 
 		if (!device) {
-			//Filter out incomplete partials...
-			let anagramDevice = anagramSet.map((s: any) => {
-				return { word: s } as IWord;
-			}) as Array<IWord>;
+			let anagramDevice = anagramSet.map(stringToIWord) as Array<IWord>;
 			anagrams.push({ words: anagramDevice } as IDevice);
 		} else {
 			containers.push({ words: device } as IDevice);
@@ -629,7 +646,7 @@ export function compareDevices(word: string): void {
 
 	console.time('New method');
 	let xyz: number = DICTIONARY.get(word).hash;
-	let newSet = getValidHashCombinations(xyz);
+	let newSet = findValidHashCombinations(xyz);
 	console.timeEnd('New method');
 }
 </script>

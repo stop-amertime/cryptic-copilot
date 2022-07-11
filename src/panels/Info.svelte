@@ -1,13 +1,22 @@
 <script lang="ts">
 import Meanings from './../lib-sv/Meanings.svelte';
-import { activeWord, activeDeviceList } from '../StateMediator.svelte';
+import {
+	activeWord,
+	activeDeviceList,
+	activeThesaurus,
+} from '../StateMediator.svelte';
 import DeviceList from '../lib-sv/DeviceList.svelte';
 import Anagram from '../lib-sv/Anagram.svelte';
 import Container from '../lib-sv/Container.svelte';
 import { Wave } from 'svelte-loading-spinners';
 import { fade } from 'svelte/transition';
 import { writable } from 'svelte/store';
+import { getThesaurus } from '../lib/DictionaryEngine';
 /* -------------------------------------------------------------------------- */
+
+let thesaurus, devices;
+activeDeviceList.subscribe(promise => promise.then(val => (devices = val)));
+activeThesaurus.subscribe(promise => promise.then(val => (thesaurus = val)));
 
 let dropdownIsOpen = [true, false, false];
 let pageHeight: number;
@@ -37,16 +46,16 @@ const closeOthers = (event: CustomEvent) => {
 
 <template lang="pug">
 +key('$activeWord')
-    +await('$activeDeviceList')
+    +await('Promise.all([$activeDeviceList, $activeThesaurus])')
         .centre(transition:fade!="{{ duration: 100, }}")
             Wave(size="60" color="#111111" unit="px" duration="1s")
 
-        +then('deviceSet')
+        +then('_')
         div#page(bind:clientHeight!='{pageHeight}')
             .deviceLists(transition:fade='{{duration:100}}')
 
                 DeviceList(
-                    definition!="{deviceSet?.thesaurus || []}"
+                    definition!="{thesaurus || []}"
                     on:opened="{closeOthers}"
                     "{listHeights}"
                     listProps="{listProps[0]}"
@@ -54,7 +63,7 @@ const closeOthers = (event: CustomEvent) => {
                 )
 
                 DeviceList(
-                    list!="{deviceSet?.anagrams || []}"
+                    list!="{devices?.anagrams || []}"
                     "{listHeights}"
                     listProps="{listProps[1]}"
                     on:opened="{closeOthers}"
@@ -62,7 +71,7 @@ const closeOthers = (event: CustomEvent) => {
                 )
 
                 DeviceList(
-                    list!="{deviceSet?.containers || []}"
+                    list!="{devices?.containers || []}"
                     on:opened="{closeOthers}"
                     "{listHeights}"
                     listProps="{listProps[2]}"

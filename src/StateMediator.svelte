@@ -1,9 +1,12 @@
 <script context="module" lang="ts">
 import { writable, derived } from 'svelte/store';
 import { makeCells, makeWordSlots, mapCellsToSlots } from './lib/GridGenerator';
-import { setDictionary } from './lib/ClueEngine';
+import {
+	setDictionary,
+	PossibleWords,
+	getThesaurus,
+} from './lib/DictionaryEngine';
 import { Save } from './lib/FileManager';
-import { compareDevices, setDict } from './lib/ClueEngine-Experiment.svelte';
 
 /* ================================= STORES ================================= */
 
@@ -20,26 +23,31 @@ export const activeSlotId = writable(null as number);
 export const activeWord = writable(null as string);
 export const activeCells = writable(null as ISlotCellState[]);
 export const activeCellAnimations = writable({ orientation: 'A', order: {} });
+export const activePossibleWords = writable([] as IWord[]);
+
 export const activeDeviceList = writable(
 	Promise.resolve([]) as Promise<IDeviceSet>
 );
-export const activePossibleWords = writable(
-	Promise.resolve([]) as Promise<string[]>
+export const activeThesaurus = writable(
+	Promise.resolve({}) as Promise<IThesaurusEntry>
 );
 </script>
 
 <script lang="ts">
 /* =========================== WEBWORKER REQUESTS =========================== */
 
-const WordWorker = new Worker(new URL('./lib/WordWorker', import.meta.url), {
-	type: 'module',
-});
+const DeviceWorker = new Worker(
+	new URL('./lib/DeviceWorker', import.meta.url),
+	{
+		type: 'module',
+	}
+);
 let workerPromises = {};
 let nonce = 0;
 
 const workerRequest = (request: string, payload: any) => {
 	let id = ++nonce;
-	WordWorker.postMessage({ id, request, payload });
+	DeviceWorker.postMessage({ id, request, payload });
 	return new Promise(function (resolve, reject) {
 		let resolver = resolve;
 		let rejecter = reject;
@@ -48,14 +56,13 @@ const workerRequest = (request: string, payload: any) => {
 };
 
 /* ============================= EVENT HANDLING ============================= */
-WordWorker.onmessage = event => {
+DeviceWorker.onmessage = event => {
 	let { id, response, error } = event.data;
-	if (!workerPromises[id]) {
-		return;
-	}
+	if (!workerPromises[id]) return;
 
-	if (error) workerPromises[id].rejecter(error);
-	else workerPromises[id].resolver(response);
+	error
+		? workerPromises[id].rejecter(error)
+		: workerPromises[id].resolver(response);
 
 	delete workerPromises[id];
 };
@@ -65,8 +72,7 @@ gridTemplate.subscribe(template => initGrid(template));
 dictionary.subscribe(dict => {
 	if (dict) {
 		setDictionary(dict);
-		setDict(dict);
-		workerRequest('setDictionary', $dictionary);
+		workerRequest('initialise', $dictionary);
 	}
 });
 
@@ -82,21 +88,20 @@ activeWord.subscribe((newWord: string) => {
 	if ($activeSlotId === null) return;
 
 	$wordSlots[$activeSlotId].word = newWord;
-
 	let newCells = calculateUpdatedCells(newWord);
 	activeCells.set(newCells);
 	refreshGridLetters($wordSlots[$activeSlotId], newCells);
-	//$activeDeviceList = workerRequest('getDevices', newWord);
-	if (newWord) compareDevices(newWord);
+
+	if (newWord) {
+		$activeDeviceList = workerRequest('getDevices', newWord);
+		$activeThesaurus = getThesaurus(newWord);
+	}
 });
 
 activeSlotId.subscribe(async (id: number) => {
 	highlightSlotCells(id);
 	refreshActiveSlotProps(id);
-	$activePossibleWords = workerRequest(
-		'getPossibleWords',
-		$activeCells
-	) as Promise<string[]>;
+	$activePossibleWords = PossibleWords.match($activeCells);
 });
 
 /* =============================== FUNCTIONS  =============================== */

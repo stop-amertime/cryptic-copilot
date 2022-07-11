@@ -10,7 +10,7 @@ import {
 	activeSlotId,
 	activePossibleWords,
 } from '../StateMediator.svelte';
-import { validWordFinder } from '../lib/ClueEngine';
+import { PossibleWords, scoreToColour } from '../lib/DictionaryEngine';
 import LetterBoxes from '../lib-sv/LetterBoxes.svelte';
 import { Center, Button, ActionIcon } from '@svelteuidev/core';
 import Icon, { loadIcon } from '@iconify/svelte';
@@ -38,24 +38,20 @@ $: searchInput = rawSearchInput
 	: '';
 
 $: [isValidSearch, searchSubMessage, messageColour] = !!searchInput
-	? validWordFinder.checkValidNewWord(searchInput, $activeCells)
+	? PossibleWords.validate(searchInput, $activeCells)
 	: [false, '', 'black'];
 
 /* .................................. Await, Filter And Chunk Possible Words. */
 
-let possibleWords = [];
-activePossibleWords.subscribe(promise => {
-	promise.then(list => {
-		rawSearchInput = '';
-		possibleWords = list || [];
-		wordWidth = $activeCells?.length * 15 + 70 || 200;
-		colCount = maxColumns(wrapperWidth, wordWidth);
-	});
+activePossibleWords.subscribe(list => {
+	rawSearchInput = '';
+	wordWidth = $activeCells?.length * 15 + 70 || 200;
+	colCount = maxColumns(wrapperWidth, wordWidth);
 });
 
-$: filteredPossibleWords = searchInput
-	? possibleWords?.filter(w => w.includes(searchInput)) ?? []
-	: possibleWords ?? [];
+$: filteredPossibleWords = !!searchInput
+	? $activePossibleWords?.filter(w => w.word.includes(searchInput)) ?? []
+	: $activePossibleWords ?? [];
 
 $: chunkedPossibleWords =
 	filteredPossibleWords?.reduce((output, item, index) => {
@@ -69,6 +65,45 @@ $: chunkedPossibleWords =
 
 $: pluralString =
 	filteredPossibleWords.length != 1 ? ' matching words' : ' matching word';
+
+const showInfo = (event: CustomEvent, word: IWord) => {
+	event.stopPropagation();
+	let node = event.target as HTMLElement;
+	//add a clickable icon to the node, to open a popup
+	let icon = document.createElement('div');
+	icon.classList.add('icon');
+	icon.innerHTML = `<svg class="iconify" data-icon="mdi:information-outline" data-inline="false" style="fill: #fff;"></svg>`;
+	icon.addEventListener('click', () => {
+		let popup = document.createElement('div');
+		popup.classList.add('popup');
+		popup.innerHTML = `<div class="popup-content">
+            <div class="popup-header">
+                <h1>${word.word}</h1>
+                <div class="popup-close">
+                    <svg class="iconify" data-icon="mdi:close" data-inline="false" style="fill: #fff;"></svg>
+                </div>
+            </div>
+            <div class="popup-body">
+                <div class="popup-word">`;
+
+		let letters = word.word.split('');
+		letters.forEach(letter => {
+			popup.innerHTML += `<div class="popup-letter">${letter}</div>`;
+		});
+		popup.innerHTML += `</div>
+                <div class="popup-definition">${word.score}</div>
+            </div>
+        </div>`;
+		popup.addEventListener('click', e => {
+			let target = e.target as HTMLElement;
+			if (target.classList.contains('popup-close')) {
+				popup.remove();
+			}
+		});
+		node.appendChild(popup);
+	});
+	node.appendChild(icon);
+};
 
 /* ==================================== - =================================== */
 </script>
@@ -132,13 +167,18 @@ $: pluralString =
 									color="dark"
 									variant="outline"
 									class="possword"
+									on:hover={event =>
+										showInfo(event, possibleWord)}
 									override={{
 										fontFamily: 'Courier Prime',
 										width: '100%',
+										backgroundColor: scoreToColour(
+											possibleWord.score
+										),
 									}}
 									on:click={() =>
-										($activeWord = possibleWord)}
-									>{possibleWord}</Button
+										($activeWord = possibleWord.word)}
+									>{possibleWord.word}</Button
 								>
 							{/each}
 						</div>
