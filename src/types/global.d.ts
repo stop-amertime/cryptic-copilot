@@ -1,13 +1,6 @@
-const enum SlotOrientation {
-	Across = 'A',
-	Down = 'D',
-}
+type SlotOrientation = 'A' | 'D';
 
-const enum WordDirection {
-	Forward = 'forward',
-	Reverse = 'reverse',
-	Anagram = 'anagram',
-}
+type WordDirection = 'forward' | 'reverse' | 'anagram';
 
 type detailsHeightTuple = [open: number, closed: number];
 
@@ -76,6 +69,7 @@ type ICell = {
 	letter?: string;
 	isSelected?: boolean;
 	isHovered?: boolean;
+	isImpossible?: boolean;
 	slots: number[];
 };
 
@@ -98,11 +92,10 @@ type ISlotCellState = {
 
 /* ------------------------------------------------------- Saving And Loading */
 
-interface IStateRecord {
-	layout: IGridLayout;
+type IStateRecord = {
+	layout?: IGridLayout;
 	wordSlots?: Array<IWordSlot>;
-	// Could add remembering the current selection?
-}
+};
 
 /* -------------------------------------------- Event Messages To/from Worker */
 

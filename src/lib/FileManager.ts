@@ -14,16 +14,21 @@ let DICT_URL = {
 };
 let DEFAULT_LAYOUTURL = './src/data/gridtemplates.json';
 
-//== LAST STATE
-let lastDictionary = localStorage.getItem('dictionary') || null;
-let lastLayout = JSON.parse(localStorage.getItem('currentLayout')) || null;
-let lastSlots = JSON.parse(localStorage.getItem('wordSlots')) || null;
-let activeFile = null;
+const makeStateRecord = (): IStateRecord =>
+	JSON.stringify({ layout, wordSlots });
 
-// if (currentState){
-//     //loadState(JSON.parse(currentState));
-// }
-// else {              // Load default blank layout //____ EDIT: TO CACHE 'DEFAULT' LAYOUT TOO.
+const saveLocal = (object: object): void => {
+	for (let [key, value] of Object.entries(object)) {
+		localStorage.setItem(key, JSON.stringify(value));
+	}
+};
+
+const loadLocal = (key: string): any => JSON.parse(localStorage.getItem(key));
+
+//== LAST STATE
+let activeFile = null;
+let defaultLayouts = loadLocal('defaultLayouts');
+let state = loadLocal('state');
 
 function stringifyDictionary(dictionary, compression = 'compressed') {
 	switch (compression) {
@@ -100,13 +105,15 @@ function unminifyDictionary(minifiedstring: string) {
 }
 
 export const Load = {
-	lastOrDefaultLayout: async () => {
-		let response = await fetch(DEFAULT_LAYOUTURL);
-		let template = await response.json();
-
-		lastLayout = template;
-		localStorage.setItem('currentLayout', JSON.stringify(lastLayout));
-		return lastLayout;
+	lastOrDefaultState: async function (): Promise<IStateRecord> {
+		if (!state) {
+			let response = await fetch(DEFAULT_LAYOUTURL);
+			let templates = await response.json();
+			defaultLayouts = templates as IGridLayout[];
+			state = { layout: defaultLayouts[0] };
+			saveLocal({ state, defaultLayouts });
+			return state;
+		} else return loadLocal('state');
 	},
 
 	lastOrDefaultDictionary: async () => {
@@ -135,53 +142,45 @@ export const Load = {
 		// downloadUtf16(stringifyDictionary(temp_DICTIONARY,"compressed"))
 		// });
 		// },
-
-		if (lastDictionary) {
-			return unminifyDictionary(lastDictionary);
+		let dictionary = localStorage.getItem('dictionary');
+		if (dictionary) {
+			return unminifyDictionary(dictionary);
 		} else {
 			let response = await fetch(DICT_URL[DICT_SAVECOMPRESSION]);
 			let fetchedString = await response.text();
-			let temp_dictionary = parseAndLoadDictionary(
-				fetchedString,
-				DICT_SAVECOMPRESSION
-			);
-			localStorage.setItem(
-				'dictionary',
-				minifyDictionary(temp_dictionary)
-			);
+			return parseAndLoadDictionary(fetchedString, DICT_SAVECOMPRESSION);
 			// document.body.addEventListener('click', () =>
 			// 	Save.textToFile(
 			// 		LZString.compressToUTF16(minifyDictionary(temp_dictionary))
 			// 	)
 			// );
-
-			return temp_dictionary;
 		}
 	},
 
-	lastSlots,
+	defaultLayouts,
 
-	StateFromFile: async function () {
+	StateFromFile: async function (): IStateRecord {
 		[activeFile] = await window.showOpenFilePicker();
 		const file = await activeFile.getFile();
 		const loadedFile = await file.text();
-		let StateFile = JSON.parse(loadedFile);
-
-		// Import the Grid Layout
-		//Grid.loadState(StateFile, false);
+		return JSON.parse(loadedFile) as IStateRecord;
 	},
 };
 
 export const Save = {
-	slots: async (wordSlots: Array<IWordSlot>) => {
-		console.log('Saving Slot State');
-		localStorage.setItem('wordSlots', JSON.stringify(wordSlots));
+	state: async (stateRecord: IStateRecord): void => {
+		state = { ...state, ...stateRecord };
+		saveLocal({ state });
 
 		if (activeFile) {
 			const writableStream = await activeFile.createWritable();
-			await writableStream.write(stringifyStateRecord()); ////////!!!!!
+			await writableStream.write(makeStateRecord()); // Todo: update staterecord
 			await writableStream.close();
 		}
+	},
+
+	dictionary: async (dictionary: IDictionary): void => {
+		localStorage.setItem('dictionary', minifyDictionary(dictionary));
 	},
 
 	stateToFile: async () => {

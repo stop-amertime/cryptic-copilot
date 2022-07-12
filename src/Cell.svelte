@@ -12,6 +12,7 @@ export let isValid: boolean;
 export let letter = '';
 export let isSelected = false;
 export let isNumbered = false;
+export let isImpossible = false;
 export let slots = [];
 
 const animationDuration = 200; //ms
@@ -29,11 +30,6 @@ $: animProps = {
 	delay: myOrder * animationTimingGap, //ms
 	direction: animDirection,
 };
-
-window.onresize = () => {
-	console.log('RESIZED!');
-	console.table({ cellWidth, fontSize });
-};
 </script>
 
 <!----------------------------------------------------------------------HTML--->
@@ -45,7 +41,8 @@ window.onresize = () => {
     .cell.valid(
     id="{id+''}" 
     class:selected="{isSelected}"
-    class:numbered="{isNumbered}" 
+    class:numbered="{isNumbered}"
+    class:impossible="{isImpossible}"
     on:click!="{() => dispatch('clicked', slots)}"
     bind:clientWidth="{cellWidth}"
     )
@@ -98,6 +95,10 @@ window.onresize = () => {
 .selected {
 	opacity: 0.5;
 	background-color: hsl(120, 100%, 85%);
+}
+
+.impossible {
+	outline: 1px solid red;
 }
 
 .valid:hover:not(.selected) {

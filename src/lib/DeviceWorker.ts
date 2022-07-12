@@ -1,3 +1,11 @@
+import {
+	monad,
+	sortByLengthAscending,
+	findDirection,
+	arraysEqual,
+	cartesianProductOfArrays,
+} from './utils';
+
 /* -------------------------------------------------------------------- Data  */
 let DICTIONARY: IDictionary = new Map();
 let HASHMAP: IWordHashMap = new Map();
@@ -141,81 +149,6 @@ const keyToIWord = (word: string): IWord => {
 };
 
 /* ----------------------------------------------  String & Array Helpers   */
-
-const monad = (input: any) => {
-	return {
-		value: input,
-		chain: (fn: (input: any) => any) => {
-			if (!input) console.warn('FAILED TO: ', fn.name);
-			console.time(fn.name);
-			let result = fn(input);
-			console.timeEnd(fn.name);
-			return monad(result);
-		},
-		output: (fnPass: (input: any) => void, fnFail: () => void) => {
-			if (input) fnPass(input);
-			else fnFail();
-		},
-	};
-};
-
-function findDirection(subword: string, baseword: string): WordDirection {
-	/**
-	 * Find the direction of a subword in a base word.
-	 *
-	 * Find whether subword is forward, backward or jumbled in the base word. For use in devices like containers, charades.
-	 *
-	 * @param {string} subword  the inner/edge word.
-	 * @param {string} baseword  the containing word.
-	 * @return {WordDirection} enum for the direction - Forward, Reverse, Anagram
-	 */
-
-	switch (baseword) {
-		case subword:
-			return WordDirection.Forward;
-		case [...subword].reverse().join(''):
-			return WordDirection.Reverse;
-		default:
-			return WordDirection.Anagram;
-	}
-}
-
-function arraysEqual(a: string[], b: string[]) {
-	if (a === b) return true;
-	if (a == null || b == null) return false;
-	if (a.length !== b.length) return false;
-
-	for (var i = 0; i < a.length; ++i) {
-		if (a[i] !== b[i]) return false;
-	}
-	return true;
-}
-
-function cartesianProductOfArrays(arrayOfWordArrays: string[][]): string[][] {
-	let cartesianProduct = [];
-	for (let i = 0; i < arrayOfWordArrays.length; i++) {
-		let currentArray = arrayOfWordArrays[i];
-		if (cartesianProduct.length === 0) {
-			cartesianProduct = currentArray;
-		} else {
-			cartesianProduct = cartesianProduct.map(item => {
-				return currentArray.map(item2 => [item, item2].flat());
-			});
-			cartesianProduct = [].concat(...cartesianProduct);
-		}
-	}
-	return cartesianProduct;
-}
-
-function sortByLengthAscending(arrayOfWordArrays: string[][]): string[][] {
-	return arrayOfWordArrays.sort((a, b) => a.length - b.length);
-}
-
-const enum WordDirection {
-	Forward = 'forward',
-	Reverse = 'reverse',
-	Anagram = 'anagram',
-}
 
 /* ---------------------------------------------------------- Getting Devices */
 

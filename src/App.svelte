@@ -1,34 +1,30 @@
 <script lang="ts">
-import Grid from './Grid.svelte';
 import Panel from './Panel.svelte';
-import { Load } from './lib/FileManager';
-import { writable, derived } from 'svelte/store';
-import StateMediator, {
-	dictionary,
-	gridTemplate,
-	wordSlots,
-} from './StateMediator.svelte';
+import Grid from './Grid.svelte';
 import { Square } from 'svelte-loading-spinners';
+import { onMount } from 'svelte';
+import { writable, derived } from 'svelte/store';
 
-let loaded;
-$wordSlots = Load.lastSlots;
-Load.lastOrDefaultLayout().then(t => {
-	$gridTemplate = t;
-	loaded = true;
+/* ========================================================================== */
+
+let loading = true;
+let StateMediator;
+onMount(() => {
+	import('./StateMediator.svelte').then(s => (StateMediator = s.default));
 });
-Load.lastOrDefaultDictionary().then(d => ($dictionary = d));
+///
 </script>
 
 <!----------------------------------------------------------------------HTML--->
 <template lang="pug">
-
-StateMediator
-+if('!loaded')
++if('loading')
     .centre: Square(size="60" color="#000000" unit="px" duration="2s")
     +else()
-    #main
-        #gridArea: Grid
-        #panelArea: Panel
+        #main
+            #gridArea: Grid
+            #panelArea: Panel
+
+svelte:component(this='{StateMediator}' on:isLoading!='{(event)=>{loading=event.detail}}')
 </template>
 
 <!----------------------------------------------------------------------CSS----->

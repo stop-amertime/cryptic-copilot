@@ -1,10 +1,10 @@
 <script lang="ts">
 import Cell from './Cell.svelte';
 import { fly } from 'svelte/transition';
-import { cells, activeSlotId } from './StateMediator.svelte';
+import { activeSlotId, cells } from './StateMediator.svelte';
 /* -------------------------------------------------------------------------- */
 
-$: rowsize = Math.sqrt($cells.length) as number;
+$: rowsize = ~~Math.sqrt($cells.length) as number;
 
 // A cell is clicked - select the appropriate wordSlot.
 function updateSelectedSlot(event: CustomEvent): void {

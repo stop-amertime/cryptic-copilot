@@ -165,7 +165,7 @@ export const PossibleWords = {
 	},
 
 	hasMatch(letters: ISlotCellState[]): boolean {
-		let searchregex = this.generateMatchRegex(letters);
+		let searchregex = cellMatchRegex(letters);
 		let searchlength = letters.length;
 
 		for (let word of DICTIONARY) {
