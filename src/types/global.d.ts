@@ -83,12 +83,16 @@ type IWordSlot = {
 	cells: Array<number>;
 	word: string | null;
 	clue: string;
+	intersections: { slotId: number; myIndex: number; otherIndex: number }[];
+	possibleWords?: IWord[];
 };
 
 type ISlotCellState = {
 	letter: string;
 	isOverwritable: boolean;
 };
+
+type ISlotMatchArray = [letterIndex: number, letter: string][];
 
 /* ------------------------------------------------------- Saving And Loading */
 

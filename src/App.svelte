@@ -47,21 +47,24 @@ svelte:component(this='{StateMediator}' on:isLoading!='{(event)=>{loading=event.
 		position: absolute 0 0;
 		width: 100vw;
 		height: 100vh;
-		padding: 30px 10%;
+		padding: 30px 30px;
 		overflow-y: auto;
 		display: flex;
 		flex-wrap: nowrap;
 		align-items: center;
+		justify-content: center;
 	}
 
 	#gridArea {
 		flex: 1 0 400px;
 		max-width: 800px;
 		padding-right: 15px;
+		padding: 25px;
 	}
 
 	#panelArea {
-		flex: 1 1 300px;
+		flex: 2 0 300px;
+		max-width: 600px;
 		height: 100%;
 	}
 }

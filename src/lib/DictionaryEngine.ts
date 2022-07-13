@@ -1,7 +1,29 @@
 let DICTIONARY = new Map();
+let WORDS_OF_LENGTH = new Map() as Map<number, string[]>;
 export const setDictionary = (dictionary: IDictionary) => {
 	DICTIONARY = dictionary;
+	WORDS_OF_LENGTH = groupByLength([...dictionary.keys()]);
+	console.log('---- DictEngine Initialised');
 };
+
+function groupByLength(list: Array<any>) {
+	const map = new Map();
+
+	for (let item of list) {
+		if (typeof item != null && item != null) {
+			const key = item.length;
+			const collection = map.get(key);
+			if (!collection) {
+				map.set(key, [item]);
+			} else {
+				collection.push(item);
+			}
+		}
+	}
+	return map;
+}
+
+export const wordsOfLength = () => WORDS_OF_LENGTH;
 
 export function toGridWord(word) {
 	return word.toUpperCase().replace(/[^A-Z]/, '');
@@ -25,9 +47,9 @@ export const enum TrafficLight {
 
 export function cellMatchRegex(cells: ISlotCellState[]): RegExp {
 	let searchstring = '';
-	cells.forEach(cell => {
+	for (let cell of cells) {
 		searchstring += cell.isOverwritable ? '.' : cell.letter;
-	});
+	}
 	return new RegExp('(\\b|^)' + searchstring + '(\\b|$)');
 }
 
@@ -119,20 +141,31 @@ export async function getThesaurus(word: string): Promise<IThesaurusEntry> {
 	} as IThesaurusEntry;
 }
 
-export const PossibleWords = {
-	match(cells: ISlotCellState[]): IWord[] {
-		//? -> Finds all valid words for template e.g. [ _ A B _ _ C ] -> [FABRIC, ..., ...]
-		if (!cells || !cells.length) return null;
-		let searchregex = cellMatchRegex(cells);
-		let searchlength = cells.length;
+export function getMatchArray(
+	cells: ISlotCellState[]
+): [index: number, letter: string][] {
+	let array = [] as [index: number, letter: string][];
+	for (let i = 0; i < cells.length; i++) {
+		if (!cells[i].isOverwritable) {
+			array.push([i, cells[i].letter]);
+		}
+	}
+	return array;
+}
 
-		// Test through the dictionary
+export const PossibleWords = {
+	match(matchArray: ISlotMatchArray, searchLength: number): IWord[] {
+		//? -> Finds all valid words for template e.g. [ _ A B _ _ C ] -> [FABRIC, ..., ...]
 		let possibleWordsArray = [] as IWord[];
 
-		for (let entry of DICTIONARY) {
-			if (entry[0].length == searchlength && searchregex.test(entry[0])) {
-				possibleWordsArray.push({ word: entry[0], ...entry[1] });
+		if (matchArray.length == 0)
+			return WORDS_OF_LENGTH.get(searchLength).map(getWord);
+
+		checkword: for (let word of WORDS_OF_LENGTH.get(searchLength)) {
+			for (let [index, letter] of matchArray) {
+				if (word[index] != letter) continue checkword;
 			}
+			possibleWordsArray.push({ word, ...DICTIONARY.get(word) });
 		}
 		return possibleWordsArray;
 	},
@@ -164,14 +197,12 @@ export const PossibleWords = {
 		return [isValidSearch, userMessage, colour];
 	},
 
-	hasMatch(letters: ISlotCellState[]): boolean {
-		let searchregex = cellMatchRegex(letters);
-		let searchlength = letters.length;
-
-		for (let word of DICTIONARY) {
-			if (word[0].length == searchlength && searchregex.test(word[0])) {
-				return true;
+	hasMatch(matchArray: ISlotMatchArray, searchLength: number): boolean {
+		checkword: for (let word of WORDS_OF_LENGTH.get(searchLength)) {
+			for (let [index, letter] of matchArray) {
+				if (word[index] != letter) continue checkword;
 			}
+			return true;
 		}
 		return false;
 	},

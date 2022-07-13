@@ -1,26 +1,112 @@
 <script lang="ts">
+import { quadInOut } from 'svelte/easing';
+import { fly } from 'svelte/transition';
+import { Wave } from 'svelte-loading-spinners';
+import { getThesaurus, getWord, scoreToColour } from '../lib/DictionaryEngine';
+import Meanings from '../lib-sv/Meanings.svelte';
 export let word = 'NO WORD ENTERED';
+const wordinfo = getWord(word);
+const thesaurus = getThesaurus(word);
+const colour = scoreToColour(wordinfo.score);
 </script>
 
 <!----------------------------------------------------------------------HTML--->
 <div class="popover">
-	<div class {word} <div id="arrow" data-popper-arrow />
+	{#await thesaurus then thesaurusentry}
+		<div
+			class="content"
+			transition:fly={{
+				y: 20,
+				duration: 200,
+				easing: quadInOut,
+			}}
+		>
+			<div class="topArea" style:--colour={colour}>
+				<p class="titleWord">{word}</p>
+				<p class="titleScore">{wordinfo.score}</p>
+			</div>
+			<div class="wordInfo">
+				{#if thesaurusentry.numberOfSenses > 0}
+					<Meanings meanings={thesaurusentry} />
+				{:else}
+					<div class="error">Sorry: no definitions found.</div>
+				{/if}
+			</div>
+		</div>
+	{/await}
+	<div id="arrow" data-popper-arrow />
 </div>
 
 <!----------------------------------------------------------------------CSS----->
 <style lang="scss">
 $popovercolor: white;
+
 .popover {
-	box-shadow: 10px 0px 15px rgba(0, 0, 0, 0.435);
 	background-color: $popovercolor;
 	width: 300px;
-	height: 300px;
-	border-radius: 3px;
-	padding: 10px;
+	max-height: 500px;
+	display: block;
+	background-color: rgba(0, 0, 0, 0);
+
+	.content {
+		opacity: 1;
+		background-color: $popovercolor;
+		box-shadow: 0px 10px 10px rgba(73, 73, 73, 0.435);
+		border-radius: 5px;
+		overflow: hidden;
+		width: 100%;
+		height: 100%;
+		display: block;
+	}
+
+	.topArea {
+		padding: 0px;
+		margin: 0px;
+		width: 100%;
+		height: 40px;
+		background-color: var(--colour);
+		display: block;
+		box-shadow: 1px 3px 5px black;
+
+		.titleWord {
+			float: left;
+			font-size: 22px;
+			font-weight: bold;
+			color: black;
+			height: 40px;
+			padding: 0 20px;
+			margin: 0px;
+			line-height: 40px;
+		}
+
+		.titleScore {
+			float: left;
+			font-size: 22px;
+			color: grey;
+			padding: 0px;
+			margin: 0px;
+			height: 100%;
+			line-height: 40px;
+		}
+	}
+
+	.wordInfo {
+		width: 100%;
+		max-height: 300px;
+		overflow-y: auto;
+	}
+
+	.error {
+		height: max-content;
+		color: red;
+		font-size: 12px;
+		text-align: center;
+		padding: 10px;
+	}
 }
 
 #arrow::before {
-	background-color: $popovercolor;
+	background-color: white !important;
 	content: '';
 	transform: rotate(45deg);
 }
@@ -28,9 +114,11 @@ $popovercolor: white;
 #arrow,
 #arrow::before {
 	position: absolute;
-	width: 8px;
-	height: 8px;
+	width: 2px;
+	height: 2px;
+	background-color: white;
 	z-index: -1;
+	box-shadow: 2px 2px 10px black;
 }
 
 :global(.popover[data-popper-placement^='bottom'] > #arrow) {

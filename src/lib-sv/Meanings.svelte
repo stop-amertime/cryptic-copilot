@@ -21,6 +21,11 @@ const rowSizer = node => {
                         .syn.main {synonym.mainWord}
                         +each('synonym?.relatedWords || [] as related')
                             .syn.related {related}
+    +if('meanings.abbreviationFor')
+        p.abbrHeader Cryptic Abbreviation For: 
+        .abbrWrapper
+            +each('meanings?.abbreviationFor || [] as abbr')
+                .abbrDef {abbr}
 
 </template>
 
@@ -33,7 +38,7 @@ $indent: 15px;
 .scrollwrapper {
 	position: relative;
 	@include size(100%, 100%);
-	overflow-y: scroll;
+	overflow-y: auto;
 	display: block;
 	align-items: center;
 }
@@ -64,11 +69,16 @@ details.partOfSpeech {
 		text-align: left;
 		height: max-content;
 		max-width: min(80ch, 90%);
+		line-height: 14px;
 
 		.partName,
 		.definition {
 			flex: 0 1 auto;
 			padding: 5px;
+		}
+
+		&:hover {
+			background-color: #f0f0f0;
 		}
 	}
 
@@ -97,6 +107,30 @@ details.partOfSpeech {
 		&.related {
 			flex: 2 1 auto;
 		}
+	}
+}
+
+.abbrHeader {
+	font-size: 16px;
+	font-style: italic;
+	margin-top: 10px;
+	margin-bottom: 10px;
+	text-align: center;
+}
+
+.abbrWrapper {
+	display: flex;
+	flex-wrap: wrap;
+	margin-top: 10px;
+	margin-bottom: 10px;
+	justify-content: center;
+
+	.abbrDef {
+		font-size: 12px;
+		outline: 1px solid grey;
+		padding: 5px;
+		margin: 3px;
+		border-radius: 5px;
 	}
 }
 </style>

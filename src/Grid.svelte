@@ -4,7 +4,7 @@ import { fly } from 'svelte/transition';
 import { activeSlotId, cells } from './StateMediator.svelte';
 /* -------------------------------------------------------------------------- */
 
-$: rowsize = ~~Math.sqrt($cells.length) as number;
+$: rowsize = Math.sqrt($cells.length) as number;
 
 // A cell is clicked - select the appropriate wordSlot.
 function updateSelectedSlot(event: CustomEvent): void {

@@ -74,10 +74,7 @@ export const monad = (input: any) => {
 	return {
 		value: input,
 		chain: (fn: (input: any) => any) => {
-			if (!input) console.warn('FAILED TO: ', fn.name);
-			console.time(fn.name);
 			let result = fn(input);
-			console.timeEnd(fn.name);
 			return monad(result);
 		},
 		output: (fnPass: (input: any) => void, fnFail: () => void) => {

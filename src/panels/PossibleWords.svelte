@@ -9,6 +9,7 @@ import {
 	activeWord,
 	activeSlotId,
 	activePossibleWords,
+	isWordBanned,
 } from '../StateMediator.svelte';
 import { PossibleWords, scoreToColour } from '../lib/DictionaryEngine';
 import LetterBoxes from '../lib-sv/LetterBoxes.svelte';
@@ -66,44 +67,11 @@ $: chunkedPossibleWords =
 $: pluralString =
 	filteredPossibleWords.length != 1 ? ' matching words' : ' matching word';
 
-const showInfo = (event: CustomEvent, word: IWord) => {
-	event.stopPropagation();
-	let node = event.target as HTMLElement;
-	//add a clickable icon to the node, to open a popup
-	let icon = document.createElement('div');
-	icon.classList.add('icon');
-	icon.innerHTML = `<svg class="iconify" data-icon="mdi:information-outline" data-inline="false" style="fill: #fff;"></svg>`;
-	icon.addEventListener('click', () => {
-		let popup = document.createElement('div');
-		popup.classList.add('popup');
-		popup.innerHTML = `<div class="popup-content">
-            <div class="popup-header">
-                <h1>${word.word}</h1>
-                <div class="popup-close">
-                    <svg class="iconify" data-icon="mdi:close" data-inline="false" style="fill: #fff;"></svg>
-                </div>
-            </div>
-            <div class="popup-body">
-                <div class="popup-word">`;
-
-		let letters = word.word.split('');
-		letters.forEach(letter => {
-			popup.innerHTML += `<div class="popup-letter">${letter}</div>`;
-		});
-		popup.innerHTML += `</div>
-                <div class="popup-definition">${word.score}</div>
-            </div>
-        </div>`;
-		popup.addEventListener('click', e => {
-			let target = e.target as HTMLElement;
-			if (target.classList.contains('popup-close')) {
-				popup.remove();
-			}
-		});
-		node.appendChild(popup);
-	});
-	node.appendChild(icon);
-};
+function checkIfBanned(node: HTMLElement, word: string) {
+	if ($isWordBanned(word)) {
+		node.classList.add('banned');
+	}
+}
 
 /* ==================================== - =================================== */
 </script>
@@ -151,55 +119,47 @@ const showInfo = (event: CustomEvent, word: IWord) => {
 				>
 			{/if}
 		</div>
-
 		<div id="possibleWordsArea" bind:clientHeight={possibleWordsHeight}>
-			<div
-				id="possibleWordsWrapper"
-				bind:clientWidth={wrapperWidth}
-				transition:fade
-			>
-				{#if filteredPossibleWords && filteredPossibleWords.length > 0}
-					<VirtualList items={chunkedPossibleWords} let:item>
-						<div class="wordRow" style="--cols:{colCount}">
-							{#each item as possibleWord}
-								<Button
-									ripple
-									color="dark"
-									variant="outline"
-									class="possword"
-									on:hover={event =>
-										showInfo(event, possibleWord)}
-									override={{
-										fontFamily: 'Courier Prime',
-										width: '100%',
-										backgroundColor: scoreToColour(
-											possibleWord.score
-										),
-									}}
-									on:click={() =>
-										($activeWord = possibleWord.word)}
-									>{possibleWord.word}</Button
-								>
-							{/each}
-						</div>
-					</VirtualList>
-				{:else if !filteredPossibleWords || filteredPossibleWords.length == 0}
-					<div id="noPossibleWords">
-						<img
-							id="noWordsIcon"
-							src="/src/assets/icons/nomatches.png"
-							alt="No matching words."
-						/>
+			{#key $activeSlotId}
+				<div
+					id="possibleWordsWrapper"
+					bind:clientWidth={wrapperWidth}
+					transition:fade
+				>
+					{#if filteredPossibleWords && filteredPossibleWords.length > 0}
+						<VirtualList items={chunkedPossibleWords} let:item>
+							<div class="wordRow" style="--cols:{colCount}">
+								{#each item as possibleWord}
+									<button
+										class="possword"
+										use:checkIfBanned={possibleWord.word}
+										style:--score={possibleWord.score}
+										on:click={() =>
+											($activeWord = possibleWord.word)}
+										>{possibleWord.word}</button
+									>
+								{/each}
+							</div>
+						</VirtualList>
+					{:else if !filteredPossibleWords || filteredPossibleWords.length == 0}
+						<div id="noPossibleWords">
+							<img
+								id="noWordsIcon"
+								src="/src/assets/icons/nomatches.png"
+								alt="No matching words."
+							/>
 
-						<p class="noWordsText">
-							<strong
-								>No matching words in our dictionary - sorry.</strong
-							><br />
-							You can type new words into the bar above.
-						</p>
-					</div>
-				{/if}
-			</div>
+							<p class="noWordsText">
+								<strong
+									>No matching words in our dictionary -
+									sorry.</strong
+								><br />
+								You can type new words into the bar above.
+							</p>
+						</div>
+					{/if}
+				</div>
+			{/key}
 		</div>
 	</div>
 {:else}
@@ -254,9 +214,55 @@ const showInfo = (event: CustomEvent, word: IWord) => {
 	padding-right: 20px;
 }
 
-/* .possword{
-        background-color: red;
-    } */
+.possword {
+	position: relative;
+	background-color: hsl(calc(var(--score) * 2), 75%, 80%);
+	// add css for hovering button
+	border: 1px solid hsl(calc(var(--score) * 2), 75%, 50%);
+	color: hsl(calc(var(--score) * 2), 75%, 20%);
+	font-size: 1.2em;
+	padding: 5px;
+	border-radius: 5px;
+	cursor: pointer;
+	transition: all 0.2s ease-in-out;
+
+	&:after {
+		counter-reset: score var(--score);
+		content: counter(score);
+		position: absolute;
+		right: 5px;
+		font-size: 0.7em;
+		color: rgba(0, 0, 0, 0.278);
+	}
+
+	&:hover {
+		background-color: hsl(calc(var(--score) * 2), 75%, 90%);
+		color: hsl(calc(var(--score) * 2), 75%, 10%);
+	}
+
+	&:active {
+		background-color: hsl(calc(var(--score) * 2), 75%, 60%);
+		color: hsl(calc(var(--score) * 2), 75%, 10%);
+	}
+
+	&:global(.banned:before) {
+		content: '!';
+		width: 20px;
+		height: 20px;
+		color: white;
+		font-size: 18px;
+		line-height: 18px;
+		margin-right: 5px;
+		position: absolute;
+		font-weight: bolder;
+		top: -5px;
+		left: 2px;
+		border-radius: 50%;
+		background-color: orange;
+		z-index: 2;
+		box-shadow: 5px 2px 10px rgba(0, 0, 0, 0.278);
+	}
+}
 
 #noPossibleWords {
 	display: flex;

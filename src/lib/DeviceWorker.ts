@@ -12,9 +12,9 @@ let HASHMAP: IWordHashMap = new Map();
 let HASHLIST: number[] = [];
 
 /* ------------------------------------------------------------------ Filters */
-let MIN_WORD_LENGTH: number;
-let MIN_WORD_SCORE: number;
-let MAX_ANAGRAM_WORDS: number;
+let MIN_WORD_LENGTH = 15;
+let MIN_WORD_SCORE = 45;
+let MAX_ANAGRAM_WORDS = 4;
 let TARGET_WORD: string;
 
 /* ---------------------------------------------------------- Setup Functions */
@@ -147,8 +147,6 @@ const hashToKeyArray = (hash: number): string[] => {
 const keyToIWord = (word: string): IWord => {
 	return { word, ...DICTIONARY.get(word) };
 };
-
-/* ----------------------------------------------  String & Array Helpers   */
 
 /* ---------------------------------------------------------- Getting Devices */
 

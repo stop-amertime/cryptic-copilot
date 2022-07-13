@@ -54,6 +54,7 @@ export function makeWordSlots(gridTemplate: IGridLayout): IWordSlot[] {
 						cells: mycells,
 						word: null,
 						clue: '',
+						intersections: [],
 					} as IWordSlot);
 
 					numberedCell = true;
@@ -81,6 +82,7 @@ export function makeWordSlots(gridTemplate: IGridLayout): IWordSlot[] {
 						cells: mycells,
 						word: null,
 						clue: '',
+						intersections: [],
 					});
 					numberedCell = true;
 				}
@@ -95,21 +97,45 @@ export function makeWordSlots(gridTemplate: IGridLayout): IWordSlot[] {
 	return temp_wordSlots as IWordSlot[];
 }
 
-export function mapCellsToSlots(cells: ICell[], slots: IWordSlot[]): ICell[] {
+export function mapCellsToSlots(
+	cells: ICell[],
+	slots: IWordSlot[]
+): [ICell[], IWordSlot[]] {
 	// Update each cell with the slots it occupies.
-	let newcells = cells.slice();
-	newcells.forEach((cell, index) => {
+	// Update each slot with a list of intersecting slots.
+
+	let [tmpCells, tmpSlots] = [cells.slice(), slots.slice()];
+
+	tmpCells.forEach((cell, index) => {
 		let mySlots = [];
 		for (let i = 0; i < slots.length; i++) {
 			if (slots[i].cells[0] == cell.id) {
-				newcells[cell.id].isNumbered = true;
+				tmpCells[cell.id].isNumbered = true;
 				mySlots.push(i);
-			}
-			if (slots[i].cells.some(c => c == cell.id)) {
+			} else if (slots[i].cells.some(c => c === cell.id)) {
 				mySlots.push(i);
 			}
 		}
-		newcells[index].slots = mySlots;
+		tmpCells[index].slots = mySlots;
+
+		if (mySlots.length > 1) {
+			let slotA = mySlots[0];
+			let slotB = mySlots[1];
+			let indexAtA = slots[slotA].cells.indexOf(cell.id);
+			let indexAtB = slots[slotB].cells.indexOf(cell.id);
+
+			tmpSlots[slotA].intersections.push({
+				slotId: slotB,
+				myIndex: indexAtA,
+				otherIndex: indexAtB,
+			});
+
+			tmpSlots[slotB].intersections.push({
+				slotId: slotA,
+				myIndex: indexAtB,
+				otherIndex: indexAtA,
+			});
+		}
 	});
-	return newcells as ICell[];
+	return [tmpCells, tmpSlots] as [ICell[], IWordSlot[]];
 }
