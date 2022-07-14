@@ -51,7 +51,8 @@ StateMediator:
 
 <style lang="scss">
 #saveLoadArea {
-	@include size(50px, 200px);
+	width: 100%;
+	height: 20%;
 	display: flex;
 	flex-direction: row;
 	justify-content: space-around;
@@ -60,17 +61,23 @@ StateMediator:
 }
 
 button {
-	font-family: 'Courier Prime', monospace;
-	font-size: 1.5em;
+	font-size: 1.2em;
 	padding: 10px;
 	border: 1px solid #000;
 	border-radius: 5px;
+	margin: 10px;
 	background-color: #fff;
 	color: #000;
 	cursor: pointer;
-}
 
-button:hover {
-	opacity: 0.8;
+	//add colouring on hover and click
+	&:hover {
+		background-color: rgb(194, 192, 192);
+		color: rgb(111, 109, 109);
+	}
+	&:active {
+		background-color: rgb(231, 231, 231);
+		color: #000;
+	}
 }
 </style>

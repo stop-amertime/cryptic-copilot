@@ -1,5 +1,6 @@
 let DICTIONARY = new Map();
 let WORDS_OF_LENGTH = new Map() as Map<number, string[]>;
+
 export const setDictionary = (dictionary: IDictionary) => {
 	DICTIONARY = dictionary;
 	WORDS_OF_LENGTH = groupByLength([...dictionary.keys()]);
@@ -23,15 +24,11 @@ function groupByLength(list: Array<any>) {
 	return map;
 }
 
-export const wordsOfLength = () => WORDS_OF_LENGTH;
-
-export function toGridWord(word) {
-	return word.toUpperCase().replace(/[^A-Z]/, '');
-}
-
-export const getWord = (word: string): IWord => {
-	return { word, ...DICTIONARY.get(word) };
-};
+export const toGridWord = word => word.toUpperCase().replace(/[^A-Z]/, '');
+export const getWord = (word: string): IWord => ({
+	word,
+	...DICTIONARY.get(word),
+});
 
 export const scoreToColour = (score: number): string => {
 	if (!score) return 'rgb(220, 220, 220)';
@@ -45,7 +42,7 @@ export const enum TrafficLight {
 	Red = '#FF0000',
 }
 
-export function cellMatchRegex(cells: ISlotCellState[]): RegExp {
+export function cellMatchRegex(cells: ICellState[]): RegExp {
 	let searchstring = '';
 	for (let cell of cells) {
 		searchstring += cell.isOverwritable ? '.' : cell.letter;
@@ -141,9 +138,7 @@ export async function getThesaurus(word: string): Promise<IThesaurusEntry> {
 	} as IThesaurusEntry;
 }
 
-export function getMatchArray(
-	cells: ISlotCellState[]
-): [index: number, letter: string][] {
+export function getMatchArray(cells: ICellState[]): IMatchPredicate[] {
 	let array = [] as [index: number, letter: string][];
 	for (let i = 0; i < cells.length; i++) {
 		if (!cells[i].isOverwritable) {
@@ -154,7 +149,7 @@ export function getMatchArray(
 }
 
 export const PossibleWords = {
-	match(matchArray: ISlotMatchArray, searchLength: number): IWord[] {
+	match(matchArray: IMatchPredicate[], searchLength: number): IWord[] {
 		//? -> Finds all valid words for template e.g. [ _ A B _ _ C ] -> [FABRIC, ..., ...]
 		let possibleWordsArray = [] as IWord[];
 
@@ -170,7 +165,7 @@ export const PossibleWords = {
 		return possibleWordsArray;
 	},
 
-	validate(filterTerm: string, cells: ISlotCellState[]) {
+	validate(filterTerm: string, cells: ICellState[]) {
 		let searchLength = filterTerm.length;
 		let slotLength = cells.length;
 		let isValidSearch, userMessage, colour;
@@ -197,7 +192,7 @@ export const PossibleWords = {
 		return [isValidSearch, userMessage, colour];
 	},
 
-	hasMatch(matchArray: ISlotMatchArray, searchLength: number): boolean {
+	hasMatch(matchArray: IMatchPredicate[], searchLength: number): boolean {
 		checkword: for (let word of WORDS_OF_LENGTH.get(searchLength)) {
 			for (let [index, letter] of matchArray) {
 				if (word[index] != letter) continue checkword;

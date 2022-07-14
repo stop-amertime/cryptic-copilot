@@ -67,11 +67,9 @@ function minifyDictionary(dictionary) {
 	let string = '';
 	for (let [key, value] of dictionary) {
 		if (value.abbreviationFor) {
-			string += `${key} ${value.score} ${
-				value.hash
-			};${value.abbreviationFor.join()}#`;
+			string += `${key} ${value.score};${value.abbreviationFor.join()}#`;
 		} else {
-			string += `${key} ${value.score} ${value.hash}#`;
+			string += `${key} ${value.score}#`;
 		}
 	}
 	return string;
@@ -92,11 +90,10 @@ function unminifyDictionary(minifiedstring: string) {
 		let wordobject = {
 			isAbbreviation,
 			score: proparray[1],
-			hash: proparray[2],
 		} as IDictionaryEntry;
 
 		if (parsestring.length > 1) {
-			wordobject['abbreviationFor'] = parsestring[1].split(',');
+			wordobject.abbreviationFor = parsestring[1].split(',');
 		}
 
 		temp_DICTIONARY.set(proparray[0], wordobject);
@@ -148,7 +145,13 @@ export const Load = {
 		} else {
 			let response = await fetch(DICT_URL[DICT_SAVECOMPRESSION]);
 			let fetchedString = await response.text();
-			return parseAndLoadDictionary(fetchedString, DICT_SAVECOMPRESSION);
+			localStorage.setItem('dictionary', fetchedString);
+			let dict = parseAndLoadDictionary(
+				fetchedString,
+				DICT_SAVECOMPRESSION
+			);
+			localStorage.setItem('dictionary', minifyDictionary(dict));
+			return dict;
 			// document.body.addEventListener('click', () =>
 			// 	Save.textToFile(
 			// 		LZString.compressToUTF16(minifyDictionary(temp_dictionary))

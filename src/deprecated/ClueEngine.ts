@@ -203,7 +203,7 @@ function toGridWord(word) {
 }
 //}
 
-function generateMatchRegex(cells: ISlotCellState[]): RegExp {
+function generateMatchRegex(cells: ICellState[]): RegExp {
 	let searchstring = '';
 	cells.forEach(cell => {
 		searchstring += cell.isOverwritable ? '.' : cell.letter;
@@ -551,7 +551,7 @@ function searchHiddenWords(searchWord) {
 export const validWordFinder = {
 	//Pull out default options/ variables if adding user settings (e.g. search depth, dictionaries, etc.Obj)
 
-	search(cells: ISlotCellState[]): string[] {
+	search(cells: ICellState[]): string[] {
 		//? -> Finds all valid words for template e.g. [ _ A B _ _ C ] -> [FABRIC, ..., ...]
 
 		let searchregex = generateMatchRegex(cells);
@@ -569,7 +569,7 @@ export const validWordFinder = {
 		return possibleWordsArray;
 	},
 
-	checkValidNewWord(filterTerm: string, cells: ISlotCellState[]) {
+	checkValidNewWord(filterTerm: string, cells: ICellState[]) {
 		let searchLength = filterTerm.length;
 		let slotLength = cells.length;
 		let isValidSearch, userMessage, colour;

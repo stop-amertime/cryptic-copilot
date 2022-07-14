@@ -1,7 +1,7 @@
 <script lang="ts">
 import { fly } from 'svelte/transition';
 
-export let letters = [] as ISlotCellState[];
+export let letters = [] as ICellState[];
 
 let wrapperWidth, wrapperHeight;
 $: maxBoxWidth = wrapperWidth / letters.length;

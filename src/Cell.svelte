@@ -89,7 +89,6 @@ $: animProps = {
 .invalid {
 	display: inline;
 	background-color: black;
-	z-index: 2;
 	//outline: 1px solid black;
 }
 
@@ -100,7 +99,13 @@ $: animProps = {
 
 .impossible {
 	border: 1px solid red;
-	background-color: hsla(0, 100%, 85%, 0.1);
+	background-color: hsla(0, 100%, 85%, 0.412);
+}
+
+.impossible.selected {
+	border: 1px solid red;
+	opacity: 0.5;
+	background-color: hsl(120, 100%, 85%);
 }
 
 .valid:hover:not(.selected) {

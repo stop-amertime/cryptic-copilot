@@ -24,7 +24,7 @@ onMount(() => {
             #gridArea: Grid
             #panelArea: Panel
 
-svelte:component(this='{StateMediator}' on:isLoading!='{(event)=>{loading=event.detail}}')
+svelte:component(this='{StateMediator}' on:isLoading!='{(ev)=>{loading=ev.detail}}')
 </template>
 
 <!----------------------------------------------------------------------CSS----->

@@ -51,7 +51,7 @@ $popovercolor: white;
 	.content {
 		opacity: 1;
 		background-color: $popovercolor;
-		box-shadow: 0px 10px 10px rgba(73, 73, 73, 0.435);
+		box-shadow: 10px 20px 30px rgba(0, 0, 0, 0.435);
 		border-radius: 5px;
 		overflow: hidden;
 		width: 100%;
@@ -66,7 +66,7 @@ $popovercolor: white;
 		height: 40px;
 		background-color: var(--colour);
 		display: block;
-		box-shadow: 1px 3px 5px black;
+		box-shadow: 1px 3px 10px rgba(103, 103, 103, 0.279);
 
 		.titleWord {
 			float: left;
@@ -80,11 +80,11 @@ $popovercolor: white;
 		}
 
 		.titleScore {
-			float: left;
+			float: right;
 			font-size: 22px;
 			color: grey;
 			padding: 0px;
-			margin: 0px;
+			margin: 0px 20px;
 			height: 100%;
 			line-height: 40px;
 		}
@@ -92,13 +92,13 @@ $popovercolor: white;
 
 	.wordInfo {
 		width: 100%;
-		max-height: 300px;
+		max-height: 400px;
 		overflow-y: auto;
 	}
 
 	.error {
 		height: max-content;
-		color: red;
+		color: rgb(158, 4, 4);
 		font-size: 12px;
 		text-align: center;
 		padding: 10px;

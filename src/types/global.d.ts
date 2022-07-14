@@ -17,6 +17,7 @@ type IDictionaryEntry = {
 
 type IWord = IDictionaryEntry & {
 	word: string;
+	index?: number;
 };
 
 /* -----------------------------------------------     Dictionary & Thesaurus */
@@ -83,16 +84,22 @@ type IWordSlot = {
 	cells: Array<number>;
 	word: string | null;
 	clue: string;
-	intersections: { slotId: number; myIndex: number; otherIndex: number }[];
-	possibleWords?: IWord[];
+	intersections: ISlotIntersection[];
+	isImpossible: boolean;
 };
 
-type ISlotCellState = {
+type ISlotIntersection = {
+	slotId: number;
+	myIndex: number;
+	otherIndex: number;
+};
+
+type ICellState = {
 	letter: string;
 	isOverwritable: boolean;
 };
 
-type ISlotMatchArray = [letterIndex: number, letter: string][];
+type IMatchPredicate = [position: number, letter: string];
 
 /* ------------------------------------------------------- Saving And Loading */
 
@@ -111,8 +118,7 @@ type IWorkerTask<Input, Output> = {
 	error?: string;
 };
 
-interface IWorkerPossibleWordsTask
-	extends IWorkerTask<ISlotCellState[], string[]> {
+interface IWorkerPossibleWordsTask extends IWorkerTask<ICellState[], string[]> {
 	request: 'possibleWords';
 }
 

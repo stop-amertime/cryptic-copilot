@@ -636,7 +636,7 @@ function sortDevices(devices: IDeviceSet): void {
 /* ========================= FINDING POSSIBLE WORDS ========================= */
 
 export const validWordFinder = {
-	search(cells: ISlotCellState[]): string[] {
+	search(cells: ICellState[]): string[] {
 		let searchregex = generateMatchRegex(cells);
 		let searchlength = cells.length;
 
@@ -652,7 +652,7 @@ export const validWordFinder = {
 		return possibleWordsArray;
 	},
 
-	checkValidNewWord(filterTerm: string, cells: ISlotCellState[]) {
+	checkValidNewWord(filterTerm: string, cells: ICellState[]) {
 		let searchLength = filterTerm.length;
 		let slotLength = cells.length;
 		let isValidSearch: boolean, userMessage: any, colour: any;
@@ -679,7 +679,7 @@ export const validWordFinder = {
 		return [isValidSearch, userMessage, colour]; //todo: Move Search Logic into Component?
 	},
 
-	anyPossibleWord(letters: ISlotCellState[]): boolean {
+	anyPossibleWord(letters: ICellState[]): boolean {
 		let searchregex = this.generateMatchRegex(letters);
 		let searchlength = letters.length;
 
@@ -693,7 +693,7 @@ export const validWordFinder = {
 	},
 };
 
-function generateMatchRegex(cells: ISlotCellState[]): RegExp {
+function generateMatchRegex(cells: ICellState[]): RegExp {
 	let searchstring = '';
 	cells.forEach(cell => {
 		searchstring += cell.isOverwritable ? '.' : cell.letter;

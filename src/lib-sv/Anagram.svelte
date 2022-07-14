@@ -27,27 +27,30 @@ export let device: IDevice;
 .device {
 	display: flex;
 	align-items: stretch;
-	height: 40px;
-	line-height: 40px;
+	line-height: 80px;
 }
 
-:global(.word) {
+.word {
 	display: inline-block;
 	position: relative;
 	font-size: 16px;
 	font-family: 'Courier Prime', Courier, monospace;
-	margin: 2px 2px;
+	margin: 8px 2px;
 	border-radius: 2px;
 	border: 1px solid gray;
 	cursor: pointer;
 	overflow: visible;
+	text-transform: lowercase;
 }
 
-:global(.word:hover) {
+.word:hover {
 	opacity: 0.8;
 }
 
-:global(.word.abbr) {
-	font-style: italic;
+.abbr {
+	font-style: bolder;
+	border: 1px solid black;
+	opacity: 0.7;
+	text-transform: uppercase;
 }
 </style>

@@ -13,8 +13,8 @@ let HASHLIST: number[] = [];
 
 /* ------------------------------------------------------------------ Filters */
 let MIN_WORD_LENGTH = 15;
-let MIN_WORD_SCORE = 45;
-let MAX_ANAGRAM_WORDS = 4;
+let MIN_WORD_SCORE = 20;
+let MAX_ANAGRAM_WORDS = 5;
 let TARGET_WORD: string;
 
 /* ---------------------------------------------------------- Setup Functions */
@@ -38,13 +38,12 @@ export const updateWordFilters = ({
 
 export const getDevices = (word: string): IDeviceSet => {
 	TARGET_WORD = word;
+	console.log('--> DW: Start:' + word);
 	return monad(word)
 		.chain(findValidHashCombinations)
 		.chain(inflateHashCombinations)
 		.chain(sortByLengthAscending)
 		.chain(categoriseWordArraysAsDevices).value;
-
-	// Add sorting in here later.
 };
 
 export const availableFunctions = { initialise, updateWordFilters, getDevices };
@@ -114,11 +113,12 @@ function makeHashMap(): void {
 	let temp = new Map() as Map<number, Set<string>>;
 	for (let [key, value] of DICTIONARY) {
 		if (key.length < 15 && value.score > 46) {
-			let previous = temp.get(value.hash);
+			let wordhash = hash(key);
+			let previous = temp.get(wordhash);
 			if (previous) {
-				temp.set(value.hash, previous.add(key));
+				temp.set(wordhash, previous.add(key));
 			} else {
-				temp.set(value.hash, new Set([key]));
+				temp.set(wordhash, new Set([key]));
 			}
 		}
 	}
@@ -141,12 +141,18 @@ const hashToKeyArray = (hash: number): string[] => {
 			hash /= value;
 		}
 	}
-	return [string + '!!!'];
+	return [string];
 };
 
 const keyToIWord = (word: string): IWord => {
 	return { word, ...DICTIONARY.get(word) };
 };
+
+function sleep(ms: number) {
+	console.log('--WORKER: Sleeping for ' + ms + 'ms');
+	var now = new Date().getTime();
+	while (new Date().getTime() < now + ms) {}
+}
 
 /* ---------------------------------------------------------- Getting Devices */
 
@@ -175,8 +181,12 @@ function findValidHashCombinations(
 		}
 		let returnarray: number[][] = [];
 
+		let inputLen = unhash(inputHash)[0].length;
+		let minLen = (inputLen >> 1) - 1;
+
 		for (let i = start; i < listlen; i++) {
 			let iter: number = factorList[i] as number;
+			if (HASHMAP.get(iter)[0].length < minLen) continue;
 			if (inputHash % iter == 0) {
 				let remaining: number = inputHash / iter;
 				let indexOfRemaining: number = factorList.findIndex(
@@ -210,14 +220,27 @@ function inflateHashCombinations(hashArrays: number[][]): string[][] {
 	for (let hashArray of hashArrays) {
 		let arrayOfWordArrays: string[][] = hashArray.map(n => unhash(n));
 		let cartesianProduct = cartesianProductOfArrays(arrayOfWordArrays);
-		for (let i = 0; i < cartesianProduct.length; i++) {
-			if (!output.some(a => arraysEqual(a, cartesianProduct[i]))) {
-				output.push(cartesianProduct[i]);
-			}
-		}
+		output.push(...cartesianProduct);
 	}
 	return output;
 }
+
+function firstHashCombination(hashArrays: number[][]): string[][] {
+	let output = [] as string[][];
+	for (let hashArray of hashArrays) {
+		let wordArray: string[] = hashArray.map(
+			n => unhash(n).sort(w => DICTIONARY.get(w).score)[0]
+		);
+		output.push(wordArray);
+	}
+	return output;
+}
+
+// function getFirstHashCombination( hashArrays: number[][] ): string[][] {
+//     let output = [] as string[][];
+// 	for (let hashArray of hashArrays) {
+// 		let wordArray: string[] = hashArray.map(n => unhash(n)[0]);
+// }
 
 function isDevice(
 	targetWord: string,
@@ -349,7 +372,7 @@ function categoriseWordArraysAsDevices(anagramList: string[][]): IDeviceSet {
 	let containers = [] as IDevice[];
 	let anagrams = [] as IDevice[];
 
-	for (let anagramSet of anagramList) {
+	for (let anagramSet of anagramList.slice(0, 1000)) {
 		let device = isDevice(TARGET_WORD, anagramSet);
 
 		if (!device) {
@@ -364,3 +387,132 @@ function categoriseWordArraysAsDevices(anagramList: string[][]): IDeviceSet {
 }
 
 ////// TO ADD: SORTING, FILTERING, etc.
+
+let ORIGINAL_WORD_ARRAY = [];
+
+///////// GOAL : RETURN if is DEVICE, and Array of 'original' words to compare direction.
+
+function isDevice2(
+	targetWord: string,
+	inputWordArray: string[],
+	depth = 0
+): Array<IWord> {
+	let subWordArray = inputWordArray.slice();
+	if (
+		subWordArray.length == 1 &&
+		subWordArray[0].length == targetWord.length
+	) {
+		return [{ ...keyToIWord(subWordArray[0]), direction: targetWord }];
+	}
+
+	// MULTIPLE WORDS - RECURSIVELY BUILD AS CHARADE/CONTAINER
+	for (let i = 0; i < subWordArray.length; i++) {
+		let subword = subWordArray[i];
+		let charade = isCharade(subWordArray[i], targetWord);
+		if (charade == 'start') {
+			let matched: string,
+				leftovers = '';
+			[matched, leftovers] = [
+				targetWord.slice(0, subword.length),
+				targetWord.slice(subword.length),
+			];
+			subWordArray.splice(i, 1);
+			i = -1;
+			let recursive = isDevice(leftovers, subWordArray, depth);
+			if (recursive) {
+				return [
+					{
+						...keyToIWord(subword),
+						direction: matched,
+						index: inputWordArray.indexOf(subword),
+					},
+					...recursive,
+				];
+			}
+		} else if (charade == 'end') {
+			//if (trivialEndings.includes(subWordArray[i])) {continue;} //throw away if 'trivial' word ending.
+
+			let subword = subWordArray[i];
+
+			let matched = targetWord.slice(-1 * subword.length);
+			let leftovers = targetWord.slice(
+				0,
+				targetWord.length - subword.length
+			);
+
+			subWordArray.splice(i, 1);
+			let recursive = isDevice(leftovers, subWordArray, depth);
+			if (recursive != null) {
+				return [
+					...recursive,
+					{
+						...keyToIWord(subword),
+						direction: findDirection(subword, matched),
+						index: inputWordArray.indexOf(subword),
+					},
+				];
+			}
+		} else if (depth == 0) {
+			//Try a container IF not already in a container (avoid double nesting)
+			let cont = isContainer(subword, targetWord);
+			if (cont != null) {
+				let matched: string,
+					leftovers = '';
+				[matched, leftovers] = cont;
+				subWordArray.splice(i, 1);
+				let recursive = isDevice(leftovers, subWordArray, 1);
+				if (recursive != null) {
+					return [
+						{
+							...keyToIWord(subword),
+							direction: findDirection(subword, matched),
+							index: inputWordArray.indexOf(subword),
+							contains: recursive,
+						} as IWord,
+					];
+				}
+			}
+		}
+	}
+
+	//NO MATCHES OF ANY KIND: RETURN NULL.
+	return null;
+
+	function isCharade(subword: string, baseword: string): string {
+		switch ([...subword].sort().join('')) {
+			case [...baseword.substring(0, subword.length)].sort().join(''):
+				return 'start';
+			case [...baseword.substring(baseword.length - subword.length)]
+				.sort()
+				.join(''):
+				return 'end';
+			default:
+				return null;
+		}
+	}
+
+	function isContainer(
+		subword: string,
+		baseword: string
+	): [match: string, rest: string] {
+		if (subword.length < 2) {
+			return null;
+		}
+
+		let sorted = [...subword].sort().join('');
+		let lengthdiff = baseword.length - subword.length;
+		if (lengthdiff == 0) {
+			return null;
+		} //just in case
+
+		for (let i = 1; i + lengthdiff < baseword.length; i++) {
+			let middleremoved =
+				baseword.slice(0, i) + baseword.slice(i + lengthdiff);
+
+			if ([...middleremoved].sort().join('') == sorted) {
+				return [middleremoved, baseword.slice(i, i + lengthdiff)];
+			}
+		}
+		return null;
+	}
+}

@@ -37,13 +37,13 @@ export function makeWordSlots(gridTemplate: IGridLayout): IWordSlot[] {
 					c != rowsize - 1 &&
 					gridTemplate[r][c + 1] == 1
 				) {
-					let len = 0;
+					let len = 1;
 					let k = c + 1;
 					let mycells = [xytocell(r, c)];
 					while (k < rowsize && gridTemplate[r][k] == 1) {
 						mycells.push(xytocell(r, k));
-						len += 1;
-						k += 1;
+						len++;
+						k++;
 					}
 
 					temp_wordSlots.push({
@@ -55,6 +55,7 @@ export function makeWordSlots(gridTemplate: IGridLayout): IWordSlot[] {
 						word: null,
 						clue: '',
 						intersections: [],
+						isImpossible: false,
 					} as IWordSlot);
 
 					numberedCell = true;
@@ -66,13 +67,13 @@ export function makeWordSlots(gridTemplate: IGridLayout): IWordSlot[] {
 					r != rowsize - 1 &&
 					gridTemplate[r + 1][c] == 1
 				) {
-					let len = 0;
+					let len = 1;
 					let k = r + 1;
 					let mycells = [xytocell(r, c)];
 					while (k < rowsize && gridTemplate[k][c] == 1) {
 						mycells.push(xytocell(k, c));
-						len += 1;
-						k += 1;
+						len++;
+						k++;
 					}
 					temp_wordSlots.push({
 						number: slotIndex,
@@ -83,6 +84,7 @@ export function makeWordSlots(gridTemplate: IGridLayout): IWordSlot[] {
 						word: null,
 						clue: '',
 						intersections: [],
+						isImpossible: false,
 					});
 					numberedCell = true;
 				}
