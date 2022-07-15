@@ -15,39 +15,33 @@ import { quadIn, quadInOut, quadOut } from 'svelte/easing';
 /* ............................................. Display Correct Page For Tab */
 
 let tabs = writable([
-	{ label: 'Word', checked: true, disabled: false },
-	{ label: 'Info', checked: false, disabled: true },
-	{ label: 'Clues', checked: false, disabled: false },
-	{ label: 'Settings', checked: false, disabled: false },
+	{ label: '🙾 Words', checked: true, disabled: false },
+	{ label: '🗲 Hints', checked: false, disabled: true },
+	{ label: '? Clues', checked: false, disabled: false },
+	{ label: '⛭ Settings', checked: false, disabled: false },
 ]);
 
-let displayPage = {
-	Word: PossibleWords,
-	Info: Info,
-	Clues: Clues,
-	Settings: Settings,
-};
+let displayPage = [PossibleWords, Info, Clues, Settings];
 
-let currentTab = 'Word';
+let currentTab = 0;
 let currentPage = PossibleWords;
-let previousTab = $tabs[-1];
+let previousTab = $tabs.length - 1;
 let pageChangeDirection: 'up' | 'down' | 'left' | 'right' = 'right';
 
 $: changePage(currentTab); //currentTab bound to selected Radio.
 
-function changePage(newTabLabel) {
-	let newTab = $tabs.find(s => s.label == newTabLabel);
-	pageChangeDirection =
-		$tabs.indexOf(newTab) < $tabs.indexOf(previousTab) ? 'left' : 'right';
-	currentPage = displayPage[newTab.label];
-	previousTab = newTab;
+function changePage(tabNumber: number) {
+	let newTab = $tabs[tabNumber];
+	pageChangeDirection = tabNumber < previousTab ? 'left' : 'right';
+	currentPage = displayPage[tabNumber];
+	previousTab = tabNumber;
 }
 
 /* ............................................ Toggle Tab2 If No Active Word */
 
 $: if (!$activeWord) {
-	if (currentTab == 'Info') {
-		currentTab = 'Word';
+	if (currentTab == 1) {
+		currentTab = 0;
 	}
 	$tabs[1].disabled = true;
 } else {
@@ -59,20 +53,15 @@ $: if (!$activeWord) {
 
 <div id="panelWrapper">
 	<div id="panelTabs">
-		{#each $tabs as tab}
-			<label
-				class:selectedTab={tab.label == currentTab}
+		{#each $tabs as tab, index}
+			<button
+				on:click={() => (currentTab = index)}
+				class:selectedTab={currentTab == index}
 				class:disabled={tab.disabled}
+				disabled={tab.disabled}
 			>
-				<input
-					type="radio"
-					value={tab.label}
-					bind:group={currentTab}
-					disabled={tab.disabled}
-					hidden
-				/>
 				{tab.label}
-			</label>
+			</button>
 		{/each}
 	</div>
 
@@ -117,7 +106,7 @@ $: if (!$activeWord) {
 	border-right: 1px solid black;
 	border-left: 1px solid black;
 	border-bottom: 1px solid black;
-	border-radius: 0px 0px 5px 5px;
+	border-radius: 0px 0px 2px 2px;
 	overflow: hidden;
 	@include staticTransitionParent();
 }
@@ -134,41 +123,52 @@ $: if (!$activeWord) {
 #panelTabs {
 	width: 100%;
 	flex: 0 0 30px;
+	max-width: calc(100% - 1px);
 
 	display: flex;
 	flex-direction: row;
 	flex-wrap: nowrap;
 
-	label {
+	button {
 		flex: 1 0 auto;
 		margin: 0;
 		padding: 10px 10px;
-		border-radius: 5px 5px 0 0;
-		border-width: 1px 1px 1px 1px;
+		border-radius: 2px 2px 0 0;
+		border-width: 1px 1px 0px 1px;
+		margin-right: -1px;
+		margin-left: 0px;
 		border-style: solid;
-		border-color: rgb(184, 184, 184);
+		border-color: rgb(213, 213, 213);
 		border-bottom: 1px solid black;
-		font-size: 14px;
-		font-weight: bold;
+		font-size: 15px;
 		cursor: pointer;
 		-webkit-transition: all 0.2s ease-in-out;
 		transition: all 0.2s ease-in-out;
 		text-align: center;
-		color: grey;
-	}
+		background-color: whitesmoke;
+		color: rgba(79, 79, 79, 0.994);
 
-	.selectedTab {
-		z-index: 0;
-		margin-top: 0px;
-		padding-top: 5px;
-		background: white;
-		border-color: black black white black;
-	}
+		&.selectedTab {
+			z-index: 0;
+			margin-top: 0px;
+			padding-top: 5px;
+			background: white;
+			color: black;
+			border-color: black black white black;
+			cursor: default;
+		}
 
-	.disabled {
-		background-color: rgb(209, 209, 209);
-		color: grey;
-		border-bottom: 1px solid black;
+		&:not(.disabled):not(.selectedTab):hover {
+			background: rgba(242, 242, 242, 0.64);
+			color: rgb(113, 113, 113);
+		}
+
+		&.disabled {
+			background-color: rgb(233, 233, 233);
+			color: rgba(153, 153, 153, 0.538);
+			border-bottom: 1px solid black;
+			cursor: default;
+		}
 	}
 }
 </style>

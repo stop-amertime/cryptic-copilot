@@ -1,4 +1,5 @@
 <script lang="ts">
+import GridModal from './../modals/GridModal.svelte';
 import { Save, Load } from '../lib/FileManager';
 import { changeLayout } from '../StateMediator.svelte';
 import Modal from '../Modals/Modal.svelte';
@@ -51,14 +52,13 @@ StateMediator:
 	<div id="saveLoadArea">
 		<button id="0" on:click={changeGrid}> Change Grid to 0 </button>
 		<button id="1" on:click={changeGrid}> Change Grid to 1 </button>
-		<button id="2" on:click={changeGrid}> Open Modal </button>
 		<button id="openModal" on:click={openModal}> Open Modal </button>
 	</div>
 </div>
 
 {#if showModal}
 	<Modal on:close={closeModal}>
-		<h1>Modal</h1>
+		<GridModal />
 	</Modal>
 {/if}
 

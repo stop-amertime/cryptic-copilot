@@ -46,11 +46,11 @@ if (previously_focused) {
 
 <div class="modal" role="dialog" aria-modal="true" bind:this={modal}>
 	<!-- svelte-ignore a11y-autofocus -->
-	<button class="closebutton" autofocus on:click={close}> X </button>
+	<button class="closebutton" autofocus on:click={close}>x</button>
 	<slot />
 </div>
 
-<style>
+<style lang="scss">
 .modal-background {
 	position: fixed;
 	top: 0;
@@ -76,7 +76,24 @@ if (previously_focused) {
 
 .closebutton {
 	position: fixed;
-	top: 100px;
-	right: 20px;
+	top: 10px;
+	right: 10px;
+	background-color: white;
+	border: none;
+	color: #000;
+	font-size: 20px;
+	cursor: pointer;
+	width: 40px;
+	height: 40px;
+	line-height: 0px;
+	transition: all 0.2s ease;
+	border-radius: 50%;
+	text-align: center;
+	text-justify: center;
+
+	&:hover {
+		opacity: 0.6;
+		background-color: rgba(128, 128, 128, 0.181);
+	}
 }
 </style>

@@ -29,7 +29,10 @@ const colour = scoreToColour(wordinfo.score);
 				{#if thesaurusentry.numberOfSenses > 0}
 					<Meanings meanings={thesaurusentry} />
 				{:else}
-					<div class="error">Sorry: no definitions found.</div>
+					<div class="error">
+						<b>Sorry, no definitions found.</b><br /> It could be a phrase,
+						or proper noun without punctuation.
+					</div>
 				{/if}
 			</div>
 		</div>
@@ -66,12 +69,12 @@ $popovercolor: white;
 		height: 40px;
 		background-color: var(--colour);
 		display: block;
-		box-shadow: 1px 3px 10px rgba(103, 103, 103, 0.279);
+		//box-shadow: 1px 3px 10px rgba(103, 103, 103, 0.279);
+		border-bottom: 1px solid gray;
 
 		.titleWord {
 			float: left;
 			font-size: 22px;
-			font-weight: bold;
 			color: black;
 			height: 40px;
 			padding: 0 20px;
@@ -98,7 +101,7 @@ $popovercolor: white;
 
 	.error {
 		height: max-content;
-		color: rgb(158, 4, 4);
+		color: hsl(0, 70%, 60%);
 		font-size: 12px;
 		text-align: center;
 		padding: 10px;
