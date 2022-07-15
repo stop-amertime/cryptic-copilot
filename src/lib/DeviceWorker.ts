@@ -225,16 +225,16 @@ function inflateHashCombinations(hashArrays: number[][]): string[][] {
 	return output;
 }
 
-function firstHashCombination(hashArrays: number[][]): string[][] {
-	let output = [] as string[][];
-	for (let hashArray of hashArrays) {
-		let wordArray: string[] = hashArray.map(
-			n => unhash(n).sort(w => DICTIONARY.get(w).score)[0]
-		);
-		output.push(wordArray);
-	}
-	return output;
-}
+// function firstHashCombination(hashArrays: number[][]): string[][] {
+// 	let output = [] as string[][];
+// 	for (let hashArray of hashArrays) {
+// 		let wordArray: string[] = hashArray.map(
+// 			n => unhash(n).sort(w => DICTIONARY.get(w).score)[0]
+// 		);
+// 		output.push(wordArray);
+// 	}
+// 	return output;
+// }
 
 // function getFirstHashCombination( hashArrays: number[][] ): string[][] {
 //     let output = [] as string[][];
@@ -248,6 +248,7 @@ function isDevice(
 	depth = 0
 ): Array<IWord> {
 	let subWordArray = inputWordArray.slice();
+
 	// TRIVIAL CASE - SINGLE WORD
 	if (
 		subWordArray.length == 1 &&
@@ -257,7 +258,7 @@ function isDevice(
 			{
 				...keyToIWord(subWordArray[0]),
 				direction: findDirection(subWordArray[0], targetWord),
-			} as IWord,
+			},
 		];
 	}
 
@@ -322,7 +323,7 @@ function isDevice(
 							...keyToIWord(subword),
 							direction: findDirection(subword, matched),
 							contains: recursive,
-						} as IWord,
+						},
 					];
 				}
 			}
@@ -352,9 +353,7 @@ function isDevice(
 
 		let sorted = [...subword].sort().join('');
 		let lengthdiff = baseword.length - subword.length;
-		if (lengthdiff == 0) {
-			return null;
-		} //just in case
+		if (lengthdiff == 0) return null; //just in case
 
 		for (let i = 1; i + lengthdiff < baseword.length; i++) {
 			let middleremoved =
