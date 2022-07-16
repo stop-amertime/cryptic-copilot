@@ -6,21 +6,34 @@ let Layouts: number[][][] = JSON.parse(localStorage.getItem('defaultLayouts'));
 let customGridSize = writable(15);
 let customGrid = new Array(15).fill(new Array(15).fill(1));
 let isMirrored = true;
+let hasClicked = false;
 customGridSize.subscribe(
 	size =>
-		(customGrid = resize(customGrid, size, 1).map(row =>
+		(customGrid = resize(customGrid, size, []).map(row =>
 			resize(row, size, 1)
 		))
 );
 
-function resize(arr, newSize, defaultValue) {
-	return [
-		...arr,
-		...Array(Math.max(newSize - arr.length, 0)).fill(defaultValue),
-	];
+function resize(
+	arr: any[],
+	newSize: number,
+	defaultValue: number | any[]
+): any[] {
+	if (newSize > arr.length) {
+		return [
+			...arr,
+			...Array(Math.max(newSize - arr.length, 0)).fill(defaultValue),
+		];
+	} else {
+		return arr.slice(0, newSize);
+	}
 }
 
-const customCellClick = (x: number, y: number) => {
+const customCellClick = (event: MouseEvent, x: number, y: number) => {
+	if (event && (event.buttons !== 1 || hasClicked)) {
+		return;
+	}
+	hasClicked = true;
 	let newgrid = [];
 	let len = customGrid.length;
 	for (let i = 0; i < len; i++) {
@@ -29,7 +42,7 @@ const customCellClick = (x: number, y: number) => {
 			const same = () => i == x && j == y;
 			const mirrored = () => len - 1 == x + i && len - 1 == y + j;
 			if (same() || (isMirrored && mirrored())) {
-				newrow.push(customGrid[i][j] == 1 ? 0 : 1);
+				newrow.push(customGrid[x][y] == 1 ? 0 : 1);
 			} else {
 				newrow.push(customGrid[i][j]);
 			}
@@ -54,7 +67,7 @@ const changeGrid = (grid: number) => {
 
 <div class="content">
 	{#if selectedTab == 1}
-		<!-- Tab 1 -->
+		<!--================================= TAB 1 ===============================-->
 
 		<h3>Pick a Grid:</h3>
 		<div class="gridTemplates">
@@ -76,25 +89,28 @@ const changeGrid = (grid: number) => {
 			{/each}
 		</div>
 
-		<!------- Tab 2 ------->
+		<!--================================= TAB 2 ===============================-->
 	{:else}
 		<h3>Edit your Grid:</h3>
 		<p>Click a cell to change its colour</p>
 
-		<input
-			type="number"
-			id="gridDimension"
-			min="5"
-			max="20"
-			bind:value={$customGridSize}
-		/>
-
-		<input
-			type="checkbox"
-			bind:checked={isMirrored}
-			label="Half-turn Symmetry"
-		/>Half-turn Symmetry
-
+		<div class="row">
+			<input
+				type="number"
+				id="gridDimension"
+				min="5"
+				max="20"
+				bind:value={$customGridSize}
+			/>
+			<p>x {$customGridSize}</p>
+		</div>
+		<div class="row">
+			<pre>Half-Turn Symmetry    </pre>
+			<label class="switch">
+				<input type="checkbox" bind:checked={isMirrored} />
+				<span class="slider" />
+			</label>
+		</div>
 		{#key customGridSize}
 			<div class="customGrid">
 				{#each customGrid as row, i}
@@ -105,7 +121,10 @@ const changeGrid = (grid: number) => {
 								style:background-color={cell == 0
 									? 'black'
 									: 'white'}
-								on:mousedown={() => customCellClick(i, j)}
+								on:mousemove={e => customCellClick(e, i, j)}
+								on:click={() => customCellClick(null, i, j)}
+								on:mouseout={e => (hasClicked = false)}
+								on:blur={e => (hasClicked = false)}
 							/>
 						{/each}
 					</div>
@@ -150,6 +169,20 @@ const changeGrid = (grid: number) => {
 			transition: none;
 			outline: 1px solid black;
 		}
+	}
+}
+
+.content {
+	display: block;
+	width: 60vw;
+	height: 60vh;
+
+	& > .row {
+		display: flex;
+		flex-direction: row;
+		justify-content: start;
+		align-items: stretch;
+		margin-bottom: 10px;
 	}
 }
 
@@ -218,5 +251,56 @@ const changeGrid = (grid: number) => {
 			border-color: green;
 		}
 	}
+}
+
+.switch {
+	position: relative;
+	display: inline-block;
+	width: 60px;
+	height: 34px;
+}
+
+.switch input {
+	opacity: 0;
+	width: 0;
+	height: 0;
+}
+
+.slider {
+	position: absolute;
+	cursor: pointer;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-color: #ccc;
+	-webkit-transition: 0.4s;
+	transition: 0.4s;
+}
+
+.slider:before {
+	position: absolute;
+	content: '';
+	height: 26px;
+	width: 26px;
+	left: 4px;
+	bottom: 4px;
+	background-color: white;
+	-webkit-transition: 0.4s;
+	transition: 0.4s;
+}
+
+:global(input:checked + .slider) {
+	background-color: #ffffff;
+
+	&:before {
+		-webkit-transform: translateX(26px);
+		-ms-transform: translateX(26px);
+		transform: translateX(26px);
+	}
+}
+
+:global(input:focus + .slider) {
+	box-shadow: 0 0 1px #a3a3a3;
 }
 </style>
