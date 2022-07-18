@@ -1,5 +1,5 @@
 <script lang="ts">
-import { createEventDispatcher, onDestroy } from 'svelte';
+import { createEventDispatcher, onDestroy, setContext } from 'svelte';
 
 const dispatch = createEventDispatcher();
 const close = () => dispatch('close');
@@ -66,7 +66,7 @@ if (previously_focused) {
 	top: 50%;
 	max-width: calc(100vw - 4em);
 	max-height: calc(100vh - 4em);
-	overflow: auto;
+	// overflow: auto;
 	transform: translate(-50%, -50%);
 	padding: 1em;
 	border-radius: 0.2em;

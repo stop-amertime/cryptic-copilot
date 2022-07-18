@@ -35,7 +35,7 @@ export const activeThesaurus = writable(
 
 // Exported Functions
 export const isWordBanned = writable(null as Function);
-export const clearGrid = stateRecord.set({ wordSlots: null });
+export const clearGrid = () => stateRecord.set({ wordSlots: null });
 
 export const changeLayout = (layout: IGridLayout) =>
 	stateRecord.set({ layout, wordSlots: null });
