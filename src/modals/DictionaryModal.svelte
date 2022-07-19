@@ -176,7 +176,7 @@ onMount(() => {
 	flex-direction: column;
 	width: 100%;
 	height: 75vh;
-	padding: 10px;
+	padding: 11px;
 	overflow: hidden;
 }
 
