@@ -36,6 +36,9 @@ export const scoreToColour = (score: number): string => {
 	else return `hsl(${score * 2}, 75%, 85%)`;
 };
 
+const byScoreThenRandom = (a: IWord, b: IWord) =>
+	+b.score - +a.score || Math.random() - 0.5;
+
 export const enum TrafficLight {
 	Green = '#44D62C',
 	Yellow = '#FA4616',
@@ -154,14 +157,16 @@ export const PossibleWords = {
 		let possibleWordsArray = [] as IWord[];
 
 		if (matchArray.length == 0)
-			return WORDS_OF_LENGTH.get(searchLength).map(getWord);
-
-		checkword: for (let word of WORDS_OF_LENGTH.get(searchLength)) {
-			for (let [index, letter] of matchArray) {
-				if (word[index] != letter) continue checkword;
+			possibleWordsArray = WORDS_OF_LENGTH.get(searchLength).map(getWord);
+		else {
+			checkword: for (let word of WORDS_OF_LENGTH.get(searchLength)) {
+				for (let [index, letter] of matchArray) {
+					if (word[index] != letter) continue checkword;
+				}
+				possibleWordsArray.push({ word, ...DICTIONARY.get(word) });
 			}
-			possibleWordsArray.push({ word, ...DICTIONARY.get(word) });
 		}
+		possibleWordsArray.sort((a, b) => byScoreThenRandom(a, b));
 		return possibleWordsArray;
 	},
 

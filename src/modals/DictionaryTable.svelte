@@ -7,7 +7,7 @@ import { writable } from 'svelte/store';
 
 function debounce(func, timeout = 600) {
 	let timer;
-	return (...args) => {
+	return () => {
 		clearTimeout(timer);
 		timer = setTimeout(() => {
 			func();
@@ -24,6 +24,7 @@ for (let word of $dictionary.entries()) {
 	array2.push({
 		word: word[0],
 		score: word[1].score,
+		abbreviationFor: (word[1].abbreviationFor ?? '') + '',
 	});
 }
 
@@ -49,17 +50,35 @@ const setTableFilters = () => {
 	});
 };
 
+const deleteRows = () => {
+	let selectedRows = table.getSelectedRows();
+	selectedRows.forEach(row => {
+		table.deleteRow(row);
+	});
+};
+
 onMount(() => {
 	table = new Tabulator(tableComponent, {
 		data: array2,
 		reactiveData: false, //enable data reactivity
 		height: '100%',
 		pagination: true,
+		layout: 'fitDataStretch',
 		columns: [
+			{
+				title: '',
+				formatter: 'rowSelection',
+				titleFormatter: 'rowSelection',
+				titleFormatterParams: {
+					rowRange: 'active', //only toggle the values of the active filtered rows
+				},
+				hozAlign: 'center',
+				headerSort: false,
+			},
 			{
 				title: 'Word',
 				field: 'word',
-				width: 200,
+				width: 400,
 				sorter: 'string',
 				headerFilter: true,
 				editor: 'input',
@@ -90,25 +109,42 @@ onMount(() => {
 					},
 				},
 			},
-			// {
-			// 	title: 'Abbreviation For',
-			// 	field: 'abbreviationFor',
-			// 	width: 30,
-			// 	sorter: 'string',
-			// 	editor: 'textarea',
-			// 	editorParams: {
-			// 		verticalNavigation: 'editor',
-			// 	},
-			// },
+			{
+				title: 'Abbreviation For',
+				field: 'abbreviationFor',
+				width: 30,
+				sorter: 'string',
+				editor: 'textarea',
+				editorParams: {
+					verticalNavigation: 'editor',
+				},
+			},
+			// {title:"", formatter:"buttonCross", width:40, cellClick:function(e, cell){
+			// cell.getRow().delete();
+			// }},
 		],
 	});
 });
 </script>
 
 <h3>Word Length</h3>
-<RangeSlider min={1} max={40} step={1} range bind:values={$wordLengthFilters} />
+<RangeSlider
+	min={1}
+	max={40}
+	step={1}
+	range
+	bind:values={$wordLengthFilters}
+	float
+/>
 <h3>Score</h3>
-<RangeSlider min={0} max={100} bind:values={$scoreFilters} step={1} range />
+<RangeSlider
+	min={0}
+	max={100}
+	bind:values={$scoreFilters}
+	step={1}
+	range
+	float
+/>
 
 <div id="table">
 	<div id="tablein" bind:this={tableComponent} />
