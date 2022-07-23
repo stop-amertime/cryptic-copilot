@@ -7,6 +7,25 @@ export const setDictionary = (dictionary: IDictionary) => {
 	console.log('---- DictEngine Initialised');
 };
 
+export const getDictionaryFromFile = (Url: string) => {
+	return fetch(Url)
+		.then(response => response.text())
+		.then(data => {
+			return data;
+		})
+		.catch(error => {
+			console.log(error);
+		});
+};
+
+export const parseDictionaryFromText = (dictionary: string) => {
+	//DICT FORMAT: word OR word;score \n
+	//DICTX FORMAT: word;score#abbr1,abbr2..
+	// Options:
+	// Overwrite scores for existing words
+	// Default score for unscored words
+};
+
 function groupByLength(list: Array<any>) {
 	const map = new Map();
 
@@ -36,8 +55,7 @@ export const scoreToColour = (score: number): string => {
 	else return `hsl(${score * 2}, 75%, 85%)`;
 };
 
-const byScoreThenRandom = (a: IWord, b: IWord) =>
-	+b.score - +a.score || Math.random() - 0.5;
+const byScoreThenRandom = (a: IWord, b: IWord) => +b.score - +a.score || Math.random() - 0.5;
 
 export const enum TrafficLight {
 	Green = '#44D62C',
@@ -131,7 +149,7 @@ export async function getThesaurus(word: string): Promise<IThesaurusEntry> {
 		});
 	}
 
-	let abbreviationFor = DICTIONARY?.get(word)?.abbreviationFor || null;
+	let abbreviationFor = DICTIONARY?.get(word)?.abbreviationFor.split(',') || null;
 	if (abbreviationFor) numberOfSenses += abbreviationFor?.length || 0;
 
 	return {

@@ -1,5 +1,9 @@
 /* -------------------------------------------------------------- Data, Enums */
 
+import { stringify } from 'querystring';
+import { mapTo } from 'rxjs';
+import { fileURLToPath } from 'url';
+
 const enum WordDirection {
 	Forward = 'forward',
 	Reverse = 'reverse',
@@ -35,13 +39,7 @@ export const slideReplaceOut = (node: HTMLElement, args: ISlideParams) =>
 
 export function slideReplace(
 	node: HTMLElement,
-	{
-		direction = 'left',
-		out = false,
-		duration = 350,
-		easing,
-		delay = 0,
-	}: ISlideInternalParams
+	{ direction = 'left', out = false, duration = 350, easing, delay = 0 }: ISlideInternalParams
 ): SvelteAnimationReturnType {
 	let y = { translation: 'translateY', distance: node.offsetHeight };
 	let x = { translation: 'translateX', distance: node.offsetWidth };
@@ -86,10 +84,7 @@ export const monad = (input: any) => {
 	};
 };
 
-export function findDirection(
-	subword: string,
-	baseword: string
-): WordDirection {
+export function findDirection(subword: string, baseword: string): WordDirection {
 	/**
 	 * Find the direction of a subword in a base word.
 	 *
@@ -121,9 +116,7 @@ export function arraysEqual(a: string[], b: string[]) {
 	return true;
 }
 
-export function cartesianProductOfArrays(
-	arrayOfWordArrays: string[][]
-): string[][] {
+export function cartesianProductOfArrays(arrayOfWordArrays: string[][]): string[][] {
 	let cartesianProduct = [];
 	for (let i = 0; i < arrayOfWordArrays.length; i++) {
 		let currentArray = arrayOfWordArrays[i];
@@ -139,8 +132,93 @@ export function cartesianProductOfArrays(
 	return cartesianProduct;
 }
 
-export function sortByLengthAscending(
-	arrayOfWordArrays: string[][]
-): string[][] {
+export function sortByLengthAscending(arrayOfWordArrays: string[][]): string[][] {
 	return arrayOfWordArrays.sort((a, b) => a.length - b.length);
+}
+
+/* ==================== STRINGIFY, PARSE & SAVE DICTIONARIES ================ */
+
+export function wordTuplesToDictionary(tuples: IDictTuple[]): IDictionary {
+	return new Map(tuples);
+}
+
+export function dictionaryToWordTuples(dictionary: IDictionary) {
+	return [...dictionary];
+}
+
+export const dictFileToMap = (f: File) => f.text().then(dictFileStringToMap);
+export const mapToDictBlob = (map: IDictionary) => {
+	let dictFileString = mapToDictFileString(map);
+	return new Blob([dictFileString], { type: 'text/plain' });
+};
+
+export const downloadMapAsDictFile = (map: IDictionary, filename = 'dictionary.dict') => {
+	let string = mapToDictFileString(map);
+	let blob = new Blob([string], { type: 'text/plain' });
+	saveBlobAs(blob, filename);
+};
+
+export function mapToDictFileString(dictionary: IDictionary): string {
+	let string = '';
+	for (let [key, value] of dictionary) {
+		if (value.abbreviationFor) {
+			string += `${key};${value.score};${value.abbreviationFor}\n`;
+		} else {
+			string += `${key};${value.score}\n`;
+		}
+	}
+	return string;
+}
+
+export function dictFileStringToMap(dictstring: string, defaultScore = 50): IDictionary {
+	let temp_DICTIONARY = new Map() as IDictionary;
+	let wordsarray = dictstring.split('\n');
+	for (let arr of wordsarray) {
+		let [word, scoreString, abbreviationFor] = arr.split(';');
+		if (!word || word.length === 0) continue;
+
+		//Clean Strings
+		word = word.replaceAll(/[^A-z]/g, '').toLocaleUpperCase();
+		abbreviationFor = abbreviationFor?.trim();
+
+		//ConvertOrDefault & Clamp Score
+		let score = scoreString ? parseInt(scoreString) : defaultScore;
+		score = score < 0 || score > 500 ? Math.min(500, Math.max(0, score)) : score;
+
+		temp_DICTIONARY.set(word, { score, ...(abbreviationFor && { abbreviationFor }) });
+	}
+
+	/// Log Final Output Stats
+	console.group(`=== Dictionary Loaded`);
+	console.log(`Length: ${temp_DICTIONARY.size} words`);
+	console.log(`Size: ${~~dictstring.length / 1000} kB`);
+	console.groupCollapsed('=== Sample');
+	let i = 0;
+	for (let [key, value] of temp_DICTIONARY.entries()) {
+		if (i > 2 && !value.abbreviationFor) continue;
+		console.log(key, value);
+		if (++i > 4) break;
+	}
+	console.groupEnd();
+	console.groupEnd();
+
+	return temp_DICTIONARY;
+}
+
+export function stringToBlob(dictString: string) {
+	return new Blob([dictString], { type: 'text/plain;charset=utf-8' });
+}
+
+export function saveBlobAs(blob: Blob, filename: string) {
+	let a = document.createElement('a');
+	a.href = URL.createObjectURL(blob);
+	a.download = filename;
+	a.click();
+}
+
+export function saveFileAs(file: File) {
+	let a = document.createElement('a');
+	a.href = URL.createObjectURL(file);
+	a.download = file.name;
+	a.click();
 }

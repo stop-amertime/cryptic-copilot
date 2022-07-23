@@ -1,21 +1,19 @@
 // @ts-nocheck
 import LZString from 'lz-string';
-import { TestScheduler } from 'rxjs/testing';
-import { src_url_equal } from 'svelte/internal';
+import { dictFileStringToMap } from './utils';
 
 //== SETTINGS
-let DICT_VERSION = 'dict-5.0';
-let DICT_SAVECOMPRESSION = 'minified';
-let DICT_CACHECOMPRESSION = 'minified';
+let DICT_VERSION = 'ccDict-6.0';
+let DICT_SAVECOMPRESSION = 'dict';
+let DICT_CACHECOMPRESSION = 'dict';
 let DICT_URL = {
-	raw: `./src/data/${DICT_VERSION}.json`,
-	minified: `./src/data/${DICT_VERSION}.min.txt`,
+	json: `./src/data/${DICT_VERSION}.json`,
+	dict: `./src/data/${DICT_VERSION}.dict`,
 	compressed: `./src/data/${DICT_VERSION}.lz.txt`,
 };
 let DEFAULT_LAYOUTURL = './src/data/gridtemplates.json';
 
-const makeStateRecord = (): IStateRecord =>
-	JSON.stringify({ layout, wordSlots });
+const makeStateRecord = (): IStateRecord => JSON.stringify({ layout, wordSlots });
 
 const saveLocal = (object: object): void => {
 	for (let [key, value] of Object.entries(object)) {
@@ -32,73 +30,34 @@ let state = loadLocal('state');
 
 function stringifyDictionary(dictionary, compression = 'compressed') {
 	switch (compression) {
-		case 'raw':
+		case 'json':
 			return JSON.stringify(Array.from(dictionary.entries()));
 
-		case 'minified':
-			return minifyDictionary(dictionary);
+		case 'dict':
+			return dictionaryToDict(dictionary);
 
 		case 'compressed':
-			return LZString.compressToUTF16(minifyDictionary(dictionary));
+			return LZString.compressToUTF16(dictionaryToDict(dictionary));
 
 		default:
 			console.error('Incorrect Compression Level Entered!!');
 	}
 }
 
-function parseAndLoadDictionary(string: string, compression = 'compressed') {
-	// todo: move parsing into webworker, load grid before dict.
+function parseDictionary(string: string, compression = 'compressed') {
 	switch (compression) {
-		case 'raw':
+		case 'json':
 			return new Map(JSON.parse(string)) as IDictionary;
 
-		case 'minified':
-			return unminifyDictionary(string);
+		case 'dict':
+			return dictFileStringToMap(string);
 
 		case 'compressed':
-			return unminifyDictionary(LZString.decompressFromUTF16(string));
+			return dictFileStringToMap(LZString.decompressFromUTF16(string));
 
 		default:
 			console.error('Unable to decompress dictionary!!');
 	}
-}
-
-function minifyDictionary(dictionary) {
-	let string = '';
-	for (let [key, value] of dictionary) {
-		if (value.abbreviationFor) {
-			string += `${key} ${value.score};${value.abbreviationFor.join()}#`;
-		} else {
-			string += `${key} ${value.score}#`;
-		}
-	}
-	return string;
-}
-function unminifyDictionary(minifiedstring: string) {
-	let temp_DICTIONARY = new Map() as IDictionary;
-	let wordarray = minifiedstring.split('#');
-	for (let parsestring of wordarray) {
-		let isAbbreviation = false;
-		if (parsestring.includes(';')) {
-			isAbbreviation = true;
-		}
-
-		parsestring = parsestring.split(';'); // is array ["key&props","defs"]
-
-		let proparray = parsestring[0].split(' '); //  is [key,t(ype),score,hash]
-
-		let wordobject = {
-			isAbbreviation,
-			score: proparray[1],
-		} as IDictionaryEntry;
-
-		if (parsestring.length > 1) {
-			wordobject.abbreviationFor = parsestring[1].split(',');
-		}
-
-		temp_DICTIONARY.set(proparray[0], wordobject);
-	}
-	return temp_DICTIONARY;
 }
 
 export const Load = {
@@ -113,51 +72,25 @@ export const Load = {
 		} else return loadLocal('state');
 	},
 
-	lastOrDefaultDictionary: async () => {
-		// let response = await fetch(DICT_URL[DICT_SAVECOMPRESSION])
-		// let fetchedString = await response.text();
+	lastOrDefaultDictionary: async (): Promise<IDictionary> => {
+		let lastDict = localStorage.getItem('dictionary');
+		if (lastDict) return dictFileStringToMap(lastDict);
+		else return defaultDictionary();
+	},
 
-		// let temp_DICTIONARY = new Map() as IDictionary;
-		// let wordarray = fetchedString.split('#');
-		// for (let parsestring of wordarray) {
+	defaultDictionary: async (): Promise<IDictionary> => {
+		let resp = await fetch(DICT_URL[DICT_SAVECOMPRESSION]);
+		string = await resp.text();
+		return dictFileStringToMap(string);
+	},
 
-		//     let isAbbreviation = false;
-		//     if (parsestring.includes(';') ) {let isAbbreviation = true};
-
-		//     parsestring = parsestring.split(';'); // is array ["key&props","defs"]
-
-		//     let proparray = parsestring[0].split(' '); //  is [key,t(ype),score,hash]
-
-		//     let wordobject = { isAbbreviation, "score": proparray[2], "hash": proparray[3] } as IDictionaryEntry;
-
-		//     if (parsestring.length > 1) { wordobject["abbreviationFor"] = parsestring[1].split(',') }
-
-		//     temp_DICTIONARY.set(proparray[0], wordobject);
-		//     }
-
-		// document.body.addEventListener('click', () => {
-		// downloadUtf16(stringifyDictionary(temp_DICTIONARY,"compressed"))
-		// });
-		// },
-		let dictionary = localStorage.getItem('dictionary');
-		if (dictionary) {
-			return unminifyDictionary(dictionary);
-		} else {
-			let response = await fetch(DICT_URL[DICT_SAVECOMPRESSION]);
-			let fetchedString = await response.text();
-			localStorage.setItem('dictionary', fetchedString);
-			let dict = parseAndLoadDictionary(
-				fetchedString,
-				DICT_SAVECOMPRESSION
-			);
-			localStorage.setItem('dictionary', minifyDictionary(dict));
-			return dict;
-			// document.body.addEventListener('click', () =>
-			// 	Save.textToFile(
-			// 		LZString.compressToUTF16(minifyDictionary(temp_dictionary))
-			// 	)
-			// );
-		}
+	defaultDictionaryFile: async (): Promise<File> => {
+		let dict = await fetch(DICT_URL[DICT_SAVECOMPRESSION]);
+		let blob = await dict.blob();
+		let file = new File([blob], "Cryptic Copilot's Default Dictionary.dict", {
+			type: 'text/plain',
+		});
+		return file;
 	},
 
 	defaultLayouts,
@@ -183,7 +116,7 @@ export const Save = {
 	},
 
 	dictionary: async (dictionary: IDictionary): void => {
-		localStorage.setItem('dictionary', minifyDictionary(dictionary));
+		localStorage.setItem('dictionary', dictionaryToDict(dictionary));
 	},
 
 	stateToFile: async () => {

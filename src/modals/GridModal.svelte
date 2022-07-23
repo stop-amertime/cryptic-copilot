@@ -3,21 +3,15 @@ import CustomGridEditor from './CustomGridEditor.svelte';
 import TemplateGrid from './TemplateGrid.svelte';
 import { writable } from 'svelte/store';
 import { changeLayout } from '../StateMediator.svelte';
-import { getContext } from 'svelte';
 /* -------------------------------------------------------------------------- */
 
-const closeModal = () =>
-	(document.querySelector('.modal-background') as HTMLElement).click();
+const closeModal = () => (document.querySelector('.modal-background') as HTMLElement).click();
 
 let selectedTab = 1;
-let defaultLayouts: number[][][] = JSON.parse(
-	localStorage.getItem('defaultLayouts')
-);
+let defaultLayouts: number[][][] = JSON.parse(localStorage.getItem('defaultLayouts'));
 
 let localCustomLayouts = localStorage.getItem('customLayouts');
-let customLayouts: number[][][] = localCustomLayouts
-	? JSON.parse(localCustomLayouts)
-	: [];
+let customLayouts: number[][][] = localCustomLayouts ? JSON.parse(localCustomLayouts) : [];
 
 const deleteCustomLayout = (index: number) => {
 	let tmp = [];
@@ -26,6 +20,15 @@ const deleteCustomLayout = (index: number) => {
 	});
 	customLayouts = tmp;
 	localStorage.setItem('customLayouts', JSON.stringify(customLayouts));
+};
+
+const saveLayouts = () => {
+	let layouts = [...defaultLayouts, ...customLayouts];
+	let json = JSON.stringify(layouts);
+	let a = document.createElement('a');
+	a.href = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+	a.download = 'layouts.json';
+	a.click();
 };
 
 const changeGrid = (grid: IGridLayout, saveAsCustom: boolean = false) => {
@@ -39,12 +42,8 @@ const changeGrid = (grid: IGridLayout, saveAsCustom: boolean = false) => {
 </script>
 
 <div class="tabRow">
-	<button on:click={() => (selectedTab = 1)} class:select={selectedTab == 1}>
-		▦ Templates
-	</button>
-	<button on:click={() => (selectedTab = 2)} class:select={selectedTab == 2}>
-		✎ Customise
-	</button>
+	<button on:click={() => (selectedTab = 1)} class:select={selectedTab == 1}>▦ Templates</button>
+	<button on:click={() => (selectedTab = 2)} class:select={selectedTab == 2}>✎ Customise</button>
 </div>
 
 <div class="content">
@@ -54,10 +53,7 @@ const changeGrid = (grid: IGridLayout, saveAsCustom: boolean = false) => {
 		<span>Default Layouts</span>
 		<div class="gridTemplates">
 			{#each defaultLayouts as layout, index}
-				<div
-					class="grid"
-					on:click={() => changeGrid(defaultLayouts[index])}
-				>
+				<div class="grid" on:click={() => changeGrid(defaultLayouts[index])}>
 					<TemplateGrid {layout} />
 				</div>
 			{/each}
@@ -66,10 +62,7 @@ const changeGrid = (grid: IGridLayout, saveAsCustom: boolean = false) => {
 			<span>Custom Layouts</span>
 			<div class="gridTemplates">
 				{#each customLayouts as layout, index}
-					<div
-						class="grid"
-						on:click={() => changeGrid(customLayouts[index])}
-					>
+					<div class="grid" on:click={() => changeGrid(customLayouts[index])}>
 						<TemplateGrid
 							{layout}
 							isDeleteable={true}
@@ -82,6 +75,8 @@ const changeGrid = (grid: IGridLayout, saveAsCustom: boolean = false) => {
 				</div>
 			</div>
 		{/key}
+
+		<button class="saveButton" on:click={saveLayouts}>🖫 Download</button>
 
 		<!--================================= TAB 2 ===============================-->
 	{:else}
@@ -186,6 +181,24 @@ const changeGrid = (grid: IGridLayout, saveAsCustom: boolean = false) => {
 		text-align: center;
 		line-height: 130px;
 		@include centre();
+	}
+}
+
+.saveButton {
+	position: absolute;
+	bottom: 0;
+	right: 0;
+	padding: 10px;
+	margin: 30px;
+	box-shadow: 3px 3px 15px rgba(0, 0, 0, 0.3);
+	border-radius: 4px;
+	font-size: large;
+	background-color: #fff;
+	transition: all 0.2s ease-out;
+	cursor: pointer;
+	&:hover {
+		transform: scale(1.2);
+		box-shadow: 3px 10px 20px rgba(0, 0, 0, 0.1);
 	}
 }
 </style>

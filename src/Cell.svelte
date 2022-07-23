@@ -24,7 +24,7 @@ $: fontSize = (() => {
 	return cellWidth + 'px';
 })();
 $: myOrder = $activeCellAnimations.order?.[id] ?? Math.random() * 9;
-$: animDirection = $activeCellAnimations.orientation == 'A' ? 'up' : 'right';
+$: animDirection = $activeCellAnimations.orientation == 'A' ? 'up' : 'left';
 $: animProps = {
 	duration: animationDuration,
 	delay: myOrder * animationTimingGap, //ms

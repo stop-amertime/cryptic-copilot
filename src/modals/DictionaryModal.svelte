@@ -1,241 +1,291 @@
 <script lang="ts">
-import { onMount } from 'svelte';
-import { dictionary } from '../StateMediator.svelte';
-import { TabulatorFull as Tabulator } from 'tabulator-tables';
-import RangeSlider from 'svelte-range-slider-pips';
+import DictionaryEditor from './DictionaryEditor.svelte';
 import { writable } from 'svelte/store';
+import { dictionary, dictionaryName } from '../StateMediator.svelte';
+import { Load } from '../lib/FileManager';
+import { downloadMapAsDictFile, mapToDictBlob, saveBlobAs } from '../lib/utils';
+/* -------------------------------------------------------------------------- */
 
-function debounce(func, timeout = 600) {
-	let timer;
-	return () => {
-		clearTimeout(timer);
-		timer = setTimeout(() => {
-			func();
-		}, timeout);
-	};
-}
+const closeModal = () => (document.querySelector('.modal-background') as HTMLElement).click();
+let selectedTab = 1;
+let uploadedFiles = [];
+let uploadedFileWordCount = [];
+Load.defaultDictionaryFile().then(d => (uploadedFiles = [d]));
+$: currentDictionaryBlob = mapToDictBlob($dictionary);
+$: currentDictionarySize = Math.floor(currentDictionaryBlob.size / 1000).toLocaleString() + ' KB';
+let replaceOrMerge = 'merge';
+$: changeDictionaryText = replaceOrMerge == 'merge' ? '⥅ Merge' : '↷ Replace';
+const downloadCurrentDictionary = () => saveBlobAs(currentDictionaryBlob, $dictionaryName);
 
-let tableComponent, table;
-let scoreFilters = writable([20, 40]);
-let wordLengthFilters = writable([5, 30]);
-
-let array2 = [];
-for (let word of $dictionary.entries()) {
-	array2.push({
-		word: word[0],
-		score: word[1].score,
-		abbreviationFor: (word[1].abbreviationFor ?? '') + '',
-	});
-}
-
-scoreFilters.subscribe(() => {
-	if (!table) return;
-	debounce(setTableFilters)();
-});
-
-wordLengthFilters.subscribe(() => {
-	if (!table) return;
-	debounce(setTableFilters)();
-});
-
-const setTableFilters = () => {
-	table.clearFilter();
-	table.setFilter(function (data) {
-		return (
-			data.score >= $scoreFilters[0] &&
-			data.score <= $scoreFilters[1] &&
-			data.word.length >= $wordLengthFilters[0] &&
-			data.word.length <= $wordLengthFilters[1]
-		);
-	});
+const addDictionaryFile = (event: Event) => {
+	const file = (event.currentTarget as HTMLInputElement).files?.[0];
+	if (!file) return;
+	uploadedFiles = [...uploadedFiles, file];
+	console.log('ADDED FILE: ', file.name, file.size + ' B');
 };
-
-const deleteRows = () => {
-	let selectedRows = table.getSelectedRows();
-	selectedRows.forEach(row => {
-		table.deleteRow(row);
-	});
-};
-
-onMount(() => {
-	table = new Tabulator(tableComponent, {
-		data: array2,
-		reactiveData: false, //enable data reactivity
-		pagination: true,
-		layout: 'fitDataStretch',
-		columns: [
-			{
-				title: '',
-				formatter: 'rowSelection',
-				titleFormatter: 'rowSelection',
-				titleFormatterParams: {
-					rowRange: 'active', //only toggle the values of the active filtered rows
-				},
-				hozAlign: 'center',
-				headerSort: false,
-				width: 10,
-			},
-			{
-				title: 'Word',
-				field: 'word',
-				sorter: 'string',
-				width: 300,
-				headerFilter: true,
-				editor: 'input',
-				formatter: 'plaintext',
-				validator: 'regex:[A-Z]+',
-				editorParams: {
-					search: true,
-					elementAttributes: {
-						maxlength: '50', //set the maximum character length of the input element to 10 characters
-					},
-				},
-			},
-			{
-				title: 'Score',
-				field: 'score',
-				sorter: 'number',
-				width: 70,
-				validator: 'integer',
-				headerFilter: 'number',
-				formatter: 'plaintext',
-				editor: 'input',
-				editorParams: {
-					min: 0,
-					max: 10,
-					step: 1,
-					elementAttributes: {
-						maxlength: '3', //set the maximum character length of the input element to 10 characters
-					},
-				},
-			},
-			{
-				title: 'Abbreviation For',
-				field: 'abbreviationFor',
-				sorter: 'string',
-				formatter: 'plaintext',
-				editor: 'textarea',
-				editorParams: {
-					verticalNavigation: 'editor',
-				},
-				width: 0,
-			},
-			// {title:"", formatter:"buttonCross", width:40, cellClick:function(e, cell){
-			// cell.getRow().delete();
-			// }},
-		],
-	});
-});
 </script>
 
-<div class="page">
-	<h3>Dictionary Editor</h3>
-	<div class="controls">
-		<div class="filterBox">
-			<h3>Filters</h3>
-			<p>Word Length</p>
-			<RangeSlider
-				min={1}
-				max={40}
-				step={1}
-				range
-				bind:values={$wordLengthFilters}
-				float
-			/>
-			<p>Score</p>
-			<RangeSlider
-				min={0}
-				max={100}
-				bind:values={$scoreFilters}
-				step={1}
-				range
-				float
-			/>
-		</div>
-		<div class="optionBox">
-			<button>Add Word</button>
-			<button>Delete</button>
-			<button>Change Score</button>
-		</div>
-	</div>
-
-	<div id="table">
-		<div id="tablein" bind:this={tableComponent} />
-	</div>
+<div class="tabRow">
+	<button on:click={() => (selectedTab = 1)} class:select={selectedTab == 1}>🕮 Manage</button>
+	<button on:click={() => (selectedTab = 2)} class:select={selectedTab == 2}>✎ Edit</button>
 </div>
-<svelte:head>
-	<link
-		href="https://unpkg.com/tabulator-tables@4.9.1/dist/css/tabulator.min.css"
-		rel="stylesheet"
-	/>
-</svelte:head>
+
+<div class="content">
+	{#if selectedTab == 1}
+		<!--================================= TAB 1 ===============================-->
+
+		<div class="currentDictionary box">
+			<h2>Current Dictionary</h2>
+			<div class="row">
+				<p>Name:</p>
+				<input type="text" bind:value={$dictionaryName} />
+			</div>
+			<p>{currentDictionarySize}</p>
+			<p>{$dictionary.size.toLocaleString() + ' words'}</p>
+			<div class="downloadButton" on:click={downloadCurrentDictionary}>Download as .dict</div>
+		</div>
+
+		<div class="editDictionary box">
+			<h2>Change or Add</h2>
+			<h3>1. Pick a Dictionary</h3>
+			<div class="fileArea editArea">
+				{#each uploadedFiles as file, index}
+					<label class="fileLabel" for="radio{index}">
+						<input type="radio" id="radio{index}" name="file" value={index} checked />
+						<p class="filename">{file.name || 'unnamed file'}</p>
+						<p class="filesize">{~~(file.size / 1000) + 'kB'}</p>
+						<p class="numberofwords" />
+					</label>
+				{/each}
+
+				<label class="fileUploadWrapper">
+					<input type="file" accept=".dict,.txt" on:change={addDictionaryFile} hidden />
+					<p class="uploadButton">+ Upload</p>
+				</label>
+			</div>
+
+			<h3>2. Options</h3>
+			<div class="optionArea editArea">
+				<input
+					type="radio"
+					name="replaceOrMerge"
+					bind:group={replaceOrMerge}
+					value="merge"
+				/>
+				Merge with current dictionary
+				<br />
+				<input
+					type="radio"
+					name="replaceOrMerge"
+					bind:group={replaceOrMerge}
+					value="replace"
+				/>
+				Replace entirely
+				<br />
+				<hr />
+
+				{#if replaceOrMerge == 'merge'}
+					<input type="checkbox" id="overwrite" />
+					Overwrite word scores
+					<br />
+				{/if}
+				<input type="number" id="defaultScore" value="50" />
+				Default score for unscored words
+				<small>(0-100)</small>
+				<br />
+
+				<!-- <label class="checkOption" for="overwrite">
+					<input type="checkbox" id="overwrite" />
+					<p>Overwrite word scores</p>
+				</label>
+				<label class="numberOption" for="defaultScore">
+					<input type="number" id="defaultScore" value="50" />
+					<p>Default score</p>
+				</label> -->
+			</div>
+
+			<div class="changeDictionary row">
+				<button class="changeButton">{changeDictionaryText}</button>
+			</div>
+		</div>
+
+		<!-- <input type="file" on:change={enableUpload}/>
+        <input type="checkbox" bind:checked="{shouldOverwrite}"/>Overwrite current Entries? -->
+		<!-- <button class=uploadButton disabled={disableUpload}>Upload</button>
+		<button class="saveButton">🖫 Download as .dict</button> -->
+
+		<!--================================= TAB 2 ===============================-->
+	{:else}
+		<DictionaryEditor />
+	{/if}
+</div>
 
 <style lang="scss">
-.page {
+.tabRow {
 	display: flex;
-	flex-direction: column;
-	width: 100%;
-	height: 75vh;
-	padding: 11px;
-	overflow: hidden;
-}
-
-:global(.tabulator-row .tabulator-cell a) {
-	white-space: pre-wrap;
-}
-
-.controls {
-	flex: 0 0 auto;
-	display: flex;
-	flex-direction: row;
-	justify-content: space-between;
-	align-items: center;
+	width: 90%;
+	justify-content: start;
 	margin-bottom: 10px;
+	border-bottom: 1px solid black;
 
-	.filterBox {
-		display: grid;
-		grid-template-rows: 30px 40px 40px;
-		grid-template-columns: 90px 1fr;
-		grid-template-areas:
-			'title title'
-			'label wordLength'
-			'label2 score';
-		outline: 1px solid grey;
-		margin: 10px 0px;
-		padding: 10px;
-		width: 60%;
+	& > button {
+		font-size: 1.2em;
+		color: grey;
+		border-radius: 1px;
+		border: none;
+		cursor: pointer;
+		transition: all 0.1s ease;
+		padding: 10px 20px;
 
-		h3 {
-			font-size: 0.8em;
-			line-height: 20px;
-			margin: 0px;
-			grid-area: title;
+		&:not(.select) {
+			opacity: 0.6;
+			background-color: rgb(255, 255, 255);
 		}
+
+		&:active {
+			opacity: 0.6;
+		}
+
+		&.select {
+			color: #000;
+			background-color: rgb(235, 235, 235);
+		}
+
+		&:hover {
+			transition: none;
+			outline: 1px solid black;
+		}
+	}
+}
+
+.content {
+	display: block;
+	width: min(1000px, 80vw);
+	height: min(800px, 85vh);
+}
+
+.box {
+	position: relative;
+	display: block;
+	padding: 10px;
+	border: 1px solid black;
+	border-radius: 5px;
+	margin: 50px 10px;
+	padding: 20px 10px;
+
+	h2 {
+		position: absolute;
+		top: -40px;
+		left: 10px;
+		background-color: white;
+		padding: 0px 30px;
+	}
+
+	&.currentDictionary {
+		position: relative;
 
 		p {
-			font-size: 0.7em;
+			margin: 10px;
+		}
+
+		& > .row {
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			justify-content: stretch;
+			width: 100%;
+			margin-bottom: 10px;
+			input {
+				width: 80%;
+			}
+		}
+
+		.downloadButton {
+			position: absolute;
+			bottom: 0;
+			right: 0;
+			padding: 10px;
+			margin: 30px;
+			box-shadow: 3px 3px 15px rgba(0, 0, 0, 0.3);
+			border-radius: 4px;
+			font-size: large;
+			background-color: #fff;
+			transition: all 0.2s ease-out;
+			cursor: pointer;
+			&:hover {
+				transform: scale(1.2);
+				box-shadow: 3px 10px 20px rgba(0, 0, 0, 0.1);
+			}
 		}
 	}
 
-	.optionBox {
+	&.editDictionary {
 		display: flex;
 		flex-direction: column;
-		justify-content: stretch;
-		align-items: stretch;
+		h3 {
+			color: gray;
+		}
 
-		& > button {
-			margin: 10px;
+		.optionArea > label {
+			display: flex;
+			flex-direction: row;
+		}
+
+		.changeButton {
+			font-size: 1.3em;
 		}
 	}
 }
 
-#table {
+.fileArea {
+	position: relative;
+	border: 2px solid black;
+	border-radius: 5px;
+	padding: 10px;
+	margin-bottom: 10px;
 	flex: 1 0 auto;
-	width: min(800px, 100vw) !important;
 
-	#tablein {
-		height: 100%;
-		width: min(800px, 100vw);
+	.fileUploadWrapper {
+		.uploadButton {
+			border: 1px solid gray;
+			border-radius: 3px;
+			padding: 15px;
+			float: right;
+			transition: all 0.2s ease-out;
+			box-shadow: 2px 4px 10px rgba(0, 0, 0, 0.2);
+
+			&:hover {
+				cursor: pointer;
+				transform: scale(1.1);
+			}
+		}
+	}
+}
+
+.fileLabel {
+	width: 100%;
+	display: grid;
+	grid-template-columns: 1fr 100px 200px;
+	justify-content: stretch;
+	outline: 1px solid black;
+
+	input {
+		display: none;
+	}
+
+	input[type='radio'] ~ p {
+		margin: 0px;
+		padding: 5px 10px;
+		cursor: pointer;
+	}
+
+	&:hover {
+		background-color: rgba(231, 255, 213, 0.31);
+	}
+
+	input[type='radio']:checked ~ p {
+		background-color: rgb(231, 255, 213);
+		color: green;
 	}
 }
 </style>

@@ -1,17 +1,17 @@
 <script context="module" lang="ts">
 import { writable } from 'svelte/store';
 import { makeCells, makeWordSlots, mapCellsToSlots } from './lib/GridGenerator';
-import {
-	setDictionary,
-	PossibleWords,
-	getThesaurus,
-} from './lib/DictionaryEngine';
+import { setDictionary, PossibleWords, getThesaurus } from './lib/DictionaryEngine';
 import { Save, Load } from './lib/FileManager';
 import { onMount, createEventDispatcher } from 'svelte';
+import { mapToDictFileString } from './lib/utils';
 
 /* ================================= STORES ================================= */
 /// Dictionary
 export const dictionary = writable(null as IDictionary);
+export const dictionaryName = writable(
+	localStorage.getItem('dictionaryName') || 'Cryptic Copilot Default'
+);
 
 /// Grid
 export const gridLayout = writable(undefined as IGridLayout);
@@ -26,29 +26,22 @@ export const activeCells = writable(null as ICellState[]);
 export const activeCellAnimations = writable({ orientation: 'A', order: {} });
 export const activePossibleWords = writable([] as IWord[]);
 
-export const activeDeviceList = writable(
-	Promise.resolve([]) as Promise<IDeviceSet>
-);
-export const activeThesaurus = writable(
-	Promise.resolve({}) as Promise<IThesaurusEntry>
-);
+export const activeDeviceList = writable(Promise.resolve([]) as Promise<IDeviceSet>);
+export const activeThesaurus = writable(Promise.resolve({}) as Promise<IThesaurusEntry>);
 
 // Exported Functions
 export const isWordBanned = writable(null as Function);
 export const clearGrid = () => stateRecord.set({ wordSlots: null });
 
-export const changeLayout = (layout: IGridLayout) =>
-	stateRecord.set({ layout, wordSlots: null });
+export const changeLayout = (layout: IGridLayout) => stateRecord.set({ layout, wordSlots: null });
 
-export const onNew = (writable: any, callback: Function) =>
-	writable.subscribe(callback);
+export const onNew = (writable: any, callback: Function) => writable.subscribe(callback);
 //
 </script>
 
 <script lang="ts">
 /* ================================ ON MOUNT ================================ */
-$isWordBanned = (word: string): boolean =>
-	isPossibleWordBanned($wordSlots[$activeSlotId], word);
+$isWordBanned = (word: string): boolean => isPossibleWordBanned($wordSlots[$activeSlotId], word);
 
 onMount(() => {
 	Load.lastOrDefaultDictionary().then(dictionary.set);
@@ -61,12 +54,9 @@ const dispatch = createEventDispatcher();
 let workerPromises = {};
 let nonce = 0;
 
-const DeviceWorker = new Worker(
-	new URL('./lib/DeviceWorker', import.meta.url),
-	{
-		type: 'module',
-	}
-);
+const DeviceWorker = new Worker(new URL('./lib/DeviceWorker', import.meta.url), {
+	type: 'module',
+});
 
 const workerRequest = (request: string, payload: any) => {
 	let id = ++nonce;
@@ -82,9 +72,7 @@ DeviceWorker.onmessage = event => {
 	let { id, response, error } = event.data;
 	if (!workerPromises[id]) return;
 
-	error
-		? workerPromises[id].rejecter(error)
-		: workerPromises[id].resolver(response);
+	error ? workerPromises[id].rejecter(error) : workerPromises[id].resolver(response);
 	console.log('Worker Responded:', { id });
 	delete workerPromises[id];
 };
@@ -101,6 +89,10 @@ onNew(stateRecord, (state: IStateRecord) => {
 
 onNew(dictionary, (dict: IDictionary) => {
 	if (!dict) return;
+	//Sync Locally
+	localStorage.setItem('dictionary', mapToDictFileString(dict));
+	localStorage.setItem('dictionaryName', $dictionaryName);
+	//Sync with Dictionary Engine & Device Worker
 	setDictionary(dict);
 	workerRequest('initialise', dict);
 });
@@ -224,9 +216,7 @@ function refreshCellLetters(slot: IWordSlot, cellStates: ICellState[]) {
 
 function findNewCellLetters(newWord: string): ICellState[] {
 	return $activeCells.map((cell, i) => {
-		return cell.isOverwritable
-			? { ...cell, letter: newWord?.[i] || '' }
-			: cell;
+		return cell.isOverwritable ? { ...cell, letter: newWord?.[i] || '' } : cell;
 	});
 }
 
@@ -234,16 +224,11 @@ function refreshCellColour(selectedSlot: number): void {
 	for (let cell of $cells) {
 		$cells[cell.id].isSelected = cell.slots.includes(selectedSlot);
 
-		$cells[cell.id].isImpossible = cell.slots.some(
-			s => $wordSlots[s].isImpossible
-		);
+		$cells[cell.id].isImpossible = cell.slots.some(s => $wordSlots[s].isImpossible);
 	}
 }
 
-function mkMatchPredicates(
-	slot: IWordSlot,
-	exclude: number = null
-): [IMatchPredicate[], number] {
+function mkMatchPredicates(slot: IWordSlot, exclude: number = null): [IMatchPredicate[], number] {
 	let array = [] as [index: number, letter: string][];
 
 	for (let crossing of slot.intersections) {
@@ -259,10 +244,7 @@ function areIntersectingSlotsPossible(slot: IWordSlot): void {
 	for (let { slotId } of slot.intersections) {
 		if ($wordSlots[slotId].word) continue;
 		let [slotCells, len] = mkMatchPredicates($wordSlots[slotId]);
-		$wordSlots[slotId].isImpossible = !PossibleWords.hasMatch(
-			slotCells,
-			len
-		);
+		$wordSlots[slotId].isImpossible = !PossibleWords.hasMatch(slotCells, len);
 	}
 }
 
@@ -272,10 +254,7 @@ function isPossibleWordBanned(slot: IWordSlot, newWord: string) {
 		if ($wordSlots[slotId].word) continue;
 
 		//Create array of slot Cells.
-		let [slotCells, len] = mkMatchPredicates(
-			$wordSlots[slotId],
-			otherIndex
-		);
+		let [slotCells, len] = mkMatchPredicates($wordSlots[slotId], otherIndex);
 
 		//Substitute the letter in the slot with the new letter.
 		slotCells.push([otherIndex, newWord[myIndex]]);

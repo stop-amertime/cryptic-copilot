@@ -6,23 +6,25 @@ type detailsHeightTuple = [open: number, closed: number];
 
 /* --------------------------------------------------------------------- Word */
 
-type IDictionaryEntry = {
+type IDictEntry = {
 	isAbbreviation?: boolean;
 	hash?: number;
-	abbreviationFor?: Array<string>;
+	abbreviationFor?: string;
 	score?: number;
 	direction?: string;
 	contains?: Array<IWord>;
 };
 
-type IWord = IDictionaryEntry & {
+type IDictTuple = [string, IDictEntry];
+
+type IWord = IDictEntry & {
 	word: string;
 	index?: number;
 };
 
 /* -----------------------------------------------     Dictionary & Thesaurus */
 
-type IDictionary = Map<string, IDictionaryEntry>;
+type IDictionary = Map<string, IDictEntry>;
 type IWordHashMap = Map<number, string[]>;
 
 type IThesaurusEntry = {

@@ -9,8 +9,7 @@ const trivialEndings = ['ER', 'ED', 'S', 'ING', 'ABLE'];
 const averageScore = (arr: IWord[]) => {
 	return (
 		arr.reduce(
-			(partialsum: number, x: IWord): any =>
-				partialsum + DICTIONARY?.get(x.word)?.score || 0,
+			(partialsum: number, x: IWord): any => partialsum + DICTIONARY?.get(x.word)?.score || 0,
 			0
 		) / arr.length
 	);
@@ -38,9 +37,7 @@ self.onmessage = function handleMessageFromMain(event: {
 			DICTIONARY = payload;
 
 			console.time('Sorting Workers Dictionary');
-			DICTIONARY = new Map(
-				Array.from(DICTIONARY).sort(a => a[1]?.score || 0)
-			);
+			DICTIONARY = new Map(Array.from(DICTIONARY).sort(a => a[1]?.score || 0));
 			console.timeEnd('Sorting Workers Dictionary');
 
 			respond('Done.');
@@ -133,9 +130,7 @@ function getLeftoverLetters(array1: string | string[], subword: string) {
 }
 
 function sortWordsByScoreThenRandomly(a: string, b: string) {
-	return (
-		DICTIONARY.get(b).score - DICTIONARY.get(a).score || 0.5 - Math.random()
-	);
+	return DICTIONARY.get(b).score - DICTIONARY.get(a).score || 0.5 - Math.random();
 }
 
 /* ........................................................... String Helpers */
@@ -274,24 +269,14 @@ function generateDevices(targetword: string) {
 	console.timeEnd('Crawl Anagram Tree');
 
 	//SHOW ME THE BROKEN ONES
-	console.table(
-		uncategorisedAnagrams.filter(
-			a => a.join('').length != targetword.length
-		)
-	);
+	console.table(uncategorisedAnagrams.filter(a => a.join('').length != targetword.length));
 
-	let devices = categoriseAsDevices(
-		<string[]>uncategorisedAnagrams,
-		<string>targetword
-	); //Categorise
+	let devices = categoriseAsDevices(<string[]>uncategorisedAnagrams, <string>targetword); //Categorise
 	sortDevices(devices); //Sort
 	return devices as IDeviceSet;
 }
 
-function crawlAnagramTree(
-	inputword: string,
-	searchList: Map<any, any> = DICTIONARY
-) {
+function crawlAnagramTree(inputword: string, searchList: Map<any, any> = DICTIONARY) {
 	let inputhash = getHash(inputword);
 	let mycompleteanagrams = [];
 	let mypartialanagrams = [];
@@ -319,10 +304,7 @@ function crawlAnagramTree(
 			continue;
 		}
 		let remainingWord = getLeftoverLetters(inputword, pa).join('');
-		let anagramsofremainingword = crawlAnagramTree(
-			remainingWord,
-			forwardSearchMap
-		);
+		let anagramsofremainingword = crawlAnagramTree(remainingWord, forwardSearchMap);
 		if (anagramsofremainingword == null) {
 			continue;
 		}
@@ -340,18 +322,11 @@ function crawlAnagramTree(
 	return mycompleteanagrams;
 }
 
-function isDevice(
-	origWord: string,
-	subWordArray: any[],
-	depth = 0
-): Array<IWord> {
+function isDevice(origWord: string, subWordArray: any[], depth = 0): Array<IWord> {
 	let inputWord = origWord;
 
 	// TRIVIAL CASE - SINGLE WORD
-	if (
-		subWordArray.length == 1 &&
-		subWordArray[0].length == inputWord.length
-	) {
+	if (subWordArray.length == 1 && subWordArray[0].length == inputWord.length) {
 		return [
 			{
 				word: subWordArray[0],
@@ -390,10 +365,7 @@ function isDevice(
 			let subword = subWordArray[i];
 
 			let matched = inputWord.slice(-1 * subword.length);
-			let leftovers = inputWord.slice(
-				0,
-				inputWord.length - subword.length
-			);
+			let leftovers = inputWord.slice(0, inputWord.length - subword.length);
 
 			subWordArray.splice(i, 1);
 			let recursive = isDevice(leftovers, subWordArray, depth);
@@ -435,9 +407,7 @@ function isDevice(
 		switch ([...subword].sort().join('')) {
 			case [...baseword.substring(0, subword.length)].sort().join(''):
 				return 'start';
-			case [...baseword.substring(baseword.length - subword.length)]
-				.sort()
-				.join(''):
+			case [...baseword.substring(baseword.length - subword.length)].sort().join(''):
 				return 'end';
 			default:
 				return null;
@@ -456,8 +426,7 @@ function isDevice(
 		} //just in case
 
 		for (let i = 1; i + lengthdiff < baseword.length; i++) {
-			let middleremoved =
-				baseword.slice(0, i) + baseword.slice(i + lengthdiff);
+			let middleremoved = baseword.slice(0, i) + baseword.slice(i + lengthdiff);
 
 			if ([...middleremoved].sort().join('') == sorted) {
 				return [middleremoved, baseword.slice(i, i + lengthdiff)];
@@ -585,10 +554,7 @@ function rateDevice(wordarray: Array<IWord>): number {
 	return out;
 }
 
-function categoriseAsDevices(
-	anagramList: any[],
-	targetword: string
-): IDeviceSet {
+function categoriseAsDevices(anagramList: any[], targetword: string): IDeviceSet {
 	let containers = [] as IDevice[];
 	let anagrams = [] as IDevice[];
 
@@ -618,10 +584,7 @@ function categoriseAsDevices(
 function sortDevices(devices: IDeviceSet): void {
 	if (devices.anagrams) {
 		devices.anagrams.sort((a, b) => {
-			return (
-				a.words.length - b.words.length ||
-				averageScore(a.words) - averageScore(b.words)
-			);
+			return a.words.length - b.words.length || averageScore(a.words) - averageScore(b.words);
 		});
 	}
 
@@ -659,10 +622,7 @@ export const validWordFinder = {
 
 		if (generateMatchRegex(cells).test(filterTerm)) {
 			isValidSearch = true;
-			[userMessage, colour] = [
-				`'${filterTerm}' can be entered as a custom word.`,
-				'#44D62C',
-			];
+			[userMessage, colour] = [`'${filterTerm}' can be entered as a custom word.`, '#44D62C'];
 		} else {
 			isValidSearch = false;
 			[userMessage, colour] =
@@ -671,10 +631,7 @@ export const validWordFinder = {
 							`${searchLength} / ${slotLength} letters needed to be a custom word.`,
 							'#FA4616',
 					  ]
-					: [
-							`'${filterTerm}' doesn't fit with the letters on the grid.`,
-							'#E40046',
-					  ];
+					: [`'${filterTerm}' doesn't fit with the letters on the grid.`, '#E40046'];
 		}
 		return [isValidSearch, userMessage, colour]; //todo: Move Search Logic into Component?
 	},
@@ -711,7 +668,7 @@ const scoreToColour = (score: number): string => {
 
 export const WordInfo = {
 	get(word: string) {
-		let entry: IDictionaryEntry = DICTIONARY.get(word);
+		let entry: IDictEntry = DICTIONARY.get(word);
 		return {
 			colour: scoreToColour(entry.score),
 			isAbbreviation: entry.isAbbreviation,

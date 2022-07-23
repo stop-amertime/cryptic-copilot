@@ -1,6 +1,6 @@
 <script lang="ts">
 import GridModal from './../modals/GridModal.svelte';
-import DictionaryModal from './../modals/DictionaryModal.svelte';
+import DictionaryModal from '../modals/DictionaryModal.svelte';
 import { Save, Load } from '../lib/FileManager';
 import { changeLayout, clearGrid } from '../StateMediator.svelte';
 import Modal from '../Modals/Modal.svelte';
@@ -28,15 +28,15 @@ const closeDictionaryModal = () => (showDictionaryModal = false);
 
 <!----------------------------------------------------------------------HTML--->
 <div id="page">
-	<span> ▩ Grid </span>
-	<button on:click={openGridModal}> ▦ Change </button>
-	<button on:click={resetGrid}> 🗑 Reset </button>
-	<span> 🕮 Dictionary </span>
-	<button> ＋ Upload </button>
-	<button on:click={openDictionaryModal}> ✎ Edit </button>
-	<span> 🗄 Files </span>
-	<button> 🖫 Save As </button>
-	<button on:click={openGridModal}> 🗁 Load </button>
+	<span>▩ Grid</span>
+	<button on:click={openGridModal}>▦ Change</button>
+	<button on:click={resetGrid}>🗑 Reset</button>
+	<span>🕮 Dictionary</span>
+	<button>＋ Upload</button>
+	<button on:click={openDictionaryModal}>✎ Edit</button>
+	<span>🗄 Files</span>
+	<button>🖫 Save As</button>
+	<button on:click={openGridModal}>🗁 Load</button>
 	<div />
 	<label style="column-span: 2">
 		<input type="checkbox" disabled />
