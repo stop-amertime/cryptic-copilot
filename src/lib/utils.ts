@@ -146,7 +146,7 @@ export function dictionaryToWordTuples(dictionary: IDictionary) {
 	return [...dictionary];
 }
 
-export const dictFileToMap = (f: File) => f.text().then(dictFileStringToMap);
+export const dictFileToMap = (f: File, d = 50) => f.text().then(t => dictFileStringToMap(t, d));
 export const mapToDictBlob = (map: IDictionary) => {
 	let dictFileString = mapToDictFileString(map);
 	return new Blob([dictFileString], { type: 'text/plain' });
@@ -212,7 +212,7 @@ export function stringToBlob(dictString: string) {
 export function saveBlobAs(blob: Blob, filename: string) {
 	let a = document.createElement('a');
 	a.href = URL.createObjectURL(blob);
-	a.download = filename;
+	a.download = filename + '.dict';
 	a.click();
 }
 

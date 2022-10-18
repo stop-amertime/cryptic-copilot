@@ -12,6 +12,9 @@ export const dictionary = writable(null as IDictionary);
 export const dictionaryName = writable(
 	localStorage.getItem('dictionaryName') || 'Cryptic Copilot Default'
 );
+export const priorityWords = writable(
+	JSON.parse(localStorage.getItem('priorityWords') || '[]') as string[]
+);
 
 /// Grid
 export const gridLayout = writable(undefined as IGridLayout);
@@ -29,13 +32,12 @@ export const activePossibleWords = writable([] as IWord[]);
 export const activeDeviceList = writable(Promise.resolve([]) as Promise<IDeviceSet>);
 export const activeThesaurus = writable(Promise.resolve({}) as Promise<IThesaurusEntry>);
 
-// Exported Functions
+// Requests
 export const isWordBanned = writable(null as Function);
 export const clearGrid = () => stateRecord.set({ wordSlots: null });
-
 export const changeLayout = (layout: IGridLayout) => stateRecord.set({ layout, wordSlots: null });
-
 export const onNew = (writable: any, callback: Function) => writable.subscribe(callback);
+
 //
 </script>
 
@@ -83,6 +85,9 @@ onNew(stateRecord, (state: IStateRecord) => {
 	if (stateRecord) {
 		dispatch('isLoading', true);
 		setState(state);
+		console.group('State Initialised:');
+		console.log(state);
+		console.groupEnd();
 		dispatch('isLoading', false);
 	}
 });
@@ -90,8 +95,17 @@ onNew(stateRecord, (state: IStateRecord) => {
 onNew(dictionary, (dict: IDictionary) => {
 	if (!dict) return;
 	//Sync Locally
-	localStorage.setItem('dictionary', mapToDictFileString(dict));
-	localStorage.setItem('dictionaryName', $dictionaryName);
+	try {
+		localStorage.setItem('dictionary', mapToDictFileString(dict));
+		localStorage.setItem('dictionaryName', $dictionaryName);
+	} catch (e) {
+		console.error(e);
+		alert(
+			`This dictionary is over 5MB in size. 
+            It can be used for now, but can't be saved in your browser between sessions. 
+            Before you leave the page, download a copy to use next time.`
+		);
+	}
 	//Sync with Dictionary Engine & Device Worker
 	setDictionary(dict);
 	workerRequest('initialise', dict);
@@ -123,6 +137,10 @@ onNew(activeSlotId, (id: number) => {
 	$activePossibleWords = PossibleWords.match(matchArray, len);
 });
 
+onNew(priorityWords, (words: string[]) => {
+	localStorage.setItem('priorityWords', JSON.stringify(words));
+	setDictionary(null, $priorityWords);
+});
 /* =============================== FUNCTIONS  =============================== */
 
 function setState(state: IStateRecord | Partial<IStateRecord>): void {

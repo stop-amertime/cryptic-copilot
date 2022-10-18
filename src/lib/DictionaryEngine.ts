@@ -1,10 +1,21 @@
 let DICTIONARY = new Map();
+let PRIORITY_WORDS = {};
 let WORDS_OF_LENGTH = new Map() as Map<number, string[]>;
 
-export const setDictionary = (dictionary: IDictionary) => {
-	DICTIONARY = dictionary;
-	WORDS_OF_LENGTH = groupByLength([...dictionary.keys()]);
-	console.log('---- DictEngine Initialised');
+export const setDictionary = (dictionary: IDictionary = null, priorityWords: string[] = null) => {
+	if (dictionary) {
+		DICTIONARY = dictionary;
+		WORDS_OF_LENGTH = groupByLength([...dictionary.keys()]);
+		console.log('---- DictEngine Initialised');
+	}
+	if (priorityWords) {
+		PRIORITY_WORDS = {};
+		for (let word of priorityWords) {
+			PRIORITY_WORDS[word] = 1;
+		}
+		console.log('---- Priority Words Updated');
+		console.log(JSON.stringify(priorityWords));
+	}
 };
 
 export const getDictionaryFromFile = (Url: string) => {
@@ -55,7 +66,10 @@ export const scoreToColour = (score: number): string => {
 	else return `hsl(${score * 2}, 75%, 85%)`;
 };
 
-const byScoreThenRandom = (a: IWord, b: IWord) => +b.score - +a.score || Math.random() - 0.5;
+const byScoreThenRandom = (a: IWord, b: IWord) =>
+	isPriorityWord(b.word) - isPriorityWord(a.word) || +b.score - +a.score || Math.random() - 0.5;
+
+export const isPriorityWord = (word: string): number => PRIORITY_WORDS[word] ?? 0;
 
 export const enum TrafficLight {
 	Green = '#44D62C',
@@ -149,8 +163,8 @@ export async function getThesaurus(word: string): Promise<IThesaurusEntry> {
 		});
 	}
 
-	let abbreviationFor = DICTIONARY?.get(word)?.abbreviationFor.split(',') || null;
-	if (abbreviationFor) numberOfSenses += abbreviationFor?.length || 0;
+	let abbreviationFor = DICTIONARY?.get(word)?.abbreviationFor || null;
+	if (abbreviationFor) numberOfSenses += abbreviationFor?.split(',')?.length || 0;
 
 	return {
 		partsOfSpeech,

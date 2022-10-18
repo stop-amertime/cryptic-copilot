@@ -11,17 +11,14 @@ $: boxDimension = Math.min(maxBoxWidth, maxBoxHeight) + 'px';
 
 <!----------------------------------------------------------------------HTML--->
 
-<div
-	id="letterBox"
-	bind:clientWidth={wrapperWidth}
-	bind:clientHeight={wrapperHeight}
->
-	{#each letters as l}
+<div id="letterBox" bind:clientWidth={wrapperWidth} bind:clientHeight={wrapperHeight}>
+	{#each letters as l, index}
 		{#key l.letter}
 			<div
 				style:--size={boxDimension}
 				class="letter"
 				class:fixed={l.isOverwritable}
+				class:first={index == 0}
 			>
 				<span>{l.letter}</span>
 			</div>
@@ -34,6 +31,10 @@ $: boxDimension = Math.min(maxBoxWidth, maxBoxHeight) + 'px';
 #letterBox {
 	grid-area: 1 / 1 / 2 / 2;
 	display: block;
+
+	&:last-child {
+		border: 1px solid red !important;
+	}
 }
 
 .letter {
@@ -45,9 +46,14 @@ $: boxDimension = Math.min(maxBoxWidth, maxBoxHeight) + 'px';
 	line-height: calc(var(--size));
 	text-align: center;
 	font-weight: bold;
-	border: 1px solid black;
-	margin-right: -1px;
+	border-width: 1px 1px 1px 0px;
+	border-color: black;
+	border-style: solid;
 	z-index: 1;
+
+	&.first {
+		border-left-width: 1px;
+	}
 
 	span {
 		margin: 0px;

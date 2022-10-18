@@ -89,7 +89,7 @@ $: animProps = {
 .invalid {
 	display: inline;
 	background-color: black;
-	//outline: 1px solid black;
+	outline: 1px solid black;
 }
 
 .selected {

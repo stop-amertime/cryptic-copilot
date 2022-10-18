@@ -11,7 +11,7 @@ import {
 	activePossibleWords,
 	isWordBanned,
 } from '../StateMediator.svelte';
-import { PossibleWords, scoreToColour } from '../lib/DictionaryEngine';
+import { PossibleWords, scoreToColour, isPriorityWord } from '../lib/DictionaryEngine';
 import LetterBoxes from '../lib-sv/LetterBoxes.svelte';
 import { Center, Button, ActionIcon } from '@svelteuidev/core';
 import Icon, { loadIcon } from '@iconify/svelte';
@@ -34,9 +34,7 @@ let possibleWordsHeight;
 /* ..................................................... Search, Filter, Sort */
 
 let rawSearchInput = '';
-$: searchInput = rawSearchInput
-	? rawSearchInput.toUpperCase().replaceAll(/[^A-Z]/g, '')
-	: '';
+$: searchInput = rawSearchInput ? rawSearchInput.toUpperCase().replaceAll(/[^A-Z]/g, '') : '';
 
 $: [isValidSearch, searchSubMessage, messageColour] = !!searchInput
 	? PossibleWords.validate(searchInput, $activeCells)
@@ -64,8 +62,7 @@ $: chunkedPossibleWords =
 		return output;
 	}, []) ?? [];
 
-$: pluralString =
-	filteredPossibleWords.length != 1 ? ' matching words' : ' matching word';
+$: pluralString = filteredPossibleWords.length != 1 ? ' matching words' : ' matching word';
 
 function checkIfBanned(node: HTMLElement, word: string) {
 	if ($isWordBanned(word)) {
@@ -111,33 +108,31 @@ function checkIfBanned(node: HTMLElement, word: string) {
 
 			{#if filteredPossibleWords.length > 0}
 				<span id="matchText">
-					<b>{filteredPossibleWords.length}</b>{pluralString}</span
-				>
+					<b>{filteredPossibleWords.length}</b>
+					{pluralString}
+				</span>
 			{:else if searchInput}
 				<span id="matchText" style:color={messageColour}>
-					{searchSubMessage}</span
-				>
+					{searchSubMessage}
+				</span>
 			{/if}
 		</div>
 		<div id="possibleWordsArea" bind:clientHeight={possibleWordsHeight}>
 			{#key $activeSlotId}
-				<div
-					id="possibleWordsWrapper"
-					bind:clientWidth={wrapperWidth}
-					transition:fade
-				>
+				<div id="possibleWordsWrapper" bind:clientWidth={wrapperWidth} transition:fade>
 					{#if filteredPossibleWords && filteredPossibleWords.length > 0}
 						<VirtualList items={chunkedPossibleWords} let:item>
 							<div class="wordRow" style="--cols:{colCount}">
 								{#each item as possibleWord}
 									<button
 										class="possword"
+										class:priorityWord={isPriorityWord(possibleWord.word)}
 										use:checkIfBanned={possibleWord.word}
 										style:--score={possibleWord.score}
-										on:click={() =>
-											($activeWord = possibleWord.word)}
-										>{possibleWord.word}</button
+										on:click={() => ($activeWord = possibleWord.word)}
 									>
+										{possibleWord.word}
+									</button>
 								{/each}
 							</div>
 						</VirtualList>
@@ -150,10 +145,8 @@ function checkIfBanned(node: HTMLElement, word: string) {
 							/>
 
 							<p class="noWordsText">
-								<strong
-									>No matching words in our dictionary -
-									sorry.</strong
-								><br />
+								<strong>No matching words in our dictionary - sorry.</strong>
+								<br />
 								You can type new words into the bar above.
 							</p>
 						</div>
@@ -225,6 +218,17 @@ function checkIfBanned(node: HTMLElement, word: string) {
 	border-radius: 5px;
 	cursor: pointer;
 	transition: all 0.2s ease-in-out;
+
+	&.priorityWord {
+		font-weight: bold;
+		&:after {
+			content: '⇧';
+			position: absolute;
+			right: 5px;
+			font-size: 1.2em;
+			color: rgb(0, 0, 0);
+		}
+	}
 
 	&:after {
 		counter-reset: score var(--score);

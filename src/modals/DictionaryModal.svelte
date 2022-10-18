@@ -1,16 +1,17 @@
 <script lang="ts">
 import { fly } from 'svelte/transition';
 import DictionaryEditor from './DictionaryEditor.svelte';
+import TopWords from './TopWords.svelte';
 import { writable } from 'svelte/store';
 import { dictionary, dictionaryName } from '../StateMediator.svelte';
 import { Load } from '../lib/FileManager';
-import { downloadMapAsDictFile, mapToDictBlob, saveBlobAs } from '../lib/utils';
+import { dictFileToMap, downloadMapAsDictFile, mapToDictBlob, saveBlobAs } from '../lib/utils';
 /* -------------------------------------------------------------------------- */
 
 const closeModal = () => (document.querySelector('.modal-background') as HTMLElement).click();
 let selectedTab = 1;
 let uploadedFiles = [];
-let uploadedFileWordCount = [];
+let selectedFile = 0;
 Load.defaultDictionaryFile().then(d => (uploadedFiles = [d]));
 $: currentDictionaryBlob = mapToDictBlob($dictionary);
 $: currentDictionarySize = Math.floor(currentDictionaryBlob.size / 1000).toLocaleString() + ' KB';
@@ -18,19 +19,31 @@ let replaceOrMerge = 'merge';
 let newDictionaryName = '';
 $: changeDictionaryText = replaceOrMerge == 'merge' ? '⥅ Merge' : '↷ Replace';
 let defaultScore = 50;
+let shouldOverwrite = true;
 const downloadCurrentDictionary = () => saveBlobAs(currentDictionaryBlob, $dictionaryName);
 
 const addDictionaryFile = (event: Event) => {
 	const file = (event.currentTarget as HTMLInputElement).files?.[0];
 	if (!file) return;
 	uploadedFiles = [...uploadedFiles, file];
-	console.log('ADDED FILE: ', file.name, file.size + ' B');
+	selectedFile = uploadedFiles.length - 1;
+};
+
+const addFileToCurrentDictionary = async () => {
+	let input = await dictFileToMap(uploadedFiles[selectedFile], defaultScore);
+	let previous = replaceOrMerge == 'merge' ? $dictionary : new Map();
+	let output = shouldOverwrite
+		? new Map([...previous, ...input])
+		: new Map([...input, ...previous]);
+	$dictionaryName = newDictionaryName || 'Merged Dictionary';
+	$dictionary = output;
 };
 </script>
 
 <div class="tabRow">
 	<button on:click={() => (selectedTab = 1)} class:select={selectedTab == 1}>🕮 Manage</button>
 	<button on:click={() => (selectedTab = 2)} class:select={selectedTab == 2}>✎ Edit</button>
+	<button on:click={() => (selectedTab = 3)} class:select={selectedTab == 3}>⭱ Top Words</button>
 </div>
 
 {#if selectedTab == 1}
@@ -51,7 +64,14 @@ const addDictionaryFile = (event: Event) => {
 			<div class="fileArea editArea">
 				{#each uploadedFiles as file, index}
 					<label class="fileLabel" for="radio{index}">
-						<input type="radio" id="radio{index}" name="file" value={index} checked />
+						<input
+							type="radio"
+							id="radio{index}"
+							name="file"
+							value={index}
+							bind:group={selectedFile}
+							checked
+						/>
 						<p class="filename">{file.name || 'unnamed file'}</p>
 						<p class="filesize">{~~(file.size / 1000) + 'kB'}</p>
 						{#await file.text() then text}
@@ -94,10 +114,11 @@ const addDictionaryFile = (event: Event) => {
 						bind:value={newDictionaryName}
 					/>
 					<br />
-
-					<input type="checkbox" id="overwrite" />
-					Overwrite scores of current dictionary
-					<br />
+					<label for="overwrite">
+						<input type="checkbox" id="overwrite" bind:checked={shouldOverwrite} />
+						Overwrite scores of current dictionary
+						<br />
+					</label>
 				{/if}
 
 				Default score:
@@ -107,14 +128,20 @@ const addDictionaryFile = (event: Event) => {
 			</div>
 
 			<div class="changeDictionary row">
-				<button class="changeButton">{changeDictionaryText}</button>
+				<button class="changeButton" on:click={addFileToCurrentDictionary}>
+					{changeDictionaryText}
+				</button>
 			</div>
 		</div>
 	</div>
 	<!--================================= TAB 2 ===============================-->
-{:else}
+{:else if selectedTab == 2}
 	<div class="editTab">
 		<DictionaryEditor />
+	</div>
+{:else}
+	<div class="topWordsTab">
+		<TopWords />
 	</div>
 {/if}
 
@@ -250,6 +277,7 @@ const addDictionaryFile = (event: Event) => {
 			padding: 10px;
 			margin-bottom: 10px;
 			flex: 3 0 auto;
+			overflow-y: scroll;
 
 			.fileLabel {
 				width: 100%;
@@ -277,22 +305,6 @@ const addDictionaryFile = (event: Event) => {
 					color: green;
 				}
 			}
-
-			.fileUploadWrapper {
-				.uploadButton {
-					border: 1px solid gray;
-					border-radius: 3px;
-					padding: 15px;
-					float: right;
-					transition: all 0.2s ease-out;
-					box-shadow: 2px 4px 10px rgba(0, 0, 0, 0.2);
-
-					&:hover {
-						cursor: pointer;
-						transform: scale(1.1);
-					}
-				}
-			}
 		}
 
 		.mergeOrReplace {
@@ -305,7 +317,17 @@ const addDictionaryFile = (event: Event) => {
 			border: 1px solid gray;
 			padding-left: 70px;
 			padding: 30px;
-			line-height: 2;
+			line-height: 3;
+
+			input[type='checkbox'] {
+				width: 20px;
+				margin-right: 20px;
+			}
+
+			input[type='number'] {
+				width: 50px;
+				font-size: 1em;
+			}
 		}
 
 		.changeButton {
