@@ -7,11 +7,11 @@ let DICT_VERSION = 'ccDict-6.0';
 let DICT_SAVECOMPRESSION = 'dict';
 let DICT_CACHECOMPRESSION = 'dict';
 let DICT_URL = {
-	json: `./src/data/${DICT_VERSION}.json`,
-	dict: `./src/data/${DICT_VERSION}.dict`,
-	compressed: `./src/data/${DICT_VERSION}.lz.txt`,
+	json: `/data/${DICT_VERSION}.json`,
+	dict: `/data/${DICT_VERSION}.dict`,
+	compressed: `/data/${DICT_VERSION}.lz.txt`,
 };
-let DEFAULT_LAYOUTURL = './src/data/gridtemplates.json';
+let DEFAULT_LAYOUTURL = '/data/gridtemplates.json';
 
 const makeStateRecord = (): IStateRecord => JSON.stringify({ layout, wordSlots });
 
@@ -75,12 +75,15 @@ export const Load = {
 	lastOrDefaultDictionary: async (): Promise<IDictionary> => {
 		let lastDict = localStorage.getItem('dictionary');
 		if (lastDict) return dictFileStringToMap(lastDict);
-		else return defaultDictionary();
+		else {
+			let x = Load.defaultDictionary();
+			return x;
+		}
 	},
 
 	defaultDictionary: async (): Promise<IDictionary> => {
 		let resp = await fetch(DICT_URL[DICT_SAVECOMPRESSION]);
-		string = await resp.text();
+		let string = await resp.text();
 		return dictFileStringToMap(string);
 	},
 
