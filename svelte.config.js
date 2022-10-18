@@ -5,10 +5,10 @@ export default {
 	// for more information about preprocessors
 	preprocess: sveltePreprocess({
 		scss: {
-			prependData: `@import './src/style.scss';`,
+			prependData: `@import 'src/style.scss';`,
 		},
-		pug: { 
-            markupTagName: 'template' 
-        },
+		pug: {
+			markupTagName: 'template',
+		},
 	}),
-}
+};
