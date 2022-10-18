@@ -3,7 +3,7 @@ import GridModal from './../modals/GridModal.svelte';
 import DictionaryModal from '../modals/DictionaryModal.svelte';
 import { Save, Load } from '../lib/FileManager';
 import { changeLayout, clearGrid } from '../StateMediator.svelte';
-import Modal from 'src/modals/Modal.svelte';
+import Modal from '../modals/Modal.svelte';
 
 const save = () => Save.stateToFile();
 const resetGrid = (event: MouseEvent) => clearGrid();
