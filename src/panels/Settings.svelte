@@ -49,12 +49,12 @@ const closeDictionaryModal = () => (showDictionaryModal = false);
 			<button>🖫 Save As</button>
 			<button on:click={openGridModal}>🗁 Load</button>
 		</div>
+		<label>
+			<input type="checkbox" disabled />
+			<p>Autosave to File on Edit</p>
+		</label>
 	</div>
 	<div />
-	<label>
-		<input type="checkbox" disabled />
-		<p>Autosave on Edit</p>
-	</label>
 </div>
 
 {#if showGridModal}
@@ -73,6 +73,7 @@ const closeDictionaryModal = () => (showDictionaryModal = false);
 #page {
 	@include scroll();
 	width: 100%;
+	max-width: 100%;
 	height: 100%;
 	@include flex-col(stretch, space-around);
 	grid-gap: 15px;
@@ -89,7 +90,6 @@ const closeDictionaryModal = () => (showDictionaryModal = false);
 		font-size: 1.5em;
 		font-weight: bold;
 		text-align: center;
-		flex: 1 0 100%;
 		height: 60px;
 		line-height: 60px;
 	}
@@ -121,8 +121,6 @@ const closeDictionaryModal = () => (showDictionaryModal = false);
 
 label {
 	display: inline-flex;
-	column-span: 2;
-	width: 150%;
 	line-height: 0px;
 	& > * {
 		margin-right: 20px;
