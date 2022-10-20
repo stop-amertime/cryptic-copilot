@@ -28,17 +28,30 @@ const closeDictionaryModal = () => (showDictionaryModal = false);
 
 <!----------------------------------------------------------------------HTML--->
 <div id="page">
-	<span>▩ Grid</span>
-	<button on:click={openGridModal}>▦ Change</button>
-	<button on:click={resetGrid}>🗑 Reset</button>
-	<span>🕮 Dictionary</span>
-	<button>＋ Upload</button>
-	<button on:click={openDictionaryModal}>✎ Edit</button>
-	<span>🗄 Files</span>
-	<button>🖫 Save As</button>
-	<button on:click={openGridModal}>🗁 Load</button>
+	<div class="row">
+		<span>▩ Grid</span>
+		<div class="buttonrow">
+			<button on:click={openGridModal}>▦ Change</button>
+			<button on:click={resetGrid}>🗑 Clear</button>
+		</div>
+	</div>
+
+	<div class="row">
+		<span>🕮 Dictionary</span>
+		<div class="buttonrow">
+			<button>＋ Upload</button>
+			<button on:click={openDictionaryModal}>✎ Edit</button>
+		</div>
+	</div>
+	<div class="row">
+		<span>🗄 Files</span>
+		<div class="buttonrow">
+			<button>🖫 Save As</button>
+			<button on:click={openGridModal}>🗁 Load</button>
+		</div>
+	</div>
 	<div />
-	<label style="column-span: 2">
+	<label>
 		<input type="checkbox" disabled />
 		<p>Autosave on Edit</p>
 	</label>
@@ -61,25 +74,49 @@ const closeDictionaryModal = () => (showDictionaryModal = false);
 	@include scroll();
 	width: 100%;
 	height: 100%;
-	display: grid;
+	@include flex-col(stretch, space-around);
 	grid-gap: 15px;
-	grid-template-columns: 1fr 150px 150px;
-	grid-template-rows: 70px 70px 70px 30px;
-	grid-template-areas:
-		'gridlabel gridbutton1 gridbutton2'
-		'dictlabel dictbutton1 dictbutton2'
-		'filelabel filebutton1 filebutton2'
-		'_________ fileautosave fileautosave';
 	padding: 20px;
 }
 
-span {
-	font-size: 1.5em;
-	font-weight: bold;
-	text-align: left;
-	flex: 1 0 auto;
-	height: 60px;
-	line-height: 60px;
+.row {
+	width: 100%;
+	display: block;
+	flex: 0 0 auto;
+
+	span {
+		width: 100%;
+		font-size: 1.5em;
+		font-weight: bold;
+		text-align: center;
+		flex: 1 0 100%;
+		height: 60px;
+		line-height: 60px;
+	}
+
+	.buttonrow {
+		display: flex;
+		button {
+			flex: 1 0 auto;
+			font-size: 1.2em;
+			padding: 10px;
+			border: 1px solid #000;
+			border-radius: 5px;
+			margin: 10px;
+			background-color: #fff;
+			color: #000;
+			cursor: pointer;
+
+			&:hover {
+				background-color: rgb(231, 231, 231);
+				color: rgb(111, 109, 109);
+			}
+			&:active {
+				background-color: rgb(194, 192, 192);
+				color: #000;
+			}
+		}
+	}
 }
 
 label {
@@ -93,27 +130,6 @@ label {
 
 	input:disabled + p {
 		color: #ccc;
-	}
-}
-
-button {
-	width: 150px;
-	font-size: 1.2em;
-	padding: 10px;
-	border: 1px solid #000;
-	border-radius: 5px;
-	margin: 10px;
-	background-color: #fff;
-	color: #000;
-	cursor: pointer;
-
-	&:hover {
-		background-color: rgb(231, 231, 231);
-		color: rgb(111, 109, 109);
-	}
-	&:active {
-		background-color: rgb(194, 192, 192);
-		color: #000;
 	}
 }
 </style>

@@ -157,7 +157,6 @@ $: if (!$activeWord) {
 			border-color: black black white black;
 			cursor: default;
 		}
-
 		&:not(.disabled):not(.selectedTab):hover {
 			background: rgba(242, 242, 242, 0.64);
 			color: rgb(113, 113, 113);
