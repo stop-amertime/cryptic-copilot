@@ -44,15 +44,17 @@ svelte:component(this='{StateMediator}' on:isLoading!='{(ev)=>{loading=ev.detail
 
 @media (min-width: 800px) {
 	#main {
+		margin: 0px auto;
 		position: absolute 0 0;
 		width: 100vw;
 		height: 100vh;
 		padding: 30px 30px;
+		max-width: 1800px;
 		overflow-y: auto;
 		display: flex;
 		flex-wrap: nowrap;
 		align-items: center;
-		justify-content: center;
+		justify-content: space-evenly;
 	}
 
 	#gridArea {
@@ -60,6 +62,10 @@ svelte:component(this='{StateMediator}' on:isLoading!='{(ev)=>{loading=ev.detail
 		max-width: 800px;
 		padding-right: 15px;
 		padding: 25px;
+		display: flex;
+		flex-direction: column;
+		align-items: stretch;
+		justify-content: stretch;
 	}
 
 	#panelArea {

@@ -2,6 +2,7 @@
 import Cell from './Cell.svelte';
 import { fly } from 'svelte/transition';
 import { activeSlotId, cells } from './StateMediator.svelte';
+import CurrentWord from './CurrentWord.svelte';
 /* -------------------------------------------------------------------------- */
 
 $: rowsize = Math.sqrt($cells.length) as number;
@@ -21,15 +22,13 @@ function updateSelectedSlot(event: CustomEvent): void {
 }
 </script>
 
-<div
-	id="GridDiv"
-	transition:fly={{ duration: 1000 }}
-	style="--dimension:{rowsize}"
->
+<div id="GridDiv" transition:fly={{ duration: 1000 }} style="--dimension:{rowsize}">
 	{#each $cells as cell}
 		<Cell {...cell} on:clicked={updateSelectedSlot} />
 	{/each}
 </div>
+
+<CurrentWord />
 
 <style>
 /* -------------------------------------------------------------------------- */

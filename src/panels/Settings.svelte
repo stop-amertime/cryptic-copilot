@@ -4,6 +4,7 @@ import DictionaryModal from '../modals/DictionaryModal.svelte';
 import { Save, Load } from '../lib/FileManager';
 import { changeLayout, clearGrid } from '../StateMediator.svelte';
 import Modal from '../modals/Modal.svelte';
+import CodeRunner from './CodeRunner.svelte';
 
 const save = () => Save.stateToFile();
 const resetGrid = (event: MouseEvent) => clearGrid();
@@ -55,6 +56,7 @@ const closeDictionaryModal = () => (showDictionaryModal = false);
 		</label>
 	</div>
 	<div />
+	<CodeRunner />
 </div>
 
 {#if showGridModal}

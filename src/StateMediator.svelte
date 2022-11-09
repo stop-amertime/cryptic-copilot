@@ -32,7 +32,8 @@ export const activePossibleWords = writable([] as IWord[]);
 export const activeDeviceList = writable(Promise.resolve([]) as Promise<IDeviceSet>);
 export const activeThesaurus = writable(Promise.resolve({}) as Promise<IThesaurusEntry>);
 
-// Requests
+/* ===================== REQUESTS FROM OTHER COMPONENTS ===================== */
+
 export const isWordBanned = writable(null as Function);
 export const clearGrid = () => stateRecord.set({ wordSlots: null });
 export const changeLayout = (layout: IGridLayout) => stateRecord.set({ layout, wordSlots: null });
