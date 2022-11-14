@@ -30,7 +30,7 @@ type IWordHashMap = Map<number, string[]>;
 type IThesaurusEntry = {
 	partsOfSpeech: Array<IThesaurusPart>;
 	numberOfSenses: number;
-	abbreviationFor?: string[];
+	abbreviationFor?: string;
 };
 
 type IThesaurusPart = {

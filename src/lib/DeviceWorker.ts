@@ -25,11 +25,7 @@ export const initialise = (dictionary: IDictionary): boolean => {
 	return true;
 };
 
-export const updateWordFilters = ({
-	length = 15,
-	score = 45,
-	maxWords = 4,
-}): boolean => {
+export const updateWordFilters = ({ length = 15, score = 45, maxWords = 4 }): boolean => {
 	MIN_WORD_LENGTH = length || MIN_WORD_LENGTH || 15;
 	MIN_WORD_SCORE = score || (MIN_WORD_SCORE ?? 45);
 	MAX_ANAGRAM_WORDS = maxWords || MAX_ANAGRAM_WORDS || 4;
@@ -42,7 +38,7 @@ export const getDevices = (word: string): IDeviceSet => {
 	return monad(word)
 		.chain(findValidHashCombinations)
 		.chain(inflateHashCombinations)
-		.chain(sortByLengthAscending)
+		.chain(sortByWordScoreAverage)
 		.chain(categoriseWordArraysAsDevices).value;
 };
 
@@ -53,8 +49,7 @@ export const availableFunctions = { initialise, updateWordFilters, getDevices };
 self.onmessage = function handle(e: MessageEvent) {
 	const { id, request, payload } = e.data;
 	const respond = (response: any) => postMessage({ id, request, response });
-	const respondErr = () =>
-		postMessage({ id, request, error: `Fail: ID-${id} ` });
+	const respondErr = () => postMessage({ id, request, error: `Fail: ID-${id} ` });
 
 	monad(payload)
 		.chain(availableFunctions?.[request] ?? (noop => noop))
@@ -171,11 +166,7 @@ function findValidHashCombinations(
 	let listlen = factorList.length;
 	return crawlTree(inputHash);
 
-	function crawlTree(
-		inputHash: number,
-		start: number = 0,
-		depth: number = 0
-	) {
+	function crawlTree(inputHash: number, start: number = 0, depth: number = 0) {
 		if (depth > maxdepth) {
 			return [];
 		}
@@ -189,25 +180,16 @@ function findValidHashCombinations(
 			if (HASHMAP.get(iter)[0].length < minLen) continue;
 			if (inputHash % iter == 0) {
 				let remaining: number = inputHash / iter;
-				let indexOfRemaining: number = factorList.findIndex(
-					x => x <= remaining
-				);
+				let indexOfRemaining: number = factorList.findIndex(x => x <= remaining);
 				if (factorList[indexOfRemaining] == remaining) {
 					let validCombination = [Number(iter), Number(remaining)]; //inline
 					returnarray.push(validCombination);
 				} else if (indexOfRemaining == -1) {
 					continue;
 				}
-				let subcombos = crawlTree(
-					remaining,
-					indexOfRemaining,
-					depth + 1
-				);
+				let subcombos = crawlTree(remaining, indexOfRemaining, depth + 1);
 				for (let combo of subcombos) {
-					returnarray.push([
-						Number(iter),
-						...combo.map(x => Number(x)),
-					]);
+					returnarray.push([Number(iter), ...combo.map(x => Number(x))]);
 				}
 			}
 		}
@@ -242,18 +224,11 @@ function inflateHashCombinations(hashArrays: number[][]): string[][] {
 // 		let wordArray: string[] = hashArray.map(n => unhash(n)[0]);
 // }
 
-function isDevice(
-	targetWord: string,
-	inputWordArray: any[],
-	depth = 0
-): Array<IWord> {
+function isDevice(targetWord: string, inputWordArray: any[], depth = 0): Array<IWord> {
 	let subWordArray = inputWordArray.slice();
 
 	// TRIVIAL CASE - SINGLE WORD
-	if (
-		subWordArray.length == 1 &&
-		subWordArray[0].length == targetWord.length
-	) {
+	if (subWordArray.length == 1 && subWordArray[0].length == targetWord.length) {
 		return [
 			{
 				...keyToIWord(subWordArray[0]),
@@ -292,10 +267,7 @@ function isDevice(
 			let subword = subWordArray[i];
 
 			let matched = targetWord.slice(-1 * subword.length);
-			let leftovers = targetWord.slice(
-				0,
-				targetWord.length - subword.length
-			);
+			let leftovers = targetWord.slice(0, targetWord.length - subword.length);
 
 			subWordArray.splice(i, 1);
 			let recursive = isDevice(leftovers, subWordArray, depth);
@@ -337,9 +309,7 @@ function isDevice(
 		switch ([...subword].sort().join('')) {
 			case [...baseword.substring(0, subword.length)].sort().join(''):
 				return 'start';
-			case [...baseword.substring(baseword.length - subword.length)]
-				.sort()
-				.join(''):
+			case [...baseword.substring(baseword.length - subword.length)].sort().join(''):
 				return 'end';
 			default:
 				return null;
@@ -356,8 +326,7 @@ function isDevice(
 		if (lengthdiff == 0) return null; //just in case
 
 		for (let i = 1; i + lengthdiff < baseword.length; i++) {
-			let middleremoved =
-				baseword.slice(0, i) + baseword.slice(i + lengthdiff);
+			let middleremoved = baseword.slice(0, i) + baseword.slice(i + lengthdiff);
 
 			if ([...middleremoved].sort().join('') == sorted) {
 				return [middleremoved, baseword.slice(i, i + lengthdiff)];
@@ -385,22 +354,29 @@ function categoriseWordArraysAsDevices(anagramList: string[][]): IDeviceSet {
 	return { anagrams, containers } as IDeviceSet;
 }
 
-////// TO ADD: SORTING, FILTERING, etc.
+/* ================================= SORTING ================================ */
+
+function sortByWordScoreAverage(anagramList: string[][]): string[][] {
+	return anagramList.sort(
+		(a, b) => getWordScoreAverage(b) - getWordScoreAverage(a) || b.length - a.length
+	);
+}
+
+function getWordScoreAverage(words: string[]): number {
+	let totalscore = 0;
+	for (let word of words) {
+		totalscore += DICTIONARY.get(word)?.score || 30;
+	}
+	return totalscore / words.length;
+}
 
 let ORIGINAL_WORD_ARRAY = [];
 
 ///////// GOAL : RETURN if is DEVICE, and Array of 'original' words to compare direction.
 
-function isDevice2(
-	targetWord: string,
-	inputWordArray: string[],
-	depth = 0
-): Array<IWord> {
+function isDevice2(targetWord: string, inputWordArray: string[], depth = 0): Array<IWord> {
 	let subWordArray = inputWordArray.slice();
-	if (
-		subWordArray.length == 1 &&
-		subWordArray[0].length == targetWord.length
-	) {
+	if (subWordArray.length == 1 && subWordArray[0].length == targetWord.length) {
 		return [{ ...keyToIWord(subWordArray[0]), direction: targetWord }];
 	}
 
@@ -434,10 +410,7 @@ function isDevice2(
 			let subword = subWordArray[i];
 
 			let matched = targetWord.slice(-1 * subword.length);
-			let leftovers = targetWord.slice(
-				0,
-				targetWord.length - subword.length
-			);
+			let leftovers = targetWord.slice(0, targetWord.length - subword.length);
 
 			subWordArray.splice(i, 1);
 			let recursive = isDevice(leftovers, subWordArray, depth);
@@ -481,19 +454,14 @@ function isDevice2(
 		switch ([...subword].sort().join('')) {
 			case [...baseword.substring(0, subword.length)].sort().join(''):
 				return 'start';
-			case [...baseword.substring(baseword.length - subword.length)]
-				.sort()
-				.join(''):
+			case [...baseword.substring(baseword.length - subword.length)].sort().join(''):
 				return 'end';
 			default:
 				return null;
 		}
 	}
 
-	function isContainer(
-		subword: string,
-		baseword: string
-	): [match: string, rest: string] {
+	function isContainer(subword: string, baseword: string): [match: string, rest: string] {
 		if (subword.length < 2) {
 			return null;
 		}
@@ -505,8 +473,7 @@ function isDevice2(
 		} //just in case
 
 		for (let i = 1; i + lengthdiff < baseword.length; i++) {
-			let middleremoved =
-				baseword.slice(0, i) + baseword.slice(i + lengthdiff);
+			let middleremoved = baseword.slice(0, i) + baseword.slice(i + lengthdiff);
 
 			if ([...middleremoved].sort().join('') == sorted) {
 				return [middleremoved, baseword.slice(i, i + lengthdiff)];

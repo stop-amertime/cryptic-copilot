@@ -27,7 +27,7 @@ export let device: IDevice = {
 		<button
 			use:popover={{ component: WordPopover, word: i.word }}
 			style:background-color={scoreToColour(i?.score)}
-			class:abbr={i.isAbbreviation}
+			class:abbr={i.abbreviationFor || i.word.length == 1}
 			class="word {i.direction} outer"
 		>
 			{i.word}
@@ -37,6 +37,7 @@ export let device: IDevice = {
 						use:popover={{ component: WordPopover, word: j.word }}
 						style:background-color={scoreToColour(j?.score)}
 						class="word {j.direction} inner"
+						class:abbr={i.abbreviationFor || i.word.length == 1}
 					>
 						{j.word}
 					</button>
@@ -62,6 +63,7 @@ export let device: IDevice = {
 	border-radius: 2px;
 	border: 1px solid gray;
 	cursor: pointer;
+	text-transform: lowercase;
 	&:hover {
 		opacity: 0.8;
 	}
@@ -70,7 +72,6 @@ export let device: IDevice = {
 		transition: all 0.2s ease;
 	}
 	overflow: visible;
-	text-transform: lowercase;
 	transition: all 0.2s ease;
 }
 
@@ -80,15 +81,9 @@ export let device: IDevice = {
 	padding: 0px 10px;
 }
 
-.word.abbr {
-	font-style: bolder;
-}
-
 .abbr {
-	font-style: bolder;
+	text-transform: uppercase !important;
 	border: 1px solid black;
-	opacity: 0.7;
-	text-transform: uppercase;
 }
 
 @mixin floatinglabel {
@@ -99,7 +94,6 @@ export let device: IDevice = {
 	width: 16px;
 	height: 16px;
 	float: left;
-	font-style: bold;
 	font-size: 14px;
 	font-style: normal;
 	line-height: 16px;
@@ -109,7 +103,6 @@ export let device: IDevice = {
 	border-radius: 20px;
 	//border: 0.5px solid gray;
 	box-shadow: 1px 1px 3px rgba(128, 128, 128, 0.435);
-	font-style: bolder;
 }
 
 :global(.anagram:before) {

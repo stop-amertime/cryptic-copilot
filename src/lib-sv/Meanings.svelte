@@ -1,6 +1,7 @@
 <script lang="ts">
 import { slide } from 'svelte/transition';
 export let meanings: IThesaurusEntry;
+let abbreviationList = meanings?.abbreviationFor?.split(',') || null;
 
 const rowSizer = node => {
 	let vertMargin = node.clientHeight * 0.1 + 'px';
@@ -21,10 +22,10 @@ const rowSizer = node => {
                         .syn.main {synonym.mainWord}
                         +each('synonym?.relatedWords || [] as related')
                             .syn.related {related}
-    +if('meanings.abbreviationFor')
+    +if('abbreviationList')
         p.abbrHeader Cryptic Abbreviation For: 
         .abbrWrapper
-            +each('meanings?.abbreviationFor || [] as abbr')
+            +each('abbreviationList as abbr')
                 .abbrDef {abbr}
 
 </template>

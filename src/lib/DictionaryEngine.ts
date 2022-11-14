@@ -163,7 +163,8 @@ export async function getThesaurus(word: string): Promise<IThesaurusEntry> {
 		});
 	}
 
-	let abbreviationFor = DICTIONARY?.get(word)?.abbreviationFor || null;
+	let dictEntry = DICTIONARY?.get(word) as IDictEntry;
+	let abbreviationFor = dictEntry?.abbreviationFor || null;
 	if (abbreviationFor) numberOfSenses += abbreviationFor?.split(',')?.length || 0;
 
 	return {
