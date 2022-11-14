@@ -12,13 +12,11 @@ export let device: IDevice;
 		<button
 			use:popover={{ component: WordPopover, word: i.word }}
 			class="word"
-			class:abbr={i.isAbbreviation}
+			class:abbr={i.abbreviationFor}
 			style:background-color={scoreToColour(i?.score)}
 		>
 			{i.word}
 		</button>
-
-		{#if index < device.words.length - 1} & {/if}
 	{/each}
 </div>
 
@@ -48,9 +46,7 @@ export let device: IDevice;
 }
 
 .abbr {
-	font-style: bolder;
 	border: 1px solid black;
-	opacity: 0.7;
 	text-transform: uppercase;
 }
 </style>
