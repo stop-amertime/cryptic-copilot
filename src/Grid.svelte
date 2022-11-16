@@ -22,28 +22,42 @@ function updateSelectedSlot(event: CustomEvent): void {
 }
 </script>
 
-<div id="GridDiv" transition:fly={{ duration: 1000 }} style="--dimension:{rowsize}">
-	{#each $cells as cell}
-		<Cell {...cell} on:clicked={updateSelectedSlot} />
-	{/each}
+<div id="Grid">
+	<div id="GridDiv" transition:fly={{ duration: 1000 }} style="--dimension:{rowsize}">
+		{#each $cells as cell}
+			<Cell {...cell} on:clicked={updateSelectedSlot} />
+		{/each}
+	</div>
+
+	<CurrentWord />
 </div>
 
-<CurrentWord />
-
-<style>
+<style lang="scss">
 /* -------------------------------------------------------------------------- */
 * {
 	box-sizing: border-box;
 }
-/* @media (min-width: 800px) { */
-#GridDiv {
-	max-height: 100%;
-	max-width: 100%;
-	height: 100%;
-	aspect-ratio: 1;
-	display: grid;
-	grid-template-columns: repeat(var(--dimension), 1fr);
-	grid-template-rows: repeat(var(--dimension), 1fr);
+@media (max-width: 800px) {
+	#Grid {
+		align-items: center;
+		justify-content: stretch;
+	}
+}
+
+#Grid {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	justify-content: center;
+
+	#GridDiv {
+		max-height: 100%;
+		max-width: 100%;
+		aspect-ratio: 1;
+		display: grid;
+		grid-template-columns: repeat(var(--dimension), 1fr);
+		grid-template-rows: repeat(var(--dimension), 1fr);
+	}
 }
 
 /* @media (max-width: 799px) {
