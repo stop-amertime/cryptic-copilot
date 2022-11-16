@@ -3,7 +3,7 @@ import { quadInOut } from 'svelte/easing';
 import { fly } from 'svelte/transition';
 import { Wave } from 'svelte-loading-spinners';
 import { getThesaurus, getWord, scoreToColour } from '../lib/DictionaryEngine';
-import Meanings from '../lib-sv/Meanings.svelte';
+import Meanings from '../panels/infopanels/Meanings.svelte';
 export let word = 'NO WORD ENTERED';
 const wordinfo = getWord(word);
 const thesaurus = getThesaurus(word);
@@ -27,11 +27,12 @@ const colour = scoreToColour(wordinfo.score);
 			</div>
 			<div class="wordInfo">
 				{#if thesaurusentry.numberOfSenses > 0}
-					<Meanings meanings={thesaurusentry} />
+					<Meanings data={thesaurusentry} />
 				{:else}
 					<div class="error">
-						<b>Sorry, no definitions found.</b><br /> It could be a phrase,
-						or proper noun without punctuation.
+						<b>Sorry, no definitions found.</b>
+						<br />
+						 It could be a phrase, or proper noun without punctuation.
 					</div>
 				{/if}
 			</div>

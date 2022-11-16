@@ -16,7 +16,7 @@ import { quadIn, quadInOut, quadOut } from 'svelte/easing';
 
 let tabs = writable([
 	{ label: '🙾 Words', checked: true, disabled: false },
-	{ label: '🗲 Hints', checked: false, disabled: true },
+	{ label: '🗲 Cryptic', checked: false, disabled: true },
 	{ label: '? Clues', checked: false, disabled: false },
 	{ label: '⛭ Settings', checked: false, disabled: false },
 ]);

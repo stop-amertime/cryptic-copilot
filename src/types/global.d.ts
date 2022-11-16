@@ -58,7 +58,15 @@ type IDeviceSet = {
 	thesaurus?: IThesaurusEntry;
 	anagrams?: IDevice[];
 	containers?: IDevice[];
-	hiddenwords?: IDevice[];
+	hiddenwords?: IHiddenWord[];
+};
+
+type IHiddenWord = {
+	start: string;
+	middle?: string;
+	end: string;
+	a: string[];
+	b: string[];
 };
 
 //= Grid

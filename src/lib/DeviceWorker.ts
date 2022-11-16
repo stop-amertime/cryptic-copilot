@@ -1,9 +1,11 @@
+import { TypePredicateKind } from 'typescript';
 import {
 	monad,
 	sortByLengthAscending,
 	findDirection,
 	arraysEqual,
 	cartesianProductOfArrays,
+	stringToBlob,
 } from './utils';
 
 /* -------------------------------------------------------------------- Data  */
@@ -35,11 +37,16 @@ export const updateWordFilters = ({ length = 15, score = 45, maxWords = 4 }): bo
 export const getDevices = (word: string): IDeviceSet => {
 	TARGET_WORD = word;
 	console.log('--> DW: Start:' + word);
-	return monad(word)
+
+	let devices = monad(word)
 		.chain(findValidHashCombinations)
 		.chain(inflateHashCombinations)
 		.chain(sortByWordScoreAverage)
 		.chain(categoriseWordArraysAsDevices).value;
+
+	devices.hiddenwords = monad(word).chain(generateHiddenWordSets).chain(searchHiddenWords).value;
+
+	return devices;
 };
 
 export const availableFunctions = { initialise, updateWordFilters, getDevices };
@@ -157,11 +164,13 @@ function findValidHashCombinations(
 ): number[][] {
 	let inputHash = typeof input == 'number' ? input : hash(input);
 	let factorList = [];
+	console.time('====FINDING FACTORS==');
 	for (let i = 0; i < HASHLIST.length; i++) {
 		if (inputHash % HASHLIST[i] == 0) {
 			factorList.push(HASHLIST[i]);
 		}
 	}
+	console.timeEnd('====FINDING FACTORS==');
 
 	let listlen = factorList.length;
 	return crawlTree(inputHash);
@@ -180,16 +189,21 @@ function findValidHashCombinations(
 			if (HASHMAP.get(iter)[0].length < minLen) continue;
 			if (inputHash % iter == 0) {
 				let remaining: number = inputHash / iter;
+				if (remaining > iter) continue;
 				let indexOfRemaining: number = factorList.findIndex(x => x <= remaining);
+				if (indexOfRemaining == -1) continue;
 				if (factorList[indexOfRemaining] == remaining) {
 					let validCombination = [Number(iter), Number(remaining)]; //inline
 					returnarray.push(validCombination);
-				} else if (indexOfRemaining == -1) {
-					continue;
-				}
-				let subcombos = crawlTree(remaining, indexOfRemaining, depth + 1);
-				for (let combo of subcombos) {
-					returnarray.push([Number(iter), ...combo.map(x => Number(x))]);
+					let subcombos = crawlTree(remaining, indexOfRemaining + 1, depth + 1);
+					for (let combo of subcombos) {
+						returnarray.push([Number(iter), ...combo.map(x => Number(x))]);
+					}
+				} else {
+					let subcombos = crawlTree(remaining, indexOfRemaining, depth + 1);
+					for (let combo of subcombos) {
+						returnarray.push([Number(iter), ...combo.map(x => Number(x))]);
+					}
 				}
 			}
 		}
@@ -206,23 +220,6 @@ function inflateHashCombinations(hashArrays: number[][]): string[][] {
 	}
 	return output;
 }
-
-// function firstHashCombination(hashArrays: number[][]): string[][] {
-// 	let output = [] as string[][];
-// 	for (let hashArray of hashArrays) {
-// 		let wordArray: string[] = hashArray.map(
-// 			n => unhash(n).sort(w => DICTIONARY.get(w).score)[0]
-// 		);
-// 		output.push(wordArray);
-// 	}
-// 	return output;
-// }
-
-// function getFirstHashCombination( hashArrays: number[][] ): string[][] {
-//     let output = [] as string[][];
-// 	for (let hashArray of hashArrays) {
-// 		let wordArray: string[] = hashArray.map(n => unhash(n)[0]);
-// }
 
 function isDevice(targetWord: string, inputWordArray: any[], depth = 0): Array<IWord> {
 	let subWordArray = inputWordArray.slice();
@@ -352,6 +349,65 @@ function categoriseWordArraysAsDevices(anagramList: string[][]): IDeviceSet {
 	}
 
 	return { anagrams, containers } as IDeviceSet;
+}
+
+function generateHiddenWordSets(inputWord: string) {
+	let searchSets: IHiddenWord[] = [];
+	let inputWordMiddle = inputWord.slice(1, -1);
+
+	for (let i = 2; i < inputWord.length - 1; i++) {
+		let start = inputWord.slice(0, i);
+		let end = inputWord.slice(i);
+		searchSets.push({ start, end, a: [], b: [] });
+	}
+
+	for (let entry of DICTIONARY) {
+		if (inputWordMiddle.includes(entry[0]) && !entry[1].abbreviationFor) {
+			let middle = entry[0];
+			let indexOfMiddle = inputWord.indexOf(middle);
+			let start = inputWord.slice(0, indexOfMiddle);
+			let end = inputWord.slice(indexOfMiddle + middle.length);
+			searchSets.push({ start, middle, end, a: [], b: [] });
+		}
+	}
+
+	return searchSets;
+}
+
+function searchHiddenWords(searchSets: IHiddenWord[]) {
+	function isValidWord(entry: [string, IDictEntry]) {
+		let [string, dict] = entry;
+		//if ( string.length < 3 ) return false;
+		if (dict.score < 40) return false;
+		return true;
+	}
+
+	// Search dictionary for matching Start/Ends
+	for (let entry of DICTIONARY) {
+		for (let set of searchSets) {
+			if (entry[0].endsWith(set.start) && isValidWord(entry)) set.a.push(entry[0]);
+			if (entry[0].startsWith(set.end) && isValidWord(entry)) set.b.push(entry[0]);
+		}
+	}
+
+	// Remove unmatched sets & trim length to 50
+	let temp = [];
+	for (let i = 0; i < searchSets.length; i++) {
+		if (searchSets[i].a.length != 0 && searchSets[i].b.length != 0) {
+			if (searchSets[i].a.length > 50) {
+				searchSets[i].a = searchSets[i].a.slice(0, 50);
+			}
+			if (searchSets[i].b.length > 50) {
+				searchSets[i].b = searchSets[i].b.slice(0, 50);
+			}
+			temp.push(searchSets[i]);
+		}
+	}
+	searchSets = temp;
+
+	// Log
+	console.log(searchSets);
+	return searchSets;
 }
 
 /* ================================= SORTING ================================ */

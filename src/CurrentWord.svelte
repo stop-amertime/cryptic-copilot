@@ -1,6 +1,5 @@
 <script lang="ts">
 import { writable } from 'svelte/store';
-import Anagram from './lib-sv/Anagram.svelte';
 import { activeSlotId, wordSlots } from './StateMediator.svelte';
 
 $: disabled = $activeSlotId === null;
