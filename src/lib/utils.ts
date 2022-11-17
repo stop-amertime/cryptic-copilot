@@ -1,9 +1,5 @@
 /* -------------------------------------------------------------- Data, Enums */
 
-import { stringify } from 'querystring';
-import { mapTo } from 'rxjs';
-import { fileURLToPath } from 'url';
-
 const enum WordDirection {
 	Forward = 'forward',
 	Reverse = 'reverse',

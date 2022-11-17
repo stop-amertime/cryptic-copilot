@@ -21,7 +21,7 @@ export let data: IDevice;
 </div>
 
 <!----------------------------------------------------------------------CSS----->
-<style>
+<style lang="scss">
 .device {
 	display: flex;
 	align-items: stretch;

@@ -1,4 +1,5 @@
 <script lang="ts">
+import { slide } from 'svelte/transition';
 export let hiddenwords: IHiddenWord[] = [
 	{
 		start: 'CDC',
@@ -28,16 +29,29 @@ export let hiddenwords: IHiddenWord[] = [
 	},
 ];
 
-let x = hiddenwords;
+const toggleOpen = (e: MouseEvent) => {
+	let elem = e.currentTarget as HTMLDetailsElement;
+	e.preventDefault();
+	if (elem.classList.contains('open')) {
+		elem.classList.remove('open');
+	} else {
+		elem.classList.add('open');
+	}
+};
+
+const titleCase = (string: string) =>
+	string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
 </script>
 
 <div class="page">
 	{#each hiddenwords as set}
-		<div class="set">
+		<div class="set open" on:click={e => toggleOpen(e)}>
 			<div class="setlabel">
-				...{set.start}
-				{set.middle ? ` + ${set.middle} + ` : ' + '}
-				{set.end}...
+				<p>
+					-{set.start.toLowerCase()}
+					{set.middle ? ` / ${titleCase(set.middle)} / ` : ' / '}
+					{titleCase(set.end)}-
+				</p>
 			</div>
 
 			<div class="setcols">
@@ -74,26 +88,67 @@ let x = hiddenwords;
 }
 
 .set {
-	margin: 20px 0px;
+	margin: 20px 10px;
 	display: flex;
 	flex-direction: column;
+	border: 1px solid rgb(231, 231, 231);
+	border-radius: 5px;
+	position: relative;
+
+	&:after {
+		content: '>';
+		position: absolute;
+		top: 10px;
+		left: 10px;
+		color: black;
+		font-size: 20px;
+		z-index: 1000;
+	}
+
+	&.open {
+		&:after {
+			transform: rotate('90deg');
+		}
+	}
+
+	&:not(.open) {
+		background-color: rgb(242, 242, 242);
+		& > .setcols {
+			max-height: 0px;
+			opacity: 0;
+		}
+	}
+
+	&:hover {
+		background-color: rgb(255, 253, 253);
+	}
 
 	.setlabel {
 		width: 100%;
-		border: 1px solid grey;
 		border-radius: 5px;
 		display: flex;
 		flex-direction: row;
 		flex-wrap: nowrap;
-		text-align: center;
+
+		p {
+			font-size: 20px;
+			width: 100%;
+			text-align: center;
+		}
 	}
 
 	.setcols {
+		transition: all 0.5s ease-out;
+		max-height: 1500px;
+		opacity: 1;
 		display: flex;
 		flex-direction: row;
 		flex-wrap: nowrap;
+		position: relative;
 
 		.column {
+			position: sticky;
+			top: 0px;
 			padding: 5px;
 			flex: 1 0 auto;
 			display: flex;
@@ -102,16 +157,23 @@ let x = hiddenwords;
 			align-items: center;
 			justify-content: center;
 			display: block;
+			height: max-content;
 
 			&.a {
 				text-align: right;
 				border-right: 1px solid rgb(202, 202, 202);
+				margin-right: -1px;
 			}
 
 			&.m {
 				text-align: center;
 				flex: 0 0 auto;
 				border-right: 1px solid rgb(202, 202, 202);
+				border-left: 1px solid rgb(202, 202, 202);
+			}
+
+			&.b {
+				border-left: 1px solid rgb(202, 202, 202);
 			}
 
 			.word {

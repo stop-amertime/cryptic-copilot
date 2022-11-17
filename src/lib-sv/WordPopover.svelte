@@ -5,22 +5,18 @@ import { Wave } from 'svelte-loading-spinners';
 import { getThesaurus, getWord, scoreToColour } from '../lib/DictionaryEngine';
 import Meanings from '../panels/infopanels/Meanings.svelte';
 export let word = 'NO WORD ENTERED';
+let opacity = 0;
 const wordinfo = getWord(word);
 const thesaurus = getThesaurus(word);
+thesaurus.then(t => (opacity = 1));
 const colour = scoreToColour(wordinfo.score);
 </script>
 
 <!----------------------------------------------------------------------HTML--->
-<div class="popover">
+
+<div class="popover" style:opacity>
 	{#await thesaurus then thesaurusentry}
-		<div
-			class="content"
-			transition:fly={{
-				y: 20,
-				duration: 200,
-				easing: quadInOut,
-			}}
-		>
+		<div class="content">
 			<div class="topArea" style:--colour={colour}>
 				<p class="titleWord">{word}</p>
 				<p class="titleScore">{wordinfo.score}</p>
@@ -32,12 +28,13 @@ const colour = scoreToColour(wordinfo.score);
 					<div class="error">
 						<b>Sorry, no definitions found.</b>
 						<br />
-						 It could be a phrase, or proper noun without punctuation.
+						It could be a phrase, or proper noun without punctuation.
 					</div>
 				{/if}
 			</div>
 		</div>
 	{/await}
+
 	<div id="arrow" data-popper-arrow />
 </div>
 
@@ -47,15 +44,16 @@ $popovercolor: white;
 
 .popover {
 	background-color: $popovercolor;
-	width: 300px;
+	width: 400px;
 	max-height: 500px;
 	display: block;
 	background-color: rgba(0, 0, 0, 0);
+	transition: opacity 0.2s ease;
+	filter: drop-shadow(5px 10px 20px rgba(128, 128, 128, 0.8));
 
 	.content {
 		opacity: 1;
 		background-color: $popovercolor;
-		box-shadow: 10px 20px 30px rgba(0, 0, 0, 0.435);
 		border-radius: 5px;
 		overflow: hidden;
 		width: 100%;
@@ -68,10 +66,9 @@ $popovercolor: white;
 		margin: 0px;
 		width: 100%;
 		height: 40px;
-		background-color: var(--colour);
+		background-color: white;
 		display: block;
-		//box-shadow: 1px 3px 10px rgba(103, 103, 103, 0.279);
-		border-bottom: 1px solid gray;
+		border-bottom: 1px solid rgb(225, 225, 225);
 
 		.titleWord {
 			float: left;
@@ -86,11 +83,12 @@ $popovercolor: white;
 		.titleScore {
 			float: right;
 			font-size: 22px;
-			color: grey;
+			color: var(--colour);
 			padding: 0px;
 			margin: 0px 20px;
 			height: 100%;
 			line-height: 40px;
+			font-style: bold;
 		}
 	}
 
@@ -98,14 +96,15 @@ $popovercolor: white;
 		width: 100%;
 		max-height: 400px;
 		overflow-y: auto;
+		padding: 15px;
 	}
 
 	.error {
 		height: max-content;
-		color: hsl(0, 70%, 60%);
+		color: hsl(0, 0%, 72%);
 		font-size: 12px;
 		text-align: center;
-		padding: 10px;
+		padding: 30px;
 	}
 }
 
@@ -113,31 +112,32 @@ $popovercolor: white;
 	background-color: white !important;
 	content: '';
 	transform: rotate(45deg);
+	z-index: -1;
 }
 
 #arrow,
 #arrow::before {
 	position: absolute;
-	width: 2px;
-	height: 2px;
-	background-color: white;
+	content: '';
+	width: 15px;
+	height: 15px;
+	background-color: none;
 	z-index: -1;
-	box-shadow: 2px 2px 10px black;
 }
 
 :global(.popover[data-popper-placement^='bottom'] > #arrow) {
-	top: -4px;
+	top: -5px;
 }
 
 :global(.popover[data-popper-placement^='top'] > #arrow) {
-	bottom: -4px;
+	bottom: -5px;
 }
 
 :global(.popover[data-popper-placement^='left'] > #arrow) {
-	right: -4px;
+	right: -5px;
 }
 
 :global(.popover[data-popper-placement^='right'] > #arrow) {
-	left: -4px;
+	left: -5px;
 }
 </style>

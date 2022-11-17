@@ -7,6 +7,9 @@
         "resolveJsonModule": true,
         "baseUrl": ".",
         "allowSyntheticDefaultImports": true,
+        "noUnusedLocals":false,
+        "noUnusedParameters": false,
+        "esModuleInterop": true,
         /**
      * Typecheck JS in `.svelte` and `.js` files by default.
      * Disable checkJs if you'd like to use dynamic types in JS.

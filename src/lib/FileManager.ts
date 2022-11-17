@@ -1,7 +1,7 @@
 import { dictFileStringToMap, mapToDictFileString } from './utils';
 
 //== SETTINGS
-let DICT_VERSION = 'ccDict-6.0';
+let DICT_VERSION = 'ccDict7';
 let DICT_URL = `${DICT_VERSION}.dict`;
 let DEFAULT_LAYOUTURL = 'gridtemplates.json';
 
@@ -32,11 +32,13 @@ export const Load = {
 
 	lastOrDefaultDictionary: async (): Promise<IDictionary> => {
 		let lastDict = localStorage.getItem('dictionary');
-		if (lastDict) return dictFileStringToMap(lastDict);
-		else {
+		let lastVersion = localStorage.getItem('dictVersion');
+		if (!lastDict || !lastVersion || lastVersion != DICT_VERSION) {
 			console.warn('No dictionary found - loading...');
 			let x = Load.defaultDictionary();
 			return x;
+		} else {
+			return dictFileStringToMap(lastDict);
 		}
 	},
 
@@ -82,6 +84,7 @@ export const Save = {
 
 	dictionary: (dictionary: IDictionary) => {
 		localStorage.setItem('dictionary', mapToDictFileString(dictionary));
+		localStorage.setItem('dictVersion', DICT_VERSION);
 		return true;
 	},
 

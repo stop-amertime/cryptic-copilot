@@ -32,11 +32,7 @@ export function popover(node, { component, ...props }) {
 
 	const detectClickOutside = event => {
 		renderedComponent = document.getElementById(id + myId);
-		if (
-			renderedComponent &&
-			!renderedComponent.contains(event.target) &&
-			isActive
-		) {
+		if (renderedComponent && !renderedComponent.contains(event.target) && isActive) {
 			hideSelf();
 		}
 	};
@@ -65,6 +61,12 @@ export function popover(node, { component, ...props }) {
 					name: 'preventOverflow',
 					options: {
 						rootBoundary: 'document',
+						padding: 10,
+					},
+				},
+				{
+					name: 'arrow',
+					options: {
 						padding: 10,
 					},
 				},

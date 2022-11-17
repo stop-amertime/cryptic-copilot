@@ -1,7 +1,7 @@
 <script context="module" lang="ts">
 import { writable } from 'svelte/store';
 import { makeCells, makeWordSlots, mapCellsToSlots } from './lib/GridGenerator';
-import { setDictionary, PossibleWords, getThesaurus } from './lib/DictionaryEngine';
+import { setDictionary, PossibleWords, getThesaurus, getSoundsLike } from './lib/DictionaryEngine';
 import { Save, Load } from './lib/FileManager';
 import { onMount, createEventDispatcher } from 'svelte';
 import { mapToDictFileString } from './lib/utils';
@@ -29,8 +29,9 @@ export const activeCells = writable(null as ICellState[]);
 export const activeCellAnimations = writable({ orientation: 'A', order: {} });
 export const activePossibleWords = writable([] as IWord[]);
 
-export const activeDeviceList = writable(Promise.resolve([]) as Promise<IDeviceSet>);
+export const activeDeviceList = writable(Promise.resolve({}) as Promise<IDeviceSet>);
 export const activeThesaurus = writable(Promise.resolve({}) as Promise<IThesaurusEntry>);
+export const activeSoundsLike = writable(Promise.resolve([]) as Promise<IWord[]>);
 
 /* ===================== REQUESTS FROM OTHER COMPONENTS ===================== */
 
@@ -126,6 +127,7 @@ onNew(activeWord, (newWord: string) => {
 	if (newWord) {
 		$activeDeviceList = workerRequest('getDevices', newWord);
 		$activeThesaurus = getThesaurus(newWord);
+		$activeSoundsLike = getSoundsLike(newWord);
 	}
 });
 

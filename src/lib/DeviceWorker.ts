@@ -1,4 +1,3 @@
-import { TypePredicateKind } from 'typescript';
 import {
 	monad,
 	sortByLengthAscending,
@@ -6,6 +5,7 @@ import {
 	arraysEqual,
 	cartesianProductOfArrays,
 	stringToBlob,
+	dictionaryToWordTuples,
 } from './utils';
 
 /* -------------------------------------------------------------------- Data  */
@@ -45,6 +45,7 @@ export const getDevices = (word: string): IDeviceSet => {
 		.chain(categoriseWordArraysAsDevices).value;
 
 	devices.hiddenwords = monad(word).chain(generateHiddenWordSets).chain(searchHiddenWords).value;
+	devices.substitutions = generateSubstitutions(word);
 
 	return devices;
 };
@@ -351,6 +352,96 @@ function categoriseWordArraysAsDevices(anagramList: string[][]): IDeviceSet {
 	return { anagrams, containers } as IDeviceSet;
 }
 
+/* ------------------------------------------------------------ Substitutions */
+
+type nestedWord = { word: string; index: number };
+
+function findNestedWords(inputWord: string) {
+	let out: nestedWord[] = [];
+	let maxLength = inputWord.length / 2;
+	for (let [word, entry] of DICTIONARY) {
+		if (inputWord.includes(word) && entry.score > 40 && word.length <= maxLength) {
+			let indexes = getAllIndexes(inputWord, word);
+			for (let index of indexes) {
+				out.push({ word, index });
+			}
+		}
+	}
+	return out;
+}
+
+function getAllIndexes(string: string, find: string) {
+	var indexes = [],
+		i = -1;
+	while ((i = string.indexOf(find, i + 1)) != -1) {
+		indexes.push(i);
+	}
+	return indexes;
+}
+
+function isValidWordWithMinScore(word: string, score = 40) {
+	return DICTIONARY.has(word) && DICTIONARY.get(word).score > score;
+}
+
+function generateSubstitutions(inputWord: string): ISubstitutionGrouped {
+	let output: ISubstitutionGrouped = new Map();
+
+	// Find entire words nested in input word, that can be subbed out.
+	let nestedWords: nestedWord[] = findNestedWords(inputWord);
+
+	// To filter out trivial substitutions: plurals, common roots (re-word, mis-word...)
+	let trivialEnds = ['', 'ED', 'LY', 'S', 'ES', 'ABLE', 'ING', 'INGS', 'ER', 'EST', 'ANT'];
+	let trivialStarts = ['', 'RE', 'MIS', 'UN', 'DE', 'IN'];
+
+	for (let { word, index } of nestedWords) {
+		let matches: ISubstitutionPair[] = [];
+		let lengthBefore = index;
+		let lengthAfter = inputWord.length - (lengthBefore + word.length);
+		let restOfWord = inputWord.slice(0, index) + inputWord.slice(index + word.length);
+
+		// Filter out if it is a 'trivial' start/end (plural / common conjugation)
+		if (!lengthBefore) {
+			//if at start...
+			if (trivialStarts.includes(word) || trivialEnds.includes(restOfWord)) continue;
+		} else if (!lengthAfter) {
+			//if at end...
+			if (trivialEnds.includes(word) || trivialStarts.includes(restOfWord)) continue;
+		}
+
+		// Replace nested word with dots, to find possible substitutions
+		let regex = new RegExp('^' + inputWord.replace(word, '.*') + '$');
+
+		// DELETIONS: See if the leftover word is valid by itself.
+		if (isValidWordWithMinScore(restOfWord)) {
+			matches.push({ finalWord: keyToIWord(restOfWord) });
+		}
+
+		// SUBSTITUTIONS: Iterate dictionary to find words with matching substitutions.
+		for (let entry of DICTIONARY) {
+			if (
+				regex.test(entry[0]) &&
+				!entry[0].includes(inputWord) &&
+				!inputWord.includes(entry[0])
+			) {
+				let substitution = entry[0].slice(lengthBefore, -1 * lengthAfter);
+				if (isValidWordWithMinScore(substitution)) {
+					matches.push({
+						replacedBy: keyToIWord(substitution),
+						finalWord: keyToIWord(entry[0]),
+					});
+				}
+			}
+		}
+
+		if (matches.length) {
+			output.set(keyToIWord(word), matches);
+		}
+	}
+	return output;
+}
+
+/* ------------------------------------------------------------- Hidden Words */
+
 function generateHiddenWordSets(inputWord: string) {
 	let searchSets: IHiddenWord[] = [];
 	let inputWordMiddle = inputWord.slice(1, -1);
@@ -405,8 +496,6 @@ function searchHiddenWords(searchSets: IHiddenWord[]) {
 	}
 	searchSets = temp;
 
-	// Log
-	console.log(searchSets);
 	return searchSets;
 }
 

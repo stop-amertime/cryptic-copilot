@@ -174,6 +174,25 @@ export async function getThesaurus(word: string): Promise<IThesaurusEntry> {
 	} as IThesaurusEntry;
 }
 
+export async function getSoundsLike(word: string): Promise<IWord[]> {
+	return fetch('https://api.datamuse.com/words?sl=' + word)
+		.then(r => r.json())
+		.then(r => parseDatamuseSoundslike(word, r));
+}
+
+function parseDatamuseSoundslike(inputWord: string, resp: DatamuseWord[]): IWord[] {
+	let output: IWord[] = [];
+	let limit = 95;
+	for (let word of resp) {
+		if (word.score > limit) {
+			let capsWord = word.word.toUpperCase();
+			if (capsWord == inputWord) continue;
+			output.push({ word: capsWord, score: word.score - limit });
+		} else break;
+	}
+	return output;
+}
+
 export function getMatchArray(cells: ICellState[]): IMatchPredicate[] {
 	let array = [] as [index: number, letter: string][];
 	for (let i = 0; i < cells.length; i++) {

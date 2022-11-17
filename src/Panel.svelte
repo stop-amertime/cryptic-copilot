@@ -1,6 +1,6 @@
 <script lang="ts">
 import PossibleWords from './panels/PossibleWords.svelte';
-import Info from './panels/Info.svelte';
+import Info from './panels/Cryptic.svelte';
 import Clues from './panels/Clues.svelte';
 import Settings from './panels/Settings.svelte';
 

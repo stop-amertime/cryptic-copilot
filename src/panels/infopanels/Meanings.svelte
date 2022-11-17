@@ -31,9 +31,6 @@ const rowSizer = node => {
 </template>
 
 <style lang="scss" global>
-//- * {
-//- 	outline: 1px solid blue;
-//- }
 $indent: 15px;
 
 .scrollwrapper {
@@ -56,20 +53,34 @@ details.partOfSpeech {
 	transition: max-height 0.2s ease;
 	height: min-content;
 
-	&[open] {
-		height: max-content;
-		padding-bottom: 20px;
+	&:not([open]) > summary:after {
+		content: '+';
+		position: absolute;
+		top: 10px;
+		right: 10px;
+		font-size: 20px;
+		font-style: bold;
+	}
+
+	&[open] > summary:after {
+		content: '-';
+		position: absolute;
+		top: 10px;
+		right: 10px;
+		font-size: 20px;
+		font-style: bold;
+		color: gray;
 	}
 
 	summary {
 		display: inline-flex;
+		width: 100%;
 		flex-wrap: nowrap;
 		font-size: 14px;
-		padding: 5px 5px 5px 0px;
+		padding: 5px 20px 5px 5px;
 		margin-bottom: 10px;
 		text-align: left;
 		height: max-content;
-		max-width: min(80ch, 90%);
 		line-height: 14px;
 
 		.partName,

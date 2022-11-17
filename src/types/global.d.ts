@@ -48,6 +48,12 @@ type IThesaurusSynonym = {
 	relatedWords: string[];
 };
 
+type DatamuseWord = {
+	word: string;
+	score: number;
+	numSyllables: number;
+};
+
 /* ---------------------------------------------------- Device (Set Of Words) */
 type IDevice = {
 	words: Array<IWord>;
@@ -59,6 +65,8 @@ type IDeviceSet = {
 	anagrams?: IDevice[];
 	containers?: IDevice[];
 	hiddenwords?: IHiddenWord[];
+	soundslike?: IWord[];
+	substitutions?: ISubstitutionGrouped;
 };
 
 type IHiddenWord = {
@@ -68,6 +76,21 @@ type IHiddenWord = {
 	a: string[];
 	b: string[];
 };
+
+type ISubstitution = {
+	deleted: IWord;
+	replacedBy?: IWord;
+	finalWord: IWord;
+};
+
+type ISubstitutionPair = {
+	replacedBy?: IWord;
+	finalWord: IWord;
+};
+
+type ISubstitutionGrouped = Map<IWord, ISubstitutionPair[]>;
+
+type nestedWord = { word: string; index: number };
 
 //= Grid
 
