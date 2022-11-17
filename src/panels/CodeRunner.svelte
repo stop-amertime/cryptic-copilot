@@ -2,10 +2,9 @@
 import { downloadMapAsDictFile } from './../lib/utils';
 import { writable } from 'svelte/store';
 import { dictionary, cells, wordSlots } from '../StateMediator.svelte';
-import { gbWords } from '../data/miscdata/gberg-1freqwords.js';
 import xwordlistScores from '../data/xwordlist.json';
 
-let freqWords = gbWords as string[];
+let freqWords = [] as string[];
 
 function run() {
 	absorbScores();

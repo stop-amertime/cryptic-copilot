@@ -1,9 +1,11 @@
 <script lang="ts">
+import { fade, slide } from 'svelte/transition';
 import WordPopover from '../../lib-sv/WordPopover.svelte';
 import { popover } from '../../lib/wordPopover';
 import { scoreToColour } from '../../lib/DictionaryEngine';
 import { quadInOut } from 'svelte/easing';
 import { activeWord } from '../../StateMediator.svelte';
+import { writable } from 'svelte/store';
 export let list: ISubstitutionGrouped;
 
 // Convert map to group(array) of Substitutions.
@@ -18,78 +20,91 @@ for (let [deleted, pairs] of list) {
 }
 
 // Toggle collapsible groups.
-const toggleOpen = (e: MouseEvent) => {
-	let child = e.currentTarget as HTMLElement;
-	let elem = child.parentElement;
+const toggleOpen = (e: MouseEvent, index: number) => {
+	let elem = e.currentTarget as HTMLElement;
 	e.preventDefault();
 	if (elem.classList.contains('open')) {
 		elem.classList.remove('open');
 	} else {
 		elem.classList.add('open');
 	}
+	if ($closedGroups.includes(index)) {
+		$closedGroups = $closedGroups.filter(x => x != index);
+	} else {
+		$closedGroups = [...$closedGroups, index];
+	}
+
+	console.log(closedGroups);
 };
 
-function growAnim(node, { duration = 1000 }) {
+let closedGroups = writable([]);
+
+function growAnim(node) {
 	let maxheight = node.scrollHeight;
+	let duration = 1000;
 
 	return {
 		duration,
 		easing: quadInOut,
-		css: t => `max-height: ${maxheight * t}`,
+		css: t => `max-height: ${maxheight * t}; `,
 	};
 }
 </script>
 
 {#if $activeWord}
 	<div class="page">
-		{#each groups as group}
+		{#each groups as group, index}
 			{@const deletedWord = group[0].deleted.word}
 			{@const [beforeDeleted, afterDeleted] = $activeWord.split(deletedWord)}
 
-			<div class="group open">
-				<div class="label" on:click={e => toggleOpen(e)}>
+			<div class="group open" on:click={e => toggleOpen(e, index)}>
+				<div class="label">
 					<p>
-						{@html `${beforeDeleted}<b>${deletedWord}</b>${afterDeleted}`}
+						{@html `${beforeDeleted}<u>${deletedWord}</u>${afterDeleted}`}
 					</p>
 				</div>
-
-				<div class="entries">
-					{#each group as entry}
-						{@const { deleted, replacedBy, finalWord } = entry}
-						<div class="entry">
-							<div
-								class="word deleted"
-								class:abbr={deleted.abbreviationFor}
-								use:popover={{ component: WordPopover, word: deleted.word }}
-								style:background-color={scoreToColour(deleted.score)}
-							>
-								{deleted.word}
-							</div>
-
-							{#if replacedBy}
-								<p>⇄</p>
+				{#if !$closedGroups.includes(index)}
+					<div class="entries" transition:slide>
+						{#each group as entry}
+							{@const { deleted, replacedBy, finalWord } = entry}
+							<div class="entry">
 								<div
-									class="word replacedBy"
-									class:abbr={replacedBy.abbreviationFor}
-									use:popover={{ component: WordPopover, word: replacedBy.word }}
-									style:background-color={scoreToColour(replacedBy.score)}
+									class="word deleted"
+									class:abbr={deleted.abbreviationFor}
+									use:popover={{ component: WordPopover, word: deleted.word }}
+									style:background-color={scoreToColour(deleted.score)}
 								>
-									{replacedBy.word}
+									{deleted.word}
 								</div>
+
+								{#if replacedBy}
+									<p>⇄</p>
+									<div
+										class="word replacedBy"
+										class:abbr={replacedBy.abbreviationFor}
+										use:popover={{
+											component: WordPopover,
+											word: replacedBy.word,
+										}}
+										style:background-color={scoreToColour(replacedBy.score)}
+									>
+										{replacedBy.word}
+									</div>
+								{:else}
+									<p>🗑</p>
+								{/if}
 								<p>⇒</p>
-							{:else}
-								<p>⥇</p>
-							{/if}
-							<div
-								class="word final"
-								use:popover={{ component: WordPopover, word: finalWord.word }}
-								style:background-color={scoreToColour(finalWord.score)}
-							>
-								{finalWord.word}
+								<div
+									class="word final"
+									use:popover={{ component: WordPopover, word: finalWord.word }}
+									style:background-color={scoreToColour(finalWord.score)}
+								>
+									{finalWord.word}
+								</div>
 							</div>
-						</div>
-					{/each}
-				</div>
+						{/each}
+					</div>
+				{/if}
 			</div>
 		{/each}
 	</div>
@@ -103,7 +118,7 @@ function growAnim(node, { duration = 1000 }) {
 	flex-direction: column;
 
 	.group {
-		margin: 20px 10px;
+		padding: 10px;
 		display: flex;
 		flex-direction: column;
 		border: 1px solid rgb(231, 231, 231);
@@ -112,12 +127,12 @@ function growAnim(node, { duration = 1000 }) {
 
 		&:after {
 			transition: 0.3s ease-in-out;
-			content: '>';
+			content: '▶';
 			position: absolute;
-			top: 10px;
-			left: 10px;
-			color: black;
-			font-size: 20px;
+			top: 20px;
+			left: 20px;
+			color: darkgray;
+			font-size: 15px;
 			z-index: 1000;
 		}
 
@@ -128,28 +143,32 @@ function growAnim(node, { duration = 1000 }) {
 		}
 
 		&:not(.open) {
-			background-color: rgb(242, 242, 242);
-			& > .entries {
-				max-height: 0px;
-				opacity: 0;
-			}
+			background-color: rgb(226, 226, 226);
+			// & > .entries {
+			// 	max-height: 0px;
+			// 	opacity: 0;
+			// }
+		}
+
+		&:hover {
+			background-color: rgb(255, 253, 253);
 		}
 
 		.label {
 			width: 100%;
+			height: 50px;
 			border-radius: 5px;
 			display: flex;
 			flex-direction: row;
 			flex-wrap: nowrap;
 
-			&:hover {
-				background-color: rgb(255, 253, 253);
-			}
-
 			p {
-				font-size: 20px;
+				font-size: 18px;
+				padding: 5px;
+				margin: 5px;
 				width: 100%;
 				text-align: center;
+				user-select: none;
 			}
 		}
 
@@ -161,31 +180,51 @@ function growAnim(node, { duration = 1000 }) {
 			flex-direction: column;
 			flex-wrap: nowrap;
 			position: relative;
+			padding: 5px 10px;
 
 			.entry {
 				display: flex;
 				flex-direction: row;
 				flex-wrap: nowrap;
 				align-items: stretch;
-				justify-content: flex-start;
+				justify-content: center;
 
 				p {
-					flex: 1 0 auto;
+					flex: 0 0 40px;
+					height: 40px;
 					font-size: 20px;
+					line-height: 45px;
+					text-align: center;
+					margin: 0px;
+					padding: 0px;
+					user-select: none;
+				}
+
+				p:last-of-type {
+					flex: 1 0 auto;
 				}
 
 				.word {
-					flex: 1 0 auto;
+					flex: 0 1 auto;
+					padding: 10px 5px;
 					display: inline-block;
 					position: relative;
+					height: 40px;
 					font-size: 16px;
 					font-family: 'Courier Prime', Courier, monospace;
-					margin: 8px 2px;
+					margin: 4px 2px;
 					border-radius: 2px;
 					border: 1px solid gray;
 					cursor: pointer;
 					overflow: visible;
 					text-transform: lowercase;
+					text-align: center;
+					text-overflow: ellipsis;
+
+					&:hover {
+						filter: contrast(1.5);
+						opacity: 0.8;
+					}
 				}
 
 				.abbr {

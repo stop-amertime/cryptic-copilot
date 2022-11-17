@@ -83,7 +83,6 @@ $popovercolor: white;
 		.titleScore {
 			float: right;
 			font-size: 22px;
-			color: var(--colour);
 			padding: 0px;
 			margin: 0px 20px;
 			height: 100%;

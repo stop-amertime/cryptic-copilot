@@ -129,6 +129,7 @@ function checkIfBanned(node: HTMLElement, word: string) {
 										class:priorityWord={isPriorityWord(possibleWord.word)}
 										use:checkIfBanned={possibleWord.word}
 										style:--score={possibleWord.score}
+										style:--col={scoreToColour(possibleWord.score)}
 										on:click={() => ($activeWord = possibleWord.word)}
 									>
 										{possibleWord.word}
@@ -209,9 +210,9 @@ function checkIfBanned(node: HTMLElement, word: string) {
 
 .possword {
 	position: relative;
-	background-color: hsl(calc(var(--score) * 2), 75%, 80%);
+	background-color: var(--col);
 	// add css for hovering button
-	border: 1px solid hsl(calc(var(--score) * 2), 75%, 50%);
+	border: 1px solid var(--col);
 	color: hsl(calc(var(--score) * 2), 75%, 20%);
 	font-size: 1.2em;
 	padding: 5px;

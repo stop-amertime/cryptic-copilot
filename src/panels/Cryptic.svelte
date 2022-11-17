@@ -65,8 +65,8 @@ const changePage = (tabNumber: number) => {
 			<Wave size="60" color="#111111" unit="px" duration="1s" />
 		</div>
 	{:then}
-		<div class="page" bind:clientHeight={pageHeight}>
-			<div class="tabs" bind:clientHeight={tabHeight}>
+		<div class="page" bind:offsetHeight={pageHeight}>
+			<div class="tabs" bind:offsetHeight={tabHeight}>
 				{#each $tabs as tab, index}
 					<button
 						on:click={() => (currentTab = index)}
@@ -80,7 +80,11 @@ const changePage = (tabNumber: number) => {
 				{/each}
 			</div>
 			{#key displayTab}
-				<div class="deviceList" transition:fade={{ duration: 100 }}>
+				<div
+					class="deviceList"
+					style:--height={pageHeight - tabHeight + 'px'}
+					transition:fade={{ duration: 100 }}
+				>
 					<div class="listWrapper">
 						{#if displayTab == 0}
 							<Meanings data={thesaurus} />
@@ -125,7 +129,7 @@ const changePage = (tabNumber: number) => {
 }
 
 .tabs {
-	margin: 10px;
+	padding: 10px;
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 	button {
@@ -157,12 +161,12 @@ const changePage = (tabNumber: number) => {
 }
 
 .deviceList {
-	height: calc(100% - 70px);
+	height: var(--height);
 	width: 100%;
-	padding-left: 20px;
 	.listWrapper {
 		height: 100%;
 		width: 100%;
+		padding: 20px 10px 10px 10px;
 		overflow: auto;
 	}
 }

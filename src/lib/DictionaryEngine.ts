@@ -62,8 +62,7 @@ export const getWord = (word: string): IWord => ({
 
 export const scoreToColour = (score: number): string => {
 	if (!score) return 'rgb(220, 220, 220)';
-	if (score < 20) return 'hsl(0,75%,85%)';
-	else return `hsl(${score * 2}, 75%, 85%)`;
+	else return `hsl(${Math.round(score * 1.25)}, 100%, 85%)`;
 };
 
 const byScoreThenRandom = (a: IWord, b: IWord) =>

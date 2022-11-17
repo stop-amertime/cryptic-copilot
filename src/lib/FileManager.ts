@@ -1,7 +1,7 @@
 import { dictFileStringToMap, mapToDictFileString } from './utils';
 
 //== SETTINGS
-let DICT_VERSION = 'ccDict7';
+let DICT_VERSION = 'ccDict8';
 let DICT_URL = `${DICT_VERSION}.dict`;
 let DEFAULT_LAYOUTURL = 'gridtemplates.json';
 
