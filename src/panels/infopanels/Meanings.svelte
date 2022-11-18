@@ -4,24 +4,33 @@ export let data: IThesaurusEntry;
 let abbreviationList = data?.abbreviationFor?.split(',') || null;
 
 const rowSizer = node => {
-	let vertMargin = node.clientHeight * 0.1 + 'px';
+	let vertMargin = node.clientHeight * 0.5 + 'px';
 	node.style.marginTop = node.style.marginBottom = vertMargin;
+};
+
+let closedGroups = [];
+const toggleOpen = (index: number) => {
+	closedGroups = closedGroups.includes(index)
+		? closedGroups.filter(x => x != index)
+		: [...closedGroups, index];
 };
 </script>
 
 <template lang="pug">
 .scrollwrapper
     +each('data?.partsOfSpeech || [] as part')
-        +each('part?.senses|| [] as sense')
-            details.partOfSpeech(open)
-                summary 
+        +each('part?.senses|| [] as sense, index')
+            .partOfSpeech("class:open={!closedGroups.includes(index)} on:click={e => toggleOpen(index)}")
+                .label
                     .partName <b>{part.partOfSpeech}</b>
-                    .definition <i>{sense.definition}</i>
-                +each('sense?.synonyms || [] as synonym')
-                    .synonymsrow(use:rowSizer)
-                        .syn.main {synonym.mainWord}
-                        +each('synonym?.relatedWords || [] as related')
-                            .syn.related {related}
+                    .definition {sense.definition}
+                +if("!closedGroups.includes(index)")
+                    .synonyms(transition:slide)
+                        +each('sense?.synonyms || [] as synonym')
+                            .synonymsrow()
+                                .syn.main {synonym.mainWord}
+                                +each('synonym?.relatedWords || [] as related')
+                                    .syn.related {related}
     +if('abbreviationList')
         p.abbrHeader Cryptic Abbreviation For: 
         .abbrWrapper
@@ -30,7 +39,7 @@ const rowSizer = node => {
 
 </template>
 
-<style lang="scss" global>
+<style lang="scss">
 $indent: 15px;
 
 .scrollwrapper {
@@ -41,83 +50,93 @@ $indent: 15px;
 	align-items: center;
 }
 
-details.partOfSpeech {
-	width: 100%;
+// Spinning Arrow
+
+.label:before {
+	transition: 0.3s ease-in-out;
+	content: '▶';
+	position: absolute;
+	top: 25px;
+	left: 10px;
+	color: darkgray;
+	font-size: 10px;
+}
+
+.open > .label:before {
+	transform: rotate(90deg);
+}
+
+// ---
+
+.partOfSpeech {
+	position: relative;
 	font-size: 12px;
 	display: block;
-	padding: 0px;
-	padding-left: $indent;
-	margin: 10px 0px;
-	background-color: white !important;
+	padding: 15px;
+	margin-bottom: 40px;
+	margin-right: 10px;
+	background-color: none;
 	transition: height 0.2s ease;
 	transition: max-height 0.2s ease;
 	height: min-content;
+	user-select: none;
+	border: 1px solid lightgray;
+	border-radius: 5px;
 
-	&:not([open]) > summary:after {
-		content: '+';
-		position: absolute;
-		top: 10px;
-		right: 10px;
-		font-size: 20px;
-		font-style: bold;
+	&:hover {
+		background-color: #fefefe;
+		cursor: pointer;
 	}
 
-	&[open] > summary:after {
-		content: '-';
-		position: absolute;
-		top: 10px;
-		right: 10px;
-		font-size: 20px;
-		font-style: bold;
-		color: gray;
-	}
-
-	summary {
-		display: inline-flex;
+	.label {
+		position: sticky;
+		top: 0;
+		background-color: white;
 		width: 100%;
 		flex-wrap: nowrap;
-		font-size: 14px;
-		padding: 5px 20px 5px 5px;
+		font-size: 16px;
+		padding: 5px;
 		margin-bottom: 10px;
+		padding-left: 20px;
 		text-align: left;
-		height: max-content;
-		line-height: 14px;
+		line-height: 20px;
 
 		.partName,
 		.definition {
 			flex: 0 1 auto;
 			padding: 5px;
 		}
-
-		&:hover {
-			background-color: #f0f0f0;
-		}
 	}
-
-	.synonymsrow {
-		width: 100%;
-		display: inline-flex;
-		flex-wrap: wrap;
-		margin-top: 5px;
-		padding-left: $indent;
-		max-width: min(80ch, 90%);
-	}
-
-	.syn {
-		padding: 5px 7px;
-		border-radius: 3px;
-		text-align: center;
-		margin: 3px;
-		border: 1px solid grey;
-
-		&.main {
-			flex: 4 1 auto;
-			background-color: rgb(229, 229, 229);
-			color: black;
+	.synonyms {
+		overflow: hidden;
+		.synonymsrow {
+			width: 100%;
+			display: flex;
+			flex-wrap: wrap;
+			margin-top: 20px;
+			border: 1px solid lightgray;
+			border-radius: 5px;
+			overflow: hidden;
 		}
 
-		&.related {
-			flex: 2 1 auto;
+		.syn {
+			font-size: 13px;
+			padding: 7px;
+			text-align: center;
+			border: 1px solid lightgray;
+			margin-top: -1px;
+			margin-left: -1px;
+
+			&.main {
+				flex: 1 1 100px;
+				font-style: italic;
+				text-align: center;
+				background-color: rgb(248, 248, 248);
+			}
+
+			&.related {
+				flex: 1 1 100px;
+			}
 		}
 	}
 }

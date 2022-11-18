@@ -1,8 +1,8 @@
-/// Colours 
+/// Colours
 $col-primary: black;
 $col-highlight: rgb(230, 230, 230);
 
-/// Sizing 
+/// Sizing
 $gap-S: 10px;
 $gap-M: 20px;
 $gap-L: 30px;
@@ -13,136 +13,140 @@ $M: 30px;
 $L: 50px;
 $XL: 100px;
 
-//Shortcuts for Common Variables 
-@mixin size($width, $height:$width){
-    width: $width;
-    height: $height;
+//Shortcuts for Common Variables
+@mixin size($width, $height: $width) {
+	width: $width;
+	height: $height;
 }
 
-@mixin fillparent{
-    width: 100%;
-    height: 100%;
+@mixin fillparent {
+	width: 100%;
+	height: 100%;
 }
 
-@function hueToColour($hue:0, $alpha:1){
-    @return hsla($hue, 75%, 85%, $alpha);
+@function hueToColour($hue: 0, $alpha: 1) {
+	@return hsla($hue, 75%, 85%, $alpha);
 }
 
-@mixin centre($axis: "both") {
-    position: absolute;
+@mixin centre($axis: 'both') {
+	position: absolute;
 
-    @if $axis =="y" {
-        top: 50%;
-        -webkit-transform: translateY(-50%);
-        -moz-transform: translateY(-50%);
-        -ms-transform: translateY(-50%);
-        -o-transform: translateY(-50%);
-        transform: translateY(-50%);
-    }
+	@if $axis == 'y' {
+		top: 50%;
+		-webkit-transform: translateY(-50%);
+		-moz-transform: translateY(-50%);
+		-ms-transform: translateY(-50%);
+		-o-transform: translateY(-50%);
+		transform: translateY(-50%);
+	}
 
-    @if $axis =="x" {
-        left: 50%;
-        -webkit-transform: translateX(-50%);
-        -moz-transform: translateX(-50%);
-        -ms-transform: translateX(-50%);
-        -o-transform: translateX(-50%);
-        transform: translateX(-50%);
-    }
+	@if $axis == 'x' {
+		left: 50%;
+		-webkit-transform: translateX(-50%);
+		-moz-transform: translateX(-50%);
+		-ms-transform: translateX(-50%);
+		-o-transform: translateX(-50%);
+		transform: translateX(-50%);
+	}
 
-    @if $axis =="both" {
-        top: 50%;
-        left: 50%;
-        -webkit-transform: translate(-50%, -50%);
-        -moz-transform: translate(-50%, -50%);
-        -ms-transform: translate(-50%, -50%);
-        -o-transform: translate(-50%, -50%);
-        transform: translate(-50%, -50%);
-    }
+	@if $axis == 'both' {
+		top: 50%;
+		left: 50%;
+		-webkit-transform: translate(-50%, -50%);
+		-moz-transform: translate(-50%, -50%);
+		-ms-transform: translate(-50%, -50%);
+		-o-transform: translate(-50%, -50%);
+		transform: translate(-50%, -50%);
+	}
 }
 
-//Dynamic Styling 
-@mixin colorByWordScore($wordScore:40){
-    $hueValue: $wordScore * 2; 
-    background-color: hsl($hueValue, 75%, 85%);
+//Dynamic Styling
+@mixin colorByWordScore($wordScore: 40) {
+	$hueValue: $wordScore * 2;
+	background-color: hsl($hueValue, 75%, 85%);
 }
 
-@mixin hoverColour($colour: $col-highlight){
-    &:hover {
-        background-color: $colour;
-        transition: background-color .2s ease-in-out;
-    }
+@mixin hoverColour($colour: $col-highlight) {
+	&:hover {
+		background-color: $colour;
+		transition: background-color 0.2s ease-in-out;
+	}
 }
 
-@mixin hoverScale($scale: 1.1){
-    &:hover {
-        transform: scale($scale);
-        transition: scale 0.2s ease-in-out;
-    }
+@mixin hoverScale($scale: 1.1) {
+	&:hover {
+		transform: scale($scale);
+		transition: scale 0.2s ease-in-out;
+	}
 }
 
+@mixin hoverEffect() {
+	&:hover {
+		filter: brightness(1.05);
+		transform: scale(1.06);
+		transition: scale 0.15s ease-out;
+	}
+}
 
 //Flex
-@mixin flex-col($xAlign:stretch, $yAlign:center){
-    display:flex;
-    flex-direction:column;
-    align-items: $xAlign;
-    justify-content: $yAlign;
+@mixin flex-col($xAlign: stretch, $yAlign: center) {
+	display: flex;
+	flex-direction: column;
+	align-items: $xAlign;
+	justify-content: $yAlign;
 }
 
-@mixin flex-row($xAlign:center, $yAlign:stretch, $canWrap:false){
-    align-items: $yAlign;
-    justify-content: $xAlign;
-    @if $canWrap == true{
-        flex-wrap: wrap;
-    }
+@mixin flex-row($xAlign: center, $yAlign: stretch, $canWrap: false) {
+	align-items: $yAlign;
+	justify-content: $xAlign;
+	@if $canWrap == true {
+		flex-wrap: wrap;
+	}
 }
 
-@mixin fillParent(){
-    width: 100%;
-    height: 100%;
+@mixin fillParent() {
+	width: 100%;
+	height: 100%;
 }
 
-@mixin centredParent(){
-    display: flex;
-    align-items: center;
-    justify-content: center;
+@mixin centredParent() {
+	display: flex;
+	align-items: center;
+	justify-content: center;
 }
 
-@mixin scroll($isVertical:true, $isHorizontal:false){
-    @if $isVertical {
-        overflow-y:auto;
-    }
-    @else {
-        overflow-y:hidden;
-    }
+@mixin scroll($isVertical: true, $isHorizontal: false) {
+	@if $isVertical {
+		overflow-y: auto;
+	} @else {
+		overflow-y: hidden;
+	}
 
-    @if isHorizontal {
-        overflow-x:auto;
-    }
-    @else {
-        overflow-x:hidden;
-    }
+	@if isHorizontal {
+		overflow-x: auto;
+	} @else {
+		overflow-x: hidden;
+	}
 }
-
 
 /// Static Transition
-@mixin staticTransitionParent{
-    display: grid;
-    grid-template-rows: 1fr;
-    grid-template-columns: 1fr;
+@mixin staticTransitionParent {
+	display: grid;
+	grid-template-rows: 1fr;
+	grid-template-columns: 1fr;
 }
 
-@mixin staticTransitionWrapper{
-    display: grid;
-    grid-template-rows: 1fr;
-    grid-template-columns: 1fr;
-    & > div{
-        grid-column: 1;
-        grid-row: 1;
-    }
+@mixin staticTransitionWrapper {
+	display: grid;
+	grid-template-rows: 1fr;
+	grid-template-columns: 1fr;
+	& > div {
+		grid-column: 1;
+		grid-row: 1;
+	}
 }
 
-@mixin staticTransitionChild{
-    grid-column: 1;
-    grid-row: 1;
+@mixin staticTransitionChild {
+	grid-column: 1;
+	grid-row: 1;
 }

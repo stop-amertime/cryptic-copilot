@@ -6,6 +6,7 @@ import { scoreToColour } from '../../lib/DictionaryEngine';
 import { quadInOut } from 'svelte/easing';
 import { activeWord } from '../../StateMediator.svelte';
 import { writable } from 'svelte/store';
+import { replaceIDs } from '@iconify/svelte';
 export let list: ISubstitutionGrouped;
 
 // Convert map to group(array) of Substitutions.
@@ -21,23 +22,12 @@ for (let [deleted, pairs] of list) {
 
 // Toggle collapsible groups.
 const toggleOpen = (e: MouseEvent, index: number) => {
-	let elem = e.currentTarget as HTMLElement;
-	e.preventDefault();
-	if (elem.classList.contains('open')) {
-		elem.classList.remove('open');
-	} else {
-		elem.classList.add('open');
-	}
-	if ($closedGroups.includes(index)) {
-		$closedGroups = $closedGroups.filter(x => x != index);
-	} else {
-		$closedGroups = [...$closedGroups, index];
-	}
-
-	console.log(closedGroups);
+	closedGroups = closedGroups.includes(index)
+		? (closedGroups = closedGroups.filter(x => x != index))
+		: [...closedGroups, index];
 };
 
-let closedGroups = writable([]);
+let closedGroups = [];
 
 function growAnim(node) {
 	let maxheight = node.scrollHeight;
@@ -57,16 +47,20 @@ function growAnim(node) {
 			{@const deletedWord = group[0].deleted.word}
 			{@const [beforeDeleted, afterDeleted] = $activeWord.split(deletedWord)}
 
-			<div class="group open" on:click={e => toggleOpen(e, index)}>
+			<div
+				class="group"
+				class:open={!closedGroups.includes(index)}
+				on:click={e => toggleOpen(e, index)}
+			>
 				<div class="label">
 					<p>
-						{@html `${beforeDeleted}<u>${deletedWord}</u>${afterDeleted}`}
+						{@html `${beforeDeleted}<s class=replaced>${deletedWord}</s>${afterDeleted}`}
 					</p>
 				</div>
-				{#if !$closedGroups.includes(index)}
+				{#if !closedGroups.includes(index)}
 					<div class="entries" transition:slide>
 						{#each group as entry}
-							{@const { deleted, replacedBy, finalWord } = entry}
+							{@const { deleted, replacedBy, finalWord, index } = entry}
 							<div class="entry">
 								<div
 									class="word deleted"
@@ -90,17 +84,34 @@ function growAnim(node) {
 									>
 										{replacedBy.word}
 									</div>
+									<p>⇒</p>
+									<div
+										class="word final"
+										use:popover={{
+											component: WordPopover,
+											word: finalWord.word,
+										}}
+										style:background-color={scoreToColour(finalWord.score)}
+									>
+										{@html finalWord.word.substring(0, index) +
+											`<u class=replaced>${replacedBy.word}</u>` +
+											finalWord.word.substring(
+												index + replacedBy.word.length
+											)}
+									</div>
 								{:else}
 									<p>🗑</p>
+									<div
+										class="word final"
+										use:popover={{
+											component: WordPopover,
+											word: finalWord.word,
+										}}
+										style:background-color={scoreToColour(finalWord.score)}
+									>
+										{finalWord.word}
+									</div>
 								{/if}
-								<p>⇒</p>
-								<div
-									class="word final"
-									use:popover={{ component: WordPopover, word: finalWord.word }}
-									style:background-color={scoreToColour(finalWord.score)}
-								>
-									{finalWord.word}
-								</div>
 							</div>
 						{/each}
 					</div>
@@ -117,6 +128,17 @@ function growAnim(node) {
 	display: flex;
 	flex-direction: column;
 
+	:global(s.replaced) {
+		text-decoration-color: red;
+		text-decoration-thickness: 2px;
+	}
+
+	:global(u.replaced) {
+		text-decoration-style: dotted;
+		text-underline-offset: 6px;
+		text-decoration-color: rgb(91, 91, 91);
+	}
+
 	.group {
 		padding: 10px;
 		display: flex;
@@ -124,6 +146,7 @@ function growAnim(node) {
 		border: 1px solid rgb(231, 231, 231);
 		border-radius: 5px;
 		position: relative;
+		margin-bottom: 30px;
 
 		&:after {
 			transition: 0.3s ease-in-out;
@@ -133,21 +156,12 @@ function growAnim(node) {
 			left: 20px;
 			color: darkgray;
 			font-size: 15px;
-			z-index: 1000;
 		}
 
 		&.open {
 			&:after {
 				transform: rotate(90deg);
 			}
-		}
-
-		&:not(.open) {
-			background-color: rgb(226, 226, 226);
-			// & > .entries {
-			// 	max-height: 0px;
-			// 	opacity: 0;
-			// }
 		}
 
 		&:hover {
@@ -161,6 +175,7 @@ function growAnim(node) {
 			display: flex;
 			flex-direction: row;
 			flex-wrap: nowrap;
+			text-underline-offset: 5px;
 
 			p {
 				font-size: 18px;
@@ -174,7 +189,6 @@ function growAnim(node) {
 
 		.entries {
 			transition: all 0.5s ease-out;
-			max-height: 1500px;
 			opacity: 1;
 			display: flex;
 			flex-direction: column;
@@ -198,10 +212,13 @@ function growAnim(node) {
 					margin: 0px;
 					padding: 0px;
 					user-select: none;
+					color: lightgray;
 				}
 
 				p:last-of-type {
-					flex: 1 0 auto;
+					flex: 1 1 auto;
+					text-align: right;
+					padding-right: 10px;
 				}
 
 				.word {
@@ -221,10 +238,18 @@ function growAnim(node) {
 					text-align: center;
 					text-overflow: ellipsis;
 
-					&:hover {
-						filter: contrast(1.5);
-						opacity: 0.8;
+					@include hoverEffect;
+
+					text-underline-offset: 5px;
+					text-decoration-style: dotted;
+
+					& {
+						text-decoration-style: dotted;
 					}
+				}
+
+				.word:last-of-type {
+					flex: 1 0 auto;
 				}
 
 				.abbr {

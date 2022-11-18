@@ -35,6 +35,8 @@ export let list: IWord[] = [];
 		cursor: pointer;
 		overflow: visible;
 		text-transform: lowercase;
+
+		@include hoverEffect();
 	}
 }
 </style>

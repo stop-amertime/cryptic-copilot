@@ -133,29 +133,30 @@ const changePage = (tabNumber: number) => {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 	button {
-		padding: 20px 10px;
+		padding: 10px 10px;
 		margin-right: -1px;
 		margin-bottom: -1px;
 		border: 1px solid rgb(183, 183, 183);
-		font-style: normal;
 		color: rgb(110, 110, 110);
 		background-color: white;
 		cursor: pointer;
+		font-size: 16px;
 
 		&:not(.selectedTab):hover {
 			background-color: rgb(245, 245, 245);
 		}
 		&.selectedTab {
-			font-style: bolder;
+			font-weight: 1000;
 			color: black;
-			background-color: rgb(245, 245, 245);
+			background-color: rgb(252, 252, 252);
 			border: 1px solid black;
 			z-index: 1;
 		}
 		&.disabled {
-			color: rgba(180, 180, 180, 0.53);
+			color: rgba(117, 115, 115, 0.53);
 			pointer-events: none;
 			cursor: not-allowed;
+			text-decoration: line-through;
 		}
 	}
 }

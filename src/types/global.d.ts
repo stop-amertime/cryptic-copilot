@@ -80,11 +80,13 @@ type IHiddenWord = {
 type ISubstitution = {
 	deleted: IWord;
 	replacedBy?: IWord;
+	index: number;
 	finalWord: IWord;
 };
 
 type ISubstitutionPair = {
 	replacedBy?: IWord;
+	index: number;
 	finalWord: IWord;
 };
 

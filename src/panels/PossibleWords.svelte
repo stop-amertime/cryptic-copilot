@@ -211,14 +211,13 @@ function checkIfBanned(node: HTMLElement, word: string) {
 .possword {
 	position: relative;
 	background-color: var(--col);
-	// add css for hovering button
-	border: 1px solid var(--col);
+	border: 1px solid lightgray;
 	color: hsl(calc(var(--score) * 2), 75%, 20%);
 	font-size: 1.2em;
 	padding: 5px;
 	border-radius: 5px;
 	cursor: pointer;
-	transition: all 0.2s ease-in-out;
+	transition: all 0.1s ease-out;
 
 	&.priorityWord {
 		font-weight: bold;
@@ -241,8 +240,8 @@ function checkIfBanned(node: HTMLElement, word: string) {
 	}
 
 	&:hover {
-		background-color: hsl(calc(var(--score) * 2), 75%, 90%);
-		color: hsl(calc(var(--score) * 2), 75%, 10%);
+		filter: brightness(0.95);
+		transform: scale(1.06);
 	}
 
 	&:active {

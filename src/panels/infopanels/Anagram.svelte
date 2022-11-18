@@ -39,10 +39,8 @@ export let data: IDevice;
 	cursor: pointer;
 	overflow: visible;
 	text-transform: lowercase;
-}
 
-.word:hover {
-	opacity: 0.8;
+	@include hoverEffect();
 }
 
 .abbr {

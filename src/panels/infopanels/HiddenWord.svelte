@@ -1,5 +1,6 @@
 <script lang="ts">
 import { slide } from 'svelte/transition';
+import { isFunctionLike } from 'typescript';
 export let hiddenwords: IHiddenWord[] = [
 	{
 		start: 'CDC',
@@ -29,53 +30,59 @@ export let hiddenwords: IHiddenWord[] = [
 	},
 ];
 
-const toggleOpen = (e: MouseEvent) => {
-	let elem = e.currentTarget as HTMLDetailsElement;
-	e.preventDefault();
-	if (elem.classList.contains('open')) {
-		elem.classList.remove('open');
-	} else {
-		elem.classList.add('open');
-	}
+// Toggle collapsible groups.
+const toggleOpen = (e: MouseEvent, index: number) => {
+	closedGroups = closedGroups.includes(index)
+		? (closedGroups = closedGroups.filter(x => x != index))
+		: [...closedGroups, index];
 };
+
+let closedGroups = [];
 
 const titleCase = (string: string) =>
 	string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
 </script>
 
 <div class="page">
-	{#each hiddenwords as set}
-		<div class="set open" on:click={e => toggleOpen(e)}>
+	{#each hiddenwords as set, index}
+		<div
+			class="set"
+			class:open={!closedGroups.includes(index)}
+			on:click={e => toggleOpen(e, index)}
+		>
 			<div class="setlabel">
 				<p>
-					-{set.start.toLowerCase()}
-					{set.middle ? ` / ${titleCase(set.middle)} / ` : ' / '}
-					{titleCase(set.end)}-
+					__{set.start.toLowerCase()}
+					{set.middle ? `  ${titleCase(set.middle)}  ` : '  '}
+					{titleCase(set.end)}__
 				</p>
 			</div>
-
-			<div class="setcols">
-				<div class="a column">
-					{#each set.a as word}
-						<div class="word">
-							{@html `${word.slice(0, word.indexOf(set.start))}<b>${set.start}</b>`}
-						</div>
-					{/each}
-				</div>
-				{#if set.middle}
-					<div class="m column">
-						<div class="word">{set.middle}</div>
+			{#if !closedGroups.includes(index)}
+				<div class="setcols" transition:slide>
+					<div class="a column">
+						{#each set.a as word}
+							<div class="word">
+								{@html `${word.slice(0, word.lastIndexOf(set.start))}<b>${
+									set.start
+								}</b>`}
+							</div>
+						{/each}
 					</div>
-				{/if}
-
-				<div class="b column">
-					{#each set.b as word}
-						<div class="word">
-							{@html `<b>${set.end}</b>${word.slice(set.end.length)}`}
+					{#if set.middle}
+						<div class="m column">
+							<div class="word">{set.middle}</div>
 						</div>
-					{/each}
+					{/if}
+
+					<div class="b column">
+						{#each set.b as word}
+							<div class="word">
+								{@html `<b>${set.end}</b>${word.slice(set.end.length)}`}
+							</div>
+						{/each}
+					</div>
 				</div>
-			</div>
+			{/if}
 		</div>
 	{/each}
 </div>
@@ -88,31 +95,32 @@ const titleCase = (string: string) =>
 }
 
 .set {
-	margin: 20px 10px;
+	margin: 0px 10px;
+	margin-bottom: 20px;
 	display: flex;
 	flex-direction: column;
 	border: 1px solid rgb(231, 231, 231);
+	background-color: white;
 	border-radius: 5px;
 	position: relative;
 
 	&:after {
-		content: '>';
+		transition: 0.3s ease-in-out;
+		content: '▶';
 		position: absolute;
-		top: 10px;
-		left: 10px;
-		color: black;
-		font-size: 20px;
-		z-index: 1000;
+		top: 20px;
+		left: 20px;
+		color: darkgray;
+		font-size: 15px;
 	}
 
 	&.open {
 		&:after {
-			transform: rotate('90deg');
+			transform: rotate(90deg);
 		}
 	}
 
 	&:not(.open) {
-		background-color: rgb(242, 242, 242);
 		& > .setcols {
 			max-height: 0px;
 			opacity: 0;

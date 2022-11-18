@@ -338,17 +338,13 @@ function categoriseWordArraysAsDevices(anagramList: string[][]): IDeviceSet {
 	let containers = [] as IDevice[];
 	let anagrams = [] as IDevice[];
 
-	for (let anagramSet of anagramList.slice(0, 1000)) {
+	for (let anagramSet of anagramList) {
 		let device = isDevice(TARGET_WORD, anagramSet);
+		if (device) containers.push({ words: device } as IDevice);
 
-		if (!device) {
-			let anagramDevice = anagramSet.map(keyToIWord) as Array<IWord>;
-			anagrams.push({ words: anagramDevice } as IDevice);
-		} else {
-			containers.push({ words: device } as IDevice);
-		}
+		let anagramDevice = anagramSet.map(keyToIWord) as Array<IWord>;
+		anagrams.push({ words: anagramDevice } as IDevice);
 	}
-
 	return { anagrams, containers } as IDeviceSet;
 }
 
@@ -413,7 +409,7 @@ function generateSubstitutions(inputWord: string): ISubstitutionGrouped {
 
 		// DELETIONS: See if the leftover word is valid by itself.
 		if (isValidWordWithMinScore(restOfWord)) {
-			matches.push({ finalWord: keyToIWord(restOfWord) });
+			matches.push({ finalWord: keyToIWord(restOfWord), index });
 		}
 
 		// SUBSTITUTIONS: Iterate dictionary to find words with matching substitutions.
@@ -428,12 +424,16 @@ function generateSubstitutions(inputWord: string): ISubstitutionGrouped {
 					matches.push({
 						replacedBy: keyToIWord(substitution),
 						finalWord: keyToIWord(entry[0]),
+						index,
 					});
 				}
 			}
 		}
 
+		const score = (x: ISubstitutionPair) => x.finalWord.score + (x.replacedBy?.score || 100);
+
 		if (matches.length) {
+			matches.sort((a, b) => score(b) - score(a));
 			output.set(keyToIWord(word), matches);
 		}
 	}
@@ -476,8 +476,9 @@ function searchHiddenWords(searchSets: IHiddenWord[]) {
 	// Search dictionary for matching Start/Ends
 	for (let entry of DICTIONARY) {
 		for (let set of searchSets) {
-			if (entry[0].endsWith(set.start) && isValidWord(entry)) set.a.push(entry[0]);
-			if (entry[0].startsWith(set.end) && isValidWord(entry)) set.b.push(entry[0]);
+			if (entry[1].abbreviationFor || entry[1].score < 40) continue;
+			if (entry[0].endsWith(set.start) && entry[0] != set.start) set.a.push(entry[0]);
+			if (entry[0].startsWith(set.end) && entry[0] != set.end) set.b.push(entry[0]);
 		}
 	}
 
@@ -486,9 +487,11 @@ function searchHiddenWords(searchSets: IHiddenWord[]) {
 	for (let i = 0; i < searchSets.length; i++) {
 		if (searchSets[i].a.length != 0 && searchSets[i].b.length != 0) {
 			if (searchSets[i].a.length > 50) {
+				searchSets[i].a.sort((a, b) => scoreHiddenWord(b) - scoreHiddenWord(a));
 				searchSets[i].a = searchSets[i].a.slice(0, 50);
 			}
 			if (searchSets[i].b.length > 50) {
+				searchSets[i].b.sort((a, b) => scoreHiddenWord(b) - scoreHiddenWord(a));
 				searchSets[i].b = searchSets[i].b.slice(0, 50);
 			}
 			temp.push(searchSets[i]);
@@ -514,6 +517,11 @@ function getWordScoreAverage(words: string[]): number {
 	}
 	return totalscore / words.length;
 }
+
+const sortByLengthThenScore = (a: string, b: string) =>
+	a.length - b.length || DICTIONARY.get(b).score - DICTIONARY.get(a).score;
+
+const scoreHiddenWord = (a: string) => DICTIONARY.get(a).score - (a.length * a.length) / 4;
 
 let ORIGINAL_WORD_ARRAY = [];
 
