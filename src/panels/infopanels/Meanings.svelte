@@ -2,40 +2,34 @@
 import { slide } from 'svelte/transition';
 export let data: IThesaurusEntry;
 let abbreviationList = data?.abbreviationFor?.split(',') || null;
+import Accordion from '../../lib-sv/Accordion.svelte';
 
 const rowSizer = node => {
 	let vertMargin = node.clientHeight * 0.5 + 'px';
 	node.style.marginTop = node.style.marginBottom = vertMargin;
 };
 
-let closedGroups = [];
-const toggleOpen = (index: number) => {
-	closedGroups = closedGroups.includes(index)
-		? closedGroups.filter(x => x != index)
-		: [...closedGroups, index];
-};
 </script>
 
 <template lang="pug">
 .scrollwrapper
-    +each('data?.partsOfSpeech || [] as part')
-        +each('part?.senses|| [] as sense, index')
-            .partOfSpeech("class:open={!closedGroups.includes(index)} on:click={e => toggleOpen(index)}")
-                .label
-                    .partName <b>{part.partOfSpeech}</b>
-                    .definition {sense.definition}
-                +if("!closedGroups.includes(index)")
-                    .synonyms(transition:slide)
-                        +each('sense?.synonyms || [] as synonym')
-                            .synonymsrow()
-                                .syn.main {synonym.mainWord}
-                                +each('synonym?.relatedWords || [] as related')
-                                    .syn.related {related}
-    +if('abbreviationList')
-        p.abbrHeader Cryptic Abbreviation For: 
-        .abbrWrapper
-            +each('abbreviationList as abbr')
-                .abbrDef {abbr}
+	+each('data?.partsOfSpeech || [] as part')
+		+each('part?.senses|| [] as sense, index')
+			Accordion
+				.label("slot=header")
+					.partName <b>{part.partOfSpeech}</b>
+					.definition {sense.definition}
+				.synonyms("slot=inner")
+					+each('sense?.synonyms || [] as synonym')
+						.synonymsrow()
+							.syn.main {synonym.mainWord}
+							+each('synonym?.relatedWords || [] as related')
+								.syn.related {related}
+	+if('abbreviationList')
+		p.abbrHeader Cryptic Abbreviation For: 
+		.abbrWrapper
+			+each('abbreviationList as abbr')
+				.abbrDef {abbr}
 
 </template>
 
@@ -50,65 +44,26 @@ $indent: 15px;
 	align-items: center;
 }
 
-// Spinning Arrow
-
-.label:before {
-	transition: 0.3s ease-in-out;
-	content: '▶';
-	position: absolute;
-	top: 25px;
-	left: 10px;
-	color: darkgray;
-	font-size: 10px;
-}
-
-.open > .label:before {
-	transform: rotate(90deg);
-}
-
-// ---
-
-.partOfSpeech {
-	position: relative;
-	font-size: 12px;
-	display: block;
-	padding: 15px;
-	margin-bottom: 40px;
-	margin-right: 10px;
-	background-color: none;
-	transition: height 0.2s ease;
-	transition: max-height 0.2s ease;
-	height: min-content;
-	user-select: none;
-	border: 1px solid lightgray;
-	border-radius: 5px;
-
-	&:hover {
-		background-color: #fefefe;
-		cursor: pointer;
-	}
-
 	.label {
-		position: sticky;
-		top: 0;
-		background-color: white;
 		width: 100%;
+		display: flex;
 		flex-wrap: nowrap;
+		padding: 5px 20px;
+		padding-top: 6px;
 		font-size: 16px;
-		padding: 5px;
-		margin-bottom: 10px;
-		padding-left: 20px;
 		text-align: left;
 		line-height: 20px;
+		align-items: center;
 
 		.partName,
 		.definition {
 			flex: 0 1 auto;
-			padding: 5px;
+			padding: 0px 10px;
 		}
 	}
+
 	.synonyms {
-		overflow: hidden;
+
 		.synonymsrow {
 			width: 100%;
 			display: flex;
@@ -139,7 +94,6 @@ $indent: 15px;
 			}
 		}
 	}
-}
 
 .abbrHeader {
 	font-size: 16px;

@@ -25,26 +25,26 @@ export let data: IDevice;
 .device {
 	display: flex;
 	align-items: stretch;
-	line-height: 80px;
 }
 
 .word {
 	display: inline-block;
 	position: relative;
-	font-size: 16px;
+	font-size: 14px;
 	font-family: 'Courier Prime', Courier, monospace;
-	margin: 8px 2px;
+	font-weight: normal;
+	margin: 12px 3px;
+	padding: 1px 10px;
 	border-radius: 2px;
-	border: 1px solid gray;
+	border: 1px solid rgb(193, 193, 193);
 	cursor: pointer;
-	overflow: visible;
 	text-transform: lowercase;
+	background-color: var(--color);
 
 	@include hoverEffect();
 }
 
 .abbr {
-	border: 1px solid black;
 	text-transform: uppercase;
 }
 </style>
