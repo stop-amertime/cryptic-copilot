@@ -130,9 +130,17 @@ type ISlotIntersection = {
 };
 
 type ICellState = {
+	id: number;
 	letter: string;
 	isOverwritable: boolean;
 };
+
+type IBoundingBox = {
+	top: number,
+	left: number,
+	width: number,
+	height: number
+}
 
 type IMatchPredicate = [position: number, letter: string];
 
