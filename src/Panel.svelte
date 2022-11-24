@@ -1,54 +1,54 @@
 <script lang="ts">
-import PossibleWords from './panels/PossibleWords.svelte';
-import Info from './panels/Cryptic.svelte';
-import Clues from './panels/Clues.svelte';
-import Settings from './panels/Settings.svelte';
+	import PossibleWords from "./panels/PossibleWords.svelte";
+	import Info from "./panels/cryptic/Cryptic.svelte";
+	import Clues from "./panels/Clues.svelte";
+	import Settings from "./panels/settings/Settings.svelte";
 
-import { activeWord } from './StateMediator.svelte';
+	import { activeWord } from "./StateMediator.svelte";
 
-import { writable } from 'svelte/store';
-import { fly, slide } from 'svelte/transition';
-import { slideReplaceIn, slideReplaceOut } from './lib/utils';
-import { quadIn, quadInOut, quadOut } from 'svelte/easing';
-/* -------------------------------------------------------------------------- */
+	import { writable } from "svelte/store";
+	import { fly, slide } from "svelte/transition";
+	import { slideReplaceIn, slideReplaceOut } from "./lib/utils";
+	import { quadIn, quadInOut, quadOut } from "svelte/easing";
+	/* -------------------------------------------------------------------------- */
 
-/* ............................................. Display Correct Page For Tab */
+	/* ............................................. Display Correct Page For Tab */
 
-let tabs = writable([
-	{ label: '🙾 Words', checked: true, disabled: false },
-	{ label: '🗲 Cryptic', checked: false, disabled: true },
-	{ label: '? Clues', checked: false, disabled: false },
-	{ label: '⛭ Settings', checked: false, disabled: false },
-]);
+	let tabs = writable([
+		{ label: "🙾 Words", checked: true, disabled: false },
+		{ label: "🗲 Cryptic", checked: false, disabled: true },
+		{ label: "? Clues", checked: false, disabled: false },
+		{ label: "⛭ Settings", checked: false, disabled: false },
+	]);
 
-let displayPage = [PossibleWords, Info, Clues, Settings];
+	let displayPage = [PossibleWords, Info, Clues, Settings];
 
-let currentTab = 0;
-let currentPage = PossibleWords;
-let previousTab = $tabs.length - 1;
-let pageChangeDirection: 'up' | 'down' | 'left' | 'right' = 'right';
+	let currentTab = 0;
+	let currentPage = PossibleWords;
+	let previousTab = $tabs.length - 1;
+	let pageChangeDirection: "up" | "down" | "left" | "right" = "right";
 
-$: changePage(currentTab); //currentTab bound to selected Radio.
+	$: changePage(currentTab); //currentTab bound to selected Radio.
 
-function changePage(tabNumber: number) {
-	let newTab = $tabs[tabNumber];
-	pageChangeDirection = tabNumber < previousTab ? 'left' : 'right';
-	currentPage = displayPage[tabNumber];
-	previousTab = tabNumber;
-}
-
-/* ............................................ Toggle Tab2 If No Active Word */
-
-$: if (!$activeWord) {
-	if (currentTab == 1) {
-		currentTab = 0;
+	function changePage(tabNumber: number) {
+		let newTab = $tabs[tabNumber];
+		pageChangeDirection = tabNumber < previousTab ? "left" : "right";
+		currentPage = displayPage[tabNumber];
+		previousTab = tabNumber;
 	}
-	$tabs[1].disabled = true;
-} else {
-	$tabs[1].disabled = false;
-}
 
-/* -------------------------------------------------------------------------- */
+	/* ............................................ Toggle Tab2 If No Active Word */
+
+	$: if (!$activeWord) {
+		if (currentTab == 1) {
+			currentTab = 0;
+		}
+		$tabs[1].disabled = true;
+	} else {
+		$tabs[1].disabled = false;
+	}
+
+	/* -------------------------------------------------------------------------- */
 </script>
 
 <div id="panelWrapper">
@@ -85,89 +85,89 @@ $: if (!$activeWord) {
 </div>
 
 <style lang="scss">
-/* -------------------------------------------------------------------------- */
+	/* -------------------------------------------------------------------------- */
 
-:global(#panelWrapper *) {
-	font-family: 'Fira Code', 'Courier New', Courier, monospace;
-}
+	:global(#panelWrapper *) {
+		font-family: "Fira Code", "Courier New", Courier, monospace;
+	}
 
-#panelWrapper {
-	width: 100%;
-	height: 100%;
-	display: flex;
-	flex-direction: column;
-	overflow: hidden;
-}
+	#panelWrapper {
+		width: 100%;
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+	}
 
-/* Static border, doesn't move while internal panel animates. */
-#panelPageBorder {
-	width: 100%;
-	flex: 1 0 300px;
-	border-right: 1px solid black;
-	border-left: 1px solid black;
-	border-bottom: 1px solid black;
-	border-radius: 0px 0px 2px 2px;
-	overflow: hidden;
-	@include staticTransitionParent();
-}
-
-:global(#panelPage) {
-	padding: 0px;
-	width: 100%;
-	height: 100%;
-	overflow: hidden;
-	@include staticTransitionWrapper();
-	@include staticTransitionChild();
-}
-
-#panelTabs {
-	width: 100%;
-	flex: 0 0 30px;
-	max-width: calc(100% - 1px);
-
-	display: flex;
-	flex-direction: row;
-	flex-wrap: nowrap;
-
-	button {
-		flex: 1 0 auto;
-		margin: 0;
-		padding: 10px 10px;
-		border-radius: 2px 2px 0 0;
-		border-width: 1px 1px 0px 1px;
-		margin-right: -1px;
-		margin-left: 0px;
-		border-style: solid;
-		border-color: rgb(213, 213, 213);
+	/* Static border, doesn't move while internal panel animates. */
+	#panelPageBorder {
+		width: 100%;
+		flex: 1 0 300px;
+		border-right: 1px solid black;
+		border-left: 1px solid black;
 		border-bottom: 1px solid black;
-		font-size: 15px;
-		cursor: pointer;
-		-webkit-transition: all 0.2s ease-in-out;
-		transition: all 0.2s ease-in-out;
-		text-align: center;
-		background-color: whitesmoke;
-		color: rgba(79, 79, 79, 0.994);
+		border-radius: 0px 0px 2px 2px;
+		overflow: hidden;
+		@include staticTransitionParent();
+	}
 
-		&.selectedTab {
-			z-index: 0;
-			margin-top: 0px;
-			padding-top: 5px;
-			background: white;
-			color: black;
-			border-color: black black white black;
-			cursor: default;
-		}
-		&:not(.disabled):not(.selectedTab):hover {
-			background: rgba(242, 242, 242, 0.64);
-			color: rgb(113, 113, 113);
-		}
+	:global(#panelPage) {
+		padding: 0px;
+		width: 100%;
+		height: 100%;
+		overflow: hidden;
+		@include staticTransitionWrapper();
+		@include staticTransitionChild();
+	}
 
-		&.disabled {
-			background-color: rgb(233, 233, 233);
-			color: rgba(153, 153, 153, 0.538);
+	#panelTabs {
+		width: 100%;
+		flex: 0 0 30px;
+		max-width: calc(100% - 1px);
+
+		display: flex;
+		flex-direction: row;
+		flex-wrap: nowrap;
+
+		button {
+			flex: 1 0 auto;
+			margin: 0;
+			padding: 10px 10px;
+			border-radius: 2px 2px 0 0;
+			border-width: 1px 1px 0px 1px;
+			margin-right: -1px;
+			margin-left: 0px;
+			border-style: solid;
+			border-color: rgb(213, 213, 213);
 			border-bottom: 1px solid black;
-			cursor: default;
+			font-size: 15px;
+			cursor: pointer;
+			-webkit-transition: all 0.2s ease-in-out;
+			transition: all 0.2s ease-in-out;
+			text-align: center;
+			background-color: whitesmoke;
+			color: rgba(79, 79, 79, 0.994);
+
+			&.selectedTab {
+				z-index: 0;
+				margin-top: 0px;
+				padding-top: 5px;
+				background: white;
+				color: black;
+				border-color: black black white black;
+				cursor: default;
+			}
+			&:not(.disabled):not(.selectedTab):hover {
+				background: rgba(242, 242, 242, 0.64);
+				color: rgb(113, 113, 113);
+			}
+
+			&.disabled {
+				background-color: rgb(233, 233, 233);
+				color: rgba(153, 153, 153, 0.538);
+				border-bottom: 1px solid black;
+				cursor: default;
+			}
 		}
 	}
-}
 </style>

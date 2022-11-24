@@ -1,341 +1,312 @@
 <script context="module" lang="ts">
-  import { writable } from "svelte/store";
-  import {
-    makeCells,
-    makeWordSlots,
-    mapCellsToSlots,
-  } from "./lib/GridGenerator";
-  import {
-    setDictionary,
-    PossibleWords,
-    getThesaurus,
-    getSoundsLike,
-  } from "./lib/DictionaryEngine";
-  import { Save, Load } from "./lib/FileManager";
-  import { onMount, createEventDispatcher } from "svelte";
-  import { mapToDictFileString } from "./lib/utils";
+	import { derived, writable } from "svelte/store";
+	import { initGrid } from "./lib/GridGenerator";
+	import {
+		setDictionary,
+		PossibleWords,
+		getThesaurus,
+		getSoundsLike,
+	} from "./lib/DictionaryEngine";
+	import { Save } from "./lib/FileManager";
+	import { onMount, createEventDispatcher } from "svelte";
+	import { mapToDictFileString } from "./lib/utils";
 
-  /* ================================= STORES ================================= */
-  /// Dictionary
-  export const dictionary = writable(null as IDictionary);
-  export const dictionaryName = writable(
-    localStorage.getItem("dictionaryName") || "Cryptic Copilot Default"
-  );
-  export const priorityWords = writable(
-    JSON.parse(localStorage.getItem("priorityWords") || "[]") as string[]
-  );
+	/* ----------------------------- First Load ----------------------------- */
 
-  /// Grid
-  export const gridLayout = writable(undefined as IGridLayout);
-  export const wordSlots = writable(undefined as IWordSlot[]);
-  export const cells = writable([] as ICell[]);
-  export const stateRecord = writable(undefined as IStateRecord);
+	export let state: UserState;
+	export let global: UserGlobalState;
 
-  /// Active State
-  export const activeSlotId = writable(null as number);
-  export const activeWord = writable(null as string);
-  export const activeCells = writable(null as ICellState[]);
-  export const activeCellAnimations = writable({ orientation: "A", order: {} });
-  export const activePossibleWords = writable([] as IWord[]);
-  export const activeSlotBoundingBox = writable(null as IBoundingBox);
+	/* --------------------------------- Stores --------------------------------- */
+	/// Grid
+	export const defaultLayouts = writable(global.defaultLayouts);
+	export const gridLayout = writable(state.layout);
+	export const wordSlots = writable(state.slots);
+	export const cells = writable(state.cells);
 
-  export const activeDeviceList = writable(
-    Promise.resolve({}) as Promise<IDeviceSet>
-  );
-  export const activeThesaurus = writable(
-    Promise.resolve({}) as Promise<IThesaurusEntry>
-  );
-  export const activeSoundsLike = writable(
-    Promise.resolve([]) as Promise<IWord[]>
-  );
+	/// Global
+	export const dictionary = writable(global.dictionary as IDictionary);
+	export const dictionaryName = writable(
+		global.dictionaryName || "Cryptic Copilot Default"
+	);
+	export const priorityWords = writable(global.priorityWords);
 
-  /* ===================== REQUESTS FROM OTHER COMPONENTS ===================== */
+	/// Active State
+	export const activeSlotId = writable(null as number);
+	export const activeWord = writable(null as string);
+	export const activeCells = writable(null as ICellState[]);
+	export const activeCellAnimations = writable({ orientation: "A", order: {} });
+	export const activePossibleWords = writable([] as IWord[]);
+	export const activeSlotBoundingBox = writable(null as IBoundingBox);
 
-  export const isWordBanned = writable(null as Function);
-  export const clearGrid = () => stateRecord.set({ wordSlots: null });
-  export const changeLayout = (layout: IGridLayout) =>
-    stateRecord.set({ layout, wordSlots: null });
-  export const onNew = (writable: any, callback: Function) =>
-    writable.subscribe(callback);
+	export const activeDeviceList = writable(
+		Promise.resolve({}) as Promise<IDeviceSet>
+	);
+	export const activeThesaurus = writable(
+		Promise.resolve({}) as Promise<IThesaurusEntry>
+	);
+	export const activeSoundsLike = writable(
+		Promise.resolve([]) as Promise<IWord[]>
+	);
 
-  //
+	/* ===================== REQUESTS FROM OTHER COMPONENTS ===================== */
+
+	export const isWordBanned = writable(null as Function);
+	export const clearGrid = () => wordSlots.set(null);
+	export const changeLayout = (layout: IGridLayout) => {
+		gridLayout.set(layout);
+		wordSlots.set(null);
+	};
+	export const onNew = (writable: any, callback: Function) =>
+		writable.subscribe(callback);
 </script>
 
 <script lang="ts">
-  /* ================================ ON MOUNT ================================ */
-  $isWordBanned = (word: string): boolean =>
-    isPossibleWordBanned($wordSlots[$activeSlotId], word);
+	/* -------------------------------------------------------------------------- */
+	/*                                  SINGLETON                                 */
+	/* -------------------------------------------------------------------------- */
+	/* ================================ ON MOUNT ================================ */
+	$isWordBanned = (word: string): boolean =>
+		isPossibleWordBanned($wordSlots[$activeSlotId], word);
+	const dispatch = createEventDispatcher();
 
-  onMount(() => {
-    Load.lastOrDefaultDictionary().then(dictionary.set);
-  });
+	/* ================================= WORKER ================================= */
+	let workerPromises = {};
+	let nonce = 0;
 
-  Load.lastOrDefaultState().then(stateRecord.set);
-  const dispatch = createEventDispatcher();
+	const DeviceWorker = new Worker(
+		new URL("./lib/DeviceWorker", import.meta.url),
+		{
+			type: "module",
+		}
+	);
 
-  /* ================================= WORKER ================================= */
-  let workerPromises = {};
-  let nonce = 0;
+	const workerRequest = (request: string, payload: any) => {
+		let id = ++nonce;
+		DeviceWorker.postMessage({ id, request, payload });
+		return new Promise(function (resolve, reject) {
+			let resolver = resolve;
+			let rejecter = reject;
+			workerPromises[id] = { resolver, rejecter };
+		});
+	};
 
-  const DeviceWorker = new Worker(
-    new URL("./lib/DeviceWorker", import.meta.url),
-    {
-      type: "module",
-    }
-  );
+	DeviceWorker.onmessage = event => {
+		let { id, response, error } = event.data;
+		if (!workerPromises[id]) return;
 
-  const workerRequest = (request: string, payload: any) => {
-    let id = ++nonce;
-    DeviceWorker.postMessage({ id, request, payload });
-    return new Promise(function (resolve, reject) {
-      let resolver = resolve;
-      let rejecter = reject;
-      workerPromises[id] = { resolver, rejecter };
-    });
-  };
+		error
+			? workerPromises[id].rejecter(error)
+			: workerPromises[id].resolver(response);
+		console.log("Worker Responded:", { id });
+		delete workerPromises[id];
+	};
 
-  DeviceWorker.onmessage = (event) => {
-    let { id, response, error } = event.data;
-    if (!workerPromises[id]) return;
+	/* ============================= EVENT HANDLING ============================= */
 
-    error
-      ? workerPromises[id].rejecter(error)
-      : workerPromises[id].resolver(response);
-    console.log("Worker Responded:", { id });
-    delete workerPromises[id];
-  };
+	onNew(state, (state: IStateRecord) => {
+		if (state) {
+			dispatch("isLoading", true);
+			setState(state);
+			console.group("State Initialised:");
+			console.log(state);
+			console.groupEnd();
+			dispatch("isLoading", false);
+		}
+	});
 
-  /* ============================= EVENT HANDLING ============================= */
+	onNew(dictionary, (dict: IDictionary) => {
+		if (!dict) return;
+		//Sync Locally
+		try {
+			localStorage.setItem("dictionary", mapToDictFileString(dict));
+			localStorage.setItem("dictionaryName", $dictionaryName);
+		} catch (e) {
+			console.error(e);
+			alert(
+				`This dictionary is over 5MB in size. 
+			It can be used for now, but can't be saved in your browser between sessions. 
+			Before you leave the page, download a copy to use next time.`
+			);
+		}
+		//Sync with Dictionary Engine & Device Worker
+		setDictionary(dict);
+		workerRequest("initialise", dict);
+	});
 
-  onNew(stateRecord, (state: IStateRecord) => {
-    if (stateRecord) {
-      dispatch("isLoading", true);
-      setState(state);
-      console.group("State Initialised:");
-      console.log(state);
-      console.groupEnd();
-      dispatch("isLoading", false);
-    }
-  });
+	onNew(activeWord, (newWord: string) => {
+		if ($activeSlotId === null) return;
 
-  onNew(dictionary, (dict: IDictionary) => {
-    if (!dict) return;
-    //Sync Locally
-    try {
-      localStorage.setItem("dictionary", mapToDictFileString(dict));
-      localStorage.setItem("dictionaryName", $dictionaryName);
-    } catch (e) {
-      console.error(e);
-      alert(
-        `This dictionary is over 5MB in size. 
-            It can be used for now, but can't be saved in your browser between sessions. 
-            Before you leave the page, download a copy to use next time.`
-      );
-    }
-    //Sync with Dictionary Engine & Device Worker
-    setDictionary(dict);
-    workerRequest("initialise", dict);
-  });
+		$wordSlots[$activeSlotId].word = newWord;
 
-  onNew(activeWord, (newWord: string) => {
-    if ($activeSlotId === null) return;
+		let updatedCells = findNewCellLetters(newWord);
+		refreshCellLetters($wordSlots[$activeSlotId], updatedCells);
+		activeCells.set(updatedCells);
+		areIntersectingSlotsPossible($wordSlots[$activeSlotId]);
+		refreshCellColour($activeSlotId);
 
-    $wordSlots[$activeSlotId].word = newWord;
+		if (newWord) {
+			$activeDeviceList = workerRequest("getDevices", newWord);
+			$activeThesaurus = getThesaurus(newWord);
+			$activeSoundsLike = getSoundsLike(newWord);
+		}
+	});
 
-    let updatedCells = findNewCellLetters(newWord);
-    refreshCellLetters($wordSlots[$activeSlotId], updatedCells);
-    activeCells.set(updatedCells);
-    areIntersectingSlotsPossible($wordSlots[$activeSlotId]);
-    refreshCellColour($activeSlotId);
+	onNew(activeSlotId, (id: number) => {
+		if (id === null || !$wordSlots[id]) return;
+		let slot = $wordSlots[id];
+		refreshCellColour(id);
+		refreshActiveSlotProps(slot);
+		refreshActiveSlotBoundingBox(slot);
+		let [matchArray, len] = mkMatchPredicates(slot);
+		$activePossibleWords = PossibleWords.match(matchArray, len);
+	});
 
-    if (newWord) {
-      $activeDeviceList = workerRequest("getDevices", newWord);
-      $activeThesaurus = getThesaurus(newWord);
-      $activeSoundsLike = getSoundsLike(newWord);
-    }
-  });
+	onNew(priorityWords, (words: string[]) => {
+		localStorage.setItem("priorityWords", JSON.stringify(words));
+		setDictionary(null, $priorityWords);
+	});
 
-  onNew(activeSlotId, (id: number) => {
-    if (id === null || !$wordSlots[id]) return;
-    let slot = $wordSlots[id];
-    refreshCellColour(id);
-    refreshActiveSlotProps(slot);
-    refreshActiveSlotBoundingBox(slot);
-    let [matchArray, len] = mkMatchPredicates(slot);
-    $activePossibleWords = PossibleWords.match(matchArray, len);
-  });
+	addEventListener("resize", e =>
+		refreshActiveSlotBoundingBox($wordSlots[$activeSlotId])
+	);
+	/* =============================== FUNCTIONS  =============================== */
 
-  onNew(priorityWords, (words: string[]) => {
-    localStorage.setItem("priorityWords", JSON.stringify(words));
-    setDictionary(null, $priorityWords);
-  });
+	function setState(state: IStateRecord | Partial<IStateRecord>): void {
+		let prevState = { layout: $gridLayout, wordSlots: $wordSlots };
+		let newState = { ...prevState, ...state };
+		if (!newState.layout) return;
+		[$gridLayout, $wordSlots, $cells] = initGrid(newState);
+		// saveState(newState);
+	}
 
-  addEventListener("resize", (e) =>
-    refreshActiveSlotBoundingBox($wordSlots[$activeSlotId])
-  );
-  /* =============================== FUNCTIONS  =============================== */
+	function saveState(toSave: IStateRecord) {
+		debounce(Save.state, 3000)(toSave);
+	}
 
-  function setState(state: IStateRecord | Partial<IStateRecord>): void {
-    let prevState = { layout: $gridLayout, wordSlots: $wordSlots };
-    let newState = { ...prevState, ...state };
-    if (!newState.layout) return;
-    [$gridLayout, $wordSlots, $cells] = initGrid(newState);
-    // saveState(newState);
-  }
+	function debounce(func: Function, wait: number) {
+		let timeout = null;
+		return (...args: any[]) => {
+			const context = this;
+			clearTimeout(timeout);
+			timeout = setTimeout(() => {
+				timeout = null;
+				func.apply(context, args);
+			}, wait);
+		};
+	}
 
-  function saveState(toSave: IStateRecord) {
-    debounce(Save.state, 3000)(toSave);
-  }
+	function refreshActiveSlotProps(slot: IWordSlot): void {
+		$activeWord = slot.word || null;
+		$activeCells = makeSlotCellArray(slot);
+	}
 
-  function debounce(func: Function, wait: number) {
-    let timeout = null;
-    return (...args: any[]) => {
-      const context = this;
-      clearTimeout(timeout);
-      timeout = setTimeout(() => {
-        timeout = null;
-        func.apply(context, args);
-      }, wait);
-    };
-  }
+	function refreshActiveSlotBoundingBox(slot: IWordSlot): void {
+		const getCell = (id: number) =>
+			document.getElementById(`${id}`) as HTMLDivElement;
 
-  function initGrid(state: IStateRecord): [IGridLayout, IWordSlot[], ICell[]] {
-    let { layout, wordSlots } = state;
-    if (!layout) return;
-    let cells = makeCells(layout);
-    if (wordSlots && wordSlots.length > 0) {
-      wordSlots.forEach((slot) => {
-        if (slot.word) {
-          loadGridLetters(slot, cells);
-        }
-      });
-    } else {
-      wordSlots = makeWordSlots(layout);
-    }
-    [cells, wordSlots] = mapCellsToSlots(cells, wordSlots);
+		let [firstCell, lastCell] = [
+			getCell(slot.cells[0]),
+			getCell(slot.cells[slot.cells.length - 1]),
+		];
 
-    return [layout, wordSlots, cells];
-  }
+		let left = firstCell.offsetLeft;
+		let top = firstCell.offsetTop;
+		let width = lastCell.offsetLeft - left + lastCell.offsetWidth;
+		let height = lastCell.offsetTop - top + lastCell.offsetHeight;
 
-  function refreshActiveSlotProps(slot: IWordSlot): void {
-    $activeWord = slot.word || null;
-    $activeCells = makeSlotCellArray(slot);
-  }
+		activeSlotBoundingBox.set({ top, left, width, height });
+	}
 
-  function refreshActiveSlotBoundingBox(slot: IWordSlot): void {
-    const getCell = (id: number) =>
-      document.getElementById(`${id}`) as HTMLDivElement;
+	function makeSlotCellArray(slot: IWordSlot): ICellState[] {
+		let mycells = [] as ICellState[];
 
-    let [firstCell, lastCell] = [
-      getCell(slot.cells[0]),
-      getCell(slot.cells[slot.cells.length - 1]),
-    ];
+		for (let cellId of slot?.cells) {
+			mycells.push({
+				id: cellId,
+				letter: $cells[cellId].letter,
+				isOverwritable: true,
+			});
+		}
 
-    let left = firstCell.offsetLeft;
-    let top = firstCell.offsetTop;
-    let width = lastCell.offsetLeft - left + lastCell.offsetWidth;
-    let height = lastCell.offsetTop - top + lastCell.offsetHeight;
+		for (let { slotId, myIndex } of slot.intersections) {
+			if ($wordSlots[slotId].word) {
+				mycells[myIndex].isOverwritable = false;
+			}
+		}
+		return mycells;
+	}
 
-    activeSlotBoundingBox.set({ top, left, width, height });
-  }
+	function refreshCellLetters(slot: IWordSlot, cellStates: ICellState[]) {
+		$activeCellAnimations.orientation = slot.orientation;
+		let animOrder = 0;
 
-  function makeSlotCellArray(slot: IWordSlot): ICellState[] {
-    let mycells = [] as ICellState[];
+		for (let i = 0; i < slot.cells.length; i++) {
+			if (cellStates[i].isOverwritable) {
+				let cellId = slot.cells[i];
+				if ($cells[cellId].letter != cellStates[i].letter) {
+					$activeCellAnimations.order[cellId] = animOrder++;
+					$cells[cellId].letter = cellStates[i].letter;
+				}
+			}
+		}
+		$cells = $cells;
+	}
 
-    for (let cellId of slot?.cells) {
-      mycells.push({
-        id: cellId,
-        letter: $cells[cellId].letter,
-        isOverwritable: true,
-      });
-    }
+	function findNewCellLetters(newWord: string): ICellState[] {
+		return $activeCells.map((cell, i) => {
+			return cell.isOverwritable
+				? { ...cell, letter: newWord?.[i] || "" }
+				: cell;
+		});
+	}
 
-    for (let { slotId, myIndex } of slot.intersections) {
-      if ($wordSlots[slotId].word) {
-        mycells[myIndex].isOverwritable = false;
-      }
-    }
-    return mycells;
-  }
+	function refreshCellColour(selectedSlot: number): void {
+		for (let cell of $cells) {
+			$cells[cell.id].isSelected = cell.slots.includes(selectedSlot);
 
-  function loadGridLetters(slot: IWordSlot, cells: ICell[]): void {
-    for (let i = 0; i < slot.cells.length; i++) {
-      let cellId = slot.cells[i];
-      cells[cellId].letter = slot?.word?.[i] || "";
-    }
-  }
+			$cells[cell.id].isImpossible = cell.slots.some(
+				s => $wordSlots[s].isImpossible
+			);
+		}
+	}
 
-  function refreshCellLetters(slot: IWordSlot, cellStates: ICellState[]) {
-    $activeCellAnimations.orientation = slot.orientation;
-    let animOrder = 0;
+	function mkMatchPredicates(
+		slot: IWordSlot,
+		exclude: number = null
+	): [IMatchPredicate[], number] {
+		let array = [] as [index: number, letter: string][];
 
-    for (let i = 0; i < slot.cells.length; i++) {
-      if (cellStates[i].isOverwritable) {
-        let cellId = slot.cells[i];
-        if ($cells[cellId].letter != cellStates[i].letter) {
-          $activeCellAnimations.order[cellId] = animOrder++;
-          $cells[cellId].letter = cellStates[i].letter;
-        }
-      }
-    }
-    $cells = $cells;
-  }
+		for (let crossing of slot.intersections) {
+			if ($wordSlots[crossing.slotId].word && crossing.myIndex !== exclude) {
+				let letter = $wordSlots[crossing.slotId].word[crossing.otherIndex];
+				array.push([crossing.myIndex, letter]);
+			}
+		}
+		return [array, slot.len];
+	}
 
-  function findNewCellLetters(newWord: string): ICellState[] {
-    return $activeCells.map((cell, i) => {
-      return cell.isOverwritable
-        ? { ...cell, letter: newWord?.[i] || "" }
-        : cell;
-    });
-  }
+	function areIntersectingSlotsPossible(slot: IWordSlot): void {
+		for (let { slotId } of slot.intersections) {
+			if ($wordSlots[slotId].word) continue;
+			let [slotCells, len] = mkMatchPredicates($wordSlots[slotId]);
+			$wordSlots[slotId].isImpossible = !PossibleWords.hasMatch(slotCells, len);
+		}
+	}
 
-  function refreshCellColour(selectedSlot: number): void {
-    for (let cell of $cells) {
-      $cells[cell.id].isSelected = cell.slots.includes(selectedSlot);
+	function isPossibleWordBanned(slot: IWordSlot, newWord: string) {
+		for (let { slotId, myIndex, otherIndex } of slot.intersections) {
+			//If the slot has a word, no use checking - it must be possible.
+			if ($wordSlots[slotId].word) continue;
 
-      $cells[cell.id].isImpossible = cell.slots.some(
-        (s) => $wordSlots[s].isImpossible
-      );
-    }
-  }
+			//Create array of slot Cells.
+			let [slotCells, len] = mkMatchPredicates($wordSlots[slotId], otherIndex);
 
-  function mkMatchPredicates(
-    slot: IWordSlot,
-    exclude: number = null
-  ): [IMatchPredicate[], number] {
-    let array = [] as [index: number, letter: string][];
+			//Substitute the letter in the slot with the new letter.
+			slotCells.push([otherIndex, newWord[myIndex]]);
 
-    for (let crossing of slot.intersections) {
-      if ($wordSlots[crossing.slotId].word && crossing.myIndex !== exclude) {
-        let letter = $wordSlots[crossing.slotId].word[crossing.otherIndex];
-        array.push([crossing.myIndex, letter]);
-      }
-    }
-    return [array, slot.len];
-  }
-
-  function areIntersectingSlotsPossible(slot: IWordSlot): void {
-    for (let { slotId } of slot.intersections) {
-      if ($wordSlots[slotId].word) continue;
-      let [slotCells, len] = mkMatchPredicates($wordSlots[slotId]);
-      $wordSlots[slotId].isImpossible = !PossibleWords.hasMatch(slotCells, len);
-    }
-  }
-
-  function isPossibleWordBanned(slot: IWordSlot, newWord: string) {
-    for (let { slotId, myIndex, otherIndex } of slot.intersections) {
-      //If the slot has a word, no use checking - it must be possible.
-      if ($wordSlots[slotId].word) continue;
-
-      //Create array of slot Cells.
-      let [slotCells, len] = mkMatchPredicates($wordSlots[slotId], otherIndex);
-
-      //Substitute the letter in the slot with the new letter.
-      slotCells.push([otherIndex, newWord[myIndex]]);
-
-      //Check if that substitution would cause the slot to have no possible words.
-      if (!PossibleWords.hasMatch(slotCells, len)) return true;
-    }
-    return false;
-  }
+			//Check if that substitution would cause the slot to have no possible words.
+			if (!PossibleWords.hasMatch(slotCells, len)) return true;
+		}
+		return false;
+	}
 </script>

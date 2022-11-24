@@ -4,6 +4,21 @@ type WordDirection = 'forward' | 'reverse' | 'anagram';
 
 type detailsHeightTuple = [open: number, closed: number];
 
+type UserState = {
+	slots?: IWordSlot[];
+	layout?: IGridLayout;
+	cells?: ICell[];
+}
+
+type UserGlobalState = {
+	defaultLayouts?: IGridLayout[];
+	dictionary?: IDictionary;
+	dictionaryVersion?: string;
+	dictionaryName?: string;
+	priorityWords?: string[];
+}
+
+
 /* --------------------------------------------------------------------- Word */
 
 type IDictEntry = {

@@ -1,3 +1,29 @@
+
+export function initGrid(state: IStateRecord): [IGridLayout, IWordSlot[], ICell[]] {
+	let { layout, wordSlots } = state;
+	if (!layout) return;
+	let cells = makeCells(layout);
+	if (wordSlots && wordSlots.length > 0) {
+		wordSlots.forEach(slot => {
+			if (slot.word) {
+				loadGridLetters(slot, cells);
+			}
+		});
+	} else {
+		wordSlots = makeWordSlots(layout);
+	}
+	[cells, wordSlots] = mapCellsToSlots(cells, wordSlots);
+
+	return [layout, wordSlots, cells];
+}
+
+	function loadGridLetters(slot: IWordSlot, cells: ICell[]): void {
+		for (let i = 0; i < slot.cells.length; i++) {
+			let cellId = slot.cells[i];
+			cells[cellId].letter = slot?.word?.[i] || "";
+		}
+	}
+
 export function makeCells(gridTemplate: IGridLayout): ICell[] {
 	let i = 0;
 	let calc_cells = [] as ICell[];

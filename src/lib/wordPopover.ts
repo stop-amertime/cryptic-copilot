@@ -1,5 +1,5 @@
 import { createPopper } from '@popperjs/core/dist/umd/popper.js';
-import WordPopover from '../lib-sv/WordPopover.svelte';
+import WordPopover from '../lib-components/WordPopover.svelte';
 
 let nonce = 0;
 let activeHiders = [];
