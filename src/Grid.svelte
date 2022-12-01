@@ -1,12 +1,13 @@
 <script lang="ts">
 	import Cell from "./Cell.svelte";
 	import { fly } from "svelte/transition";
-	import { activeSlotId, cells } from "./StateMediator.svelte";
+	import { activeSlotId } from "./StateMediator.svelte";
 	import CurrentWord from "./CurrentWord.svelte";
 	import GridSelectionBox from "./lib-sv/GridSelectionBox.svelte";
 	/* -------------------------------------------------------------------------- */
 
-	$: rowsize = Math.sqrt($cells.length) as number;
+	export let cells: ICell[];
+	$: rowsize = Math.sqrt(cells.length);
 	let gridSize: number;
 
 	// A cell is clicked - select the appropriate wordSlot.
@@ -33,7 +34,7 @@
 	>
 		<GridSelectionBox />
 
-		{#each $cells as cell}
+		{#each cells as cell}
 			<Cell {...cell} on:clicked={updateSelectedSlot} />
 		{/each}
 	</div>

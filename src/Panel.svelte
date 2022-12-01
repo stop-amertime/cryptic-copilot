@@ -2,9 +2,8 @@
 	import PossibleWords from "./panels/PossibleWords.svelte";
 	import { activeWord } from "./StateMediator.svelte";
 	import { writable } from "svelte/store";
-	import { fly, slide } from "svelte/transition";
 	import { slideReplaceIn, slideReplaceOut } from "./lib/utils";
-	import { quadIn, quadInOut, quadOut } from "svelte/easing";
+	import { quadInOut } from "svelte/easing";
 	import { onMount } from "svelte";
 	/* -------------------------------------------------------------------------- */
 

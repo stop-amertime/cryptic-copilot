@@ -1,17 +1,13 @@
 <script context="module" lang="ts">
 	import { writable } from "svelte/store";
-	import { initGrid } from "./lib/GridGenerator";
-	import {
-		setDictionary,
-		PossibleWords,
-		getThesaurus,
-		getSoundsLike,
-	} from "./lib/DictionaryEngine";
-	import { Save } from "./lib/FileManager";
-	import { onMount } from "svelte";
-	import { mapToDictFileString } from "./lib/utils";
 	import { initData } from "./lib/Initialisation";
 	/* ================================= STORES ================================= */
+
+	/// Grid
+	export const gridLayout = writable(initData.layout as IGridLayout);
+	export const wordSlots = writable(initData.wordSlots as IWordSlot[]);
+	export const cells = writable(initData.cells as ICell[]);
+	export const stateRecord = writable(null as IStateRecord);
 
 	/// Dictionary
 	export const dictionary = writable(initData.dictionary as IDictionary);
@@ -21,12 +17,6 @@
 	export const priorityWords = writable(
 		JSON.parse(localStorage.getItem("priorityWords") || "[]") as string[]
 	);
-
-	/// Grid
-	export const gridLayout = writable(initData.layout as IGridLayout);
-	export const wordSlots = writable(initData.wordSlots as IWordSlot[]);
-	export const cells = writable(initData.cells as ICell[]);
-	export const stateRecord = writable(null as IStateRecord);
 
 	/// Active State ---- CHANGE TO DERIVED?
 	export const activeSlotId = writable(null as number);
@@ -46,7 +36,7 @@
 		Promise.resolve([]) as Promise<IWord[]>
 	);
 
-	/* ===================== REQUESTS FROM OTHER COMPONENTS ===================== */
+	/* ===================== REQUESTS & OTHER FUNCTIONS  ===================== */
 
 	export const isWordBanned = writable(null as Function);
 	export const clearGrid = () => stateRecord.set({ wordSlots: null });
@@ -59,16 +49,31 @@
 </script>
 
 <script lang="ts">
+	import Grid from "./Grid.svelte";
+	import Panel from "./Panel.svelte";
+	import {
+		setDictionary,
+		PossibleWords,
+		getThesaurus,
+		getSoundsLike,
+	} from "./lib/DictionaryEngine";
+	import { mapToDictFileString } from "./lib/utils";
+	import { onMount } from "svelte";
+
+	export let isLoading;
+
 	/* ================================ ON MOUNT ================================ */
 	$isWordBanned = (word: string): boolean =>
 		isPossibleWordBanned($wordSlots[$activeSlotId], word);
 
 	onMount(() => {
-		console.timeEnd("Load Time: ");
+		isLoading = false;
 		setDictionary($dictionary);
 		workerRequest("initialise", $dictionary);
 	});
 
+	const saveLocal = (input: Object) =>
+		debounce(input => saveLocalStorage(input), 500);
 	/* ================================= WORKER ================================= */
 	let workerPromises = {};
 	let nonce = 0;
@@ -103,13 +108,6 @@
 
 	/* ============================= EVENT HANDLING ============================= */
 
-	///////////////// REMOVE
-	onNew(stateRecord, (state: IStateRecord) => {
-		if (stateRecord) {
-			setState(state);
-		}
-	});
-
 	function ChangeDictionary(dict: IDictionary) {
 		if (!dict) return;
 		//Sync Locally
@@ -131,7 +129,6 @@
 
 	onNew(activeWord, (newWord: string) => {
 		if ($activeSlotId === null) return;
-
 		$wordSlots[$activeSlotId].word = newWord;
 
 		let updatedCells = findNewCellLetters(newWord);
@@ -162,26 +159,27 @@
 		setDictionary(null, $priorityWords);
 	});
 
-	addEventListener("resize", e =>
-		refreshActiveSlotBoundingBox($wordSlots[$activeSlotId])
-	);
+	(function setupAutoSave() {
+		onNew(gridLayout, (layout: IGridLayout) => {
+			saveLocalStorage({ layout });
+		});
+
+		onNew(wordSlots, (wordSlots: IWordSlot[]) => {
+			saveLocalStorage({ wordSlots });
+		});
+	})();
+
+	addEventListener("resize", e => {
+		if (!$activeSlotId) return;
+		refreshActiveSlotBoundingBox($wordSlots[$activeSlotId]);
+	});
+
 	/* =============================== FUNCTIONS  =============================== */
 
-	function setState(state: IStateRecord | Partial<IStateRecord>): void {
-		let prevState = { layout: $gridLayout, wordSlots: $wordSlots };
-		let newState = { ...prevState, ...state };
-		if (!newState.layout) return;
-		let updatedGrid = initGrid(newState.layout, newState.wordSlots);
-		[$gridLayout, $wordSlots, $cells] = [
-			updatedGrid.layout,
-			updatedGrid.wordSlots,
-			updatedGrid.cells,
-		];
-		// saveState(newState);
-	}
-
-	function saveState(toSave: IStateRecord) {
-		debounce(Save.state, 3000)(toSave);
+	function saveLocalStorage(input: Object) {
+		for (let [key, value] of Object.entries(input)) {
+			localStorage.setItem(key, JSON.stringify(value));
+		}
 	}
 
 	function debounce(func: Function, wait: number) {
@@ -311,3 +309,89 @@
 		return false;
 	}
 </script>
+
+.
+<div id="main">
+	<div id="gridArea">
+		<Grid bind:cells={$cells} />
+	</div>
+	<div id="panelArea">
+		<Panel />
+	</div>
+</div>
+
+<!----------------------------------------------------------------------CSS----->
+<style lang="scss" global>
+	@import url("https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap");
+	@import url("https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&display=swap");
+
+	* {
+		box-sizing: border-box;
+		font-family: "Fira Code", monospace;
+	}
+
+	.centre {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+	}
+
+	@media (min-width: 800px) {
+		#main {
+			margin: 0px auto;
+			position: absolute 0 0;
+			width: 100vw;
+			height: 100vh;
+			padding: 30px 30px;
+			max-width: 1800px;
+			overflow-y: auto;
+			display: flex;
+			flex-wrap: nowrap;
+			align-items: center;
+			justify-content: space-evenly;
+		}
+
+		#gridArea {
+			flex: 1 0 400px;
+			max-width: 800px;
+			padding-right: 15px;
+			padding: 25px;
+			display: flex;
+			flex-direction: column;
+			align-items: stretch;
+			justify-content: stretch;
+		}
+
+		#panelArea {
+			flex: 2 0 300px;
+			max-width: 600px;
+			height: 100%;
+		}
+	}
+
+	@media (max-width: 799px) {
+		#main {
+			display: flex;
+			flex-direction: column;
+			width: 100vw;
+			height: 100vh;
+			align-items: center;
+			justify-items: center;
+		}
+
+		#gridArea {
+			height: 40%;
+			display: flex;
+			justify-content: center;
+			width: 100%;
+			flex: 1 0 1fr;
+		}
+
+		#panelArea {
+			width: 90%;
+			flex: 1 1 auto;
+			margin: 20px;
+			margin-top: 15px;
+		}
+	}
+</style>

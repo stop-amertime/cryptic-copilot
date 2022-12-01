@@ -2,19 +2,19 @@ let DICTIONARY = new Map();
 let PRIORITY_WORDS = {};
 let WORDS_OF_LENGTH = new Map() as Map<number, string[]>;
 
-export const setDictionary = (dictionary: IDictionary = null, priorityWords: string[] = null) => {
+export const setDictionary = (
+	dictionary: IDictionary = null,
+	priorityWords: string[] = null
+) => {
 	if (dictionary) {
 		DICTIONARY = dictionary;
 		WORDS_OF_LENGTH = groupByLength([...dictionary.keys()]);
-		console.log('---- DictEngine Initialised');
 	}
 	if (priorityWords) {
 		PRIORITY_WORDS = {};
 		for (let word of priorityWords) {
 			PRIORITY_WORDS[word] = 1;
 		}
-		console.log('---- Priority Words Updated');
-		console.log(JSON.stringify(priorityWords));
 	}
 };
 
@@ -54,41 +54,44 @@ function groupByLength(list: Array<any>) {
 	return map;
 }
 
-export const toGridWord = word => word.toUpperCase().replace(/[^A-Z]/, '');
+export const toGridWord = word => word.toUpperCase().replace(/[^A-Z]/, "");
 export const getWord = (word: string): IWord => ({
 	word,
 	...DICTIONARY.get(word),
 });
 
 export const scoreToColour = (score: number): string => {
-	if (!score) return 'rgb(220, 220, 220)';
+	if (!score) return "rgb(220, 220, 220)";
 	else return `hsl(${Math.round(score * 1.25)}, 100%, 95%)`;
 };
 
 const byScoreThenRandom = (a: IWord, b: IWord) =>
-	isPriorityWord(b.word) - isPriorityWord(a.word) || +b.score - +a.score || Math.random() - 0.5;
+	isPriorityWord(b.word) - isPriorityWord(a.word) ||
+	+b.score - +a.score ||
+	Math.random() - 0.5;
 
-export const isPriorityWord = (word: string): number => PRIORITY_WORDS[word] ?? 0;
+export const isPriorityWord = (word: string): number =>
+	PRIORITY_WORDS[word] ?? 0;
 
 export const enum TrafficLight {
-	Green = '#44D62C',
-	Yellow = '#FA4616',
-	Red = '#FF0000',
+	Green = "#44D62C",
+	Yellow = "#FA4616",
+	Red = "#FF0000",
 }
 
 export function cellMatchRegex(cells: ICellState[]): RegExp {
-	let searchstring = '';
+	let searchstring = "";
 	for (let cell of cells) {
-		searchstring += cell.isOverwritable ? '.' : cell.letter;
+		searchstring += cell.isOverwritable ? "." : cell.letter;
 	}
-	return new RegExp('(\\b|^)' + searchstring + '(\\b|$)');
+	return new RegExp("(\\b|^)" + searchstring + "(\\b|$)");
 }
 
 export async function getThesaurus(word: string): Promise<IThesaurusEntry> {
 	const response = await fetch(
-		'https://dictionaryapi.com/api/v3/references/thesaurus/json/' +
+		"https://dictionaryapi.com/api/v3/references/thesaurus/json/" +
 			word +
-			'?key=f6bff6bb-3ff1-42d4-9de7-86291d3e2b26'
+			"?key=f6bff6bb-3ff1-42d4-9de7-86291d3e2b26"
 	);
 	const data = await response.json();
 
@@ -164,7 +167,8 @@ export async function getThesaurus(word: string): Promise<IThesaurusEntry> {
 
 	let dictEntry = DICTIONARY?.get(word) as IDictEntry;
 	let abbreviationFor = dictEntry?.abbreviationFor || null;
-	if (abbreviationFor) numberOfSenses += abbreviationFor?.split(',')?.length || 0;
+	if (abbreviationFor)
+		numberOfSenses += abbreviationFor?.split(",")?.length || 0;
 
 	return {
 		partsOfSpeech,
@@ -174,12 +178,15 @@ export async function getThesaurus(word: string): Promise<IThesaurusEntry> {
 }
 
 export async function getSoundsLike(word: string): Promise<IWord[]> {
-	return fetch('https://api.datamuse.com/words?sl=' + word)
+	return fetch("https://api.datamuse.com/words?sl=" + word)
 		.then(r => r.json())
 		.then(r => parseDatamuseSoundslike(word, r));
 }
 
-function parseDatamuseSoundslike(inputWord: string, resp: DatamuseWord[]): IWord[] {
+function parseDatamuseSoundslike(
+	inputWord: string,
+	resp: DatamuseWord[]
+): IWord[] {
 	let output: IWord[] = [];
 	let limit = 95;
 	for (let word of resp) {

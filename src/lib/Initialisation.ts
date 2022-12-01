@@ -46,14 +46,20 @@ export async function loadOrInitRequiredData(): Promise<InitData> {
 
 	// Load or fetch the required global data.
 	for (let [key, { parse, getDefault }] of requiredLoadItems) {
+		console.time("--- Loading " + key);
 		let item;
 		if (LS.hasOwnProperty(key)) {
 			item = LS.getItem(key);
 		} else {
+			console.time("--- Fetching " + key);
 			item = await getDefault();
+			console.timeEnd("--- Fetching " + key);
+			console.time("--- Writing " + key);
 			LS.setItem(key, item);
+			console.timeEnd("--- Loading " + key);
 		}
 		globalData[key] = parse(item);
+		console.timeEnd("--- Loading " + key);
 	}
 
 	// Load previous state, default state.
@@ -65,11 +71,8 @@ export async function loadOrInitRequiredData(): Promise<InitData> {
 
 	// Initial grid processing.
 	// Default layout used if no layout provided.
-	let userState = initGrid(
-		userStateData.layout || globalData.defaultLayouts[0],
-		userStateData.wordSlots
-	);
-	return { ...globalData, ...userStateData };
+	let userState = initGrid(userStateData.layout, userStateData.wordSlots);
+	return { ...globalData, ...userState };
 }
 
 /* -------------------------------- Functions ------------------------------- */
