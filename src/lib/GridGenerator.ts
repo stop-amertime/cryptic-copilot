@@ -1,3 +1,29 @@
+export function initGrid(
+	layout: IGridLayout,
+	wordSlots: IWordSlot[]
+): UserStateData {
+	let cells = makeCells(layout);
+	if (wordSlots && wordSlots.length > 0) {
+		[cells, wordSlots] = addSlotLettersToCells(cells, wordSlots);
+	} else {
+		wordSlots = makeWordSlots(layout);
+	}
+	[cells, wordSlots] = mapCellsToSlots(cells, wordSlots);
+	return { layout, wordSlots, cells };
+}
+
+function addSlotLettersToCells(cells: ICell[], wordSlots: IWordSlot[]) {
+	wordSlots.forEach(slot => {
+		if (slot.word) {
+			for (let i = 0; i < slot.cells.length; i++) {
+				let cellId = slot.cells[i];
+				cells[cellId].letter = slot?.word?.[i] || "";
+			}
+		}
+	});
+	return [cells, wordSlots] as [ICell[], IWordSlot[]];
+}
+
 export function makeCells(gridTemplate: IGridLayout): ICell[] {
 	let i = 0;
 	let calc_cells = [] as ICell[];
@@ -6,7 +32,7 @@ export function makeCells(gridTemplate: IGridLayout): ICell[] {
 			calc_cells.push({
 				id: i,
 				isValid: cell == 1 ? true : false,
-				letter: '',
+				letter: "",
 				isSelected: false,
 				isNumbered: false,
 			} as ICell);
@@ -48,12 +74,12 @@ export function makeWordSlots(gridTemplate: IGridLayout): IWordSlot[] {
 
 					temp_wordSlots.push({
 						number: slotIndex,
-						orientation: 'A',
-						clueIndex: slotIndex + 'A',
+						orientation: "A",
+						clueIndex: slotIndex + "A",
 						len: len,
 						cells: mycells,
 						word: null,
-						clue: '',
+						clue: "",
 						intersections: [],
 						isImpossible: false,
 					} as IWordSlot);
@@ -77,12 +103,12 @@ export function makeWordSlots(gridTemplate: IGridLayout): IWordSlot[] {
 					}
 					temp_wordSlots.push({
 						number: slotIndex,
-						orientation: 'D',
-						clueIndex: slotIndex + 'D',
+						orientation: "D",
+						clueIndex: slotIndex + "D",
 						len: len,
 						cells: mycells,
 						word: null,
-						clue: '',
+						clue: "",
 						intersections: [],
 						isImpossible: false,
 					});

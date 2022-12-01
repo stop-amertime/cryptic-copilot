@@ -1,9 +1,36 @@
-type SlotOrientation = 'A' | 'D';
+type SlotOrientation = "A" | "D";
 
-type WordDirection = 'forward' | 'reverse' | 'anagram';
+type WordDirection = "forward" | "reverse" | "anagram";
 
 type detailsHeightTuple = [open: number, closed: number];
 
+type ILoadProtocol<T> = {
+	parse: (x: string) => T;
+	getDefault: () => Promise<string>;
+};
+type ILoadItem<T> = [key: string, loadProtocol: ILoadProtocol<T>];
+type ILoadItemSet<T> = ILoadItem<T[keyof T]>[];
+
+interface GlobalData {
+	dictionary?: IDictionary;
+	defaultLayouts?: IGridLayout[];
+	priorityWords?: string[];
+}
+
+interface UserStateData {
+	wordSlots?: IWordSlot[];
+	layout?: IGridLayout;
+	cells?: ICell[];
+}
+
+type InitData = {
+	dictionary?: IDictionary;
+	defaultLayouts?: IGridLayout[];
+	priorityWords?: string[];
+	wordSlots?: IWordSlot[];
+	layout?: IGridLayout;
+	cells?: ICell[];
+};
 /* --------------------------------------------------------------------- Word */
 
 type IDictEntry = {
@@ -136,11 +163,11 @@ type ICellState = {
 };
 
 type IBoundingBox = {
-	top: number,
-	left: number,
-	width: number,
-	height: number
-}
+	top: number;
+	left: number;
+	width: number;
+	height: number;
+};
 
 type IMatchPredicate = [position: number, letter: string];
 
@@ -162,13 +189,13 @@ type IWorkerTask<Input, Output> = {
 };
 
 interface IWorkerPossibleWordsTask extends IWorkerTask<ICellState[], string[]> {
-	request: 'possibleWords';
+	request: "possibleWords";
 }
 
 interface IWorkerDeviceTask extends IWorkerTask<string, IDeviceSet> {
-	request: 'getDevices';
+	request: "getDevices";
 }
 
 interface IWorkerDictionaryTask extends IWorkerTask<IDictionary, boolean> {
-	request: 'setDictionary';
+	request: "setDictionary";
 }
