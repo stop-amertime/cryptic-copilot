@@ -64,6 +64,8 @@
 
 <!----------------------------------------------------------------------CSS----->
 <style global lang="scss">
+  @import url("https://fonts.googleapis.com/css2?family=Jetbrains+Mono:wght@300;400&display=swap");
+
   .cell {
     overflow: hidden;
     aspect-ratio: 1;
@@ -71,7 +73,6 @@
     background-color: black;
     margin-right: -1px;
     margin-bottom: -1px;
-    transition: all 0.2s ease-out;
   }
 
   .previewMode {
@@ -84,10 +85,9 @@
 
   .letterWrapper {
     @include staticTransitionChild();
-    font-family: "Courier Prime", Courier, monospace;
+    font-family: "Jetbrains Mono", monospace;
     text-align: center;
-    font-weight: bold;
-    font-size: calc(var(--size) * 0.8);
+    font-size: calc(var(--size) * 0.6);
     line-height: var(--size);
   }
 
@@ -100,7 +100,8 @@
     user-select: none;
 
     &.selected {
-      color: hsl(115, 100%, 19%);
+      font-weight: bold;
+      background-color: rgb(255, 255, 222);
     }
   }
 
@@ -125,9 +126,8 @@
 
   .numbered:nth-of-type(n)::before {
     content: counter(value);
-    font-size: calc(5px + 0.3vw);
-    line-height: 4px;
-    font-family: Cambria, Cochin, Georgia, Times, "Times New Roman", serif;
+    font-size: calc(6px + 0.3vw);
+    line-height: 6px;
     font-weight: bolder;
     text-align: left;
     position: absolute;

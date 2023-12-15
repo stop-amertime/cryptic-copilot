@@ -2,11 +2,20 @@
 import GridModal from './../modals/GridModal.svelte';
 import DictionaryModal from '../modals/DictionaryModal.svelte';
 import { Save, Load } from '../lib/FileManager';
-import { changeLayout, clearGrid } from '../StateMediator.svelte';
+import { changeLayout, clearGrid, loadCrossword } from '../StateMediator.svelte';
 import Modal from '../modals/Modal.svelte';
 import CodeRunner from './CodeRunner.svelte';
 
 const save = () => Save.stateToFile();
+const load = () => {
+	Load.stateFromFile().then(loadedState => {
+		if (loadedState.layout){
+			loadCrossword(loadedState)
+		}
+	});
+}
+	
+
 const resetGrid = (event: MouseEvent) => clearGrid();
 const changeGrid = (event: MouseEvent) => {
 	let node = event.target as HTMLElement;
@@ -47,8 +56,8 @@ const closeDictionaryModal = () => (showDictionaryModal = false);
 	<div class="row">
 		<span>🗄 Files</span>
 		<div class="buttonrow">
-			<button>🖫 Save As</button>
-			<button on:click={openGridModal}>🗁 Load</button>
+			<button on:click={save}>🖫 Save As</button>
+			<button on:click={load}>🗁 Load</button>
 		</div>
 		<label>
 			<input type="checkbox" disabled />

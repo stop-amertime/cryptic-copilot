@@ -16,18 +16,21 @@ const loadLocal = (key: string): any => JSON.parse(localStorage.getItem(key));
 //== LAST STATE
 let activeFile = null;
 let defaultLayouts = loadLocal('defaultLayouts');
-let state = loadLocal('state');
+let state = {
+	wordSlots: loadLocal('wordSlots'),
+	layout: loadLocal('layout'),
+};	
 
 export const Load = {
 	lastOrDefaultState: async function (): Promise<IStateRecord> {
-		if (!state) {
+		if (!state.wordSlots || !state.layout) {
 			let response = await fetch(DEFAULT_LAYOUTURL);
 			let templates = await response.json();
 			defaultLayouts = templates as IGridLayout[];
-			state = { layout: defaultLayouts[0] };
-			saveLocal({ state, defaultLayouts });
+			state = { wordSlots: null, layout: defaultLayouts[0] };
+			saveLocal({ defaultLayouts });
 			return state;
-		} else return loadLocal('state');
+		} else return {wordSlots: loadLocal('wordSlots'), layout: loadLocal('layout')};
 	},
 
 	lastOrDefaultDictionary: async (): Promise<IDictionary> => {
@@ -59,18 +62,18 @@ export const Load = {
 
 	defaultLayouts,
 
-	StateFromFile: async function (): Promise<IStateRecord> {
+	stateFromFile: async function (): Promise<IStateRecord> {
 		//@ts-ignore
 		[activeFile] = await window.showOpenFilePicker();
 		const file = await activeFile.getFile();
 		const loadedFile = await file.text();
 		return JSON.parse(loadedFile) as IStateRecord;
 	},
-};
+}
 
 export const Save = {
 	state: async (stateRecord: IStateRecord): Promise<boolean> => {
-		state = { ...state, ...stateRecord };
+		state = {...state, ...stateRecord};
 		saveLocal({ state });
 
 		if (activeFile) {
@@ -89,6 +92,8 @@ export const Save = {
 	},
 
 	stateToFile: async () => {
+		console.log(state);
+		console.log(JSON.stringify(state));
 		const saveOptions = {
 			types: [
 				{

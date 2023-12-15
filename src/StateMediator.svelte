@@ -1,6 +1,8 @@
 <script context="module" lang="ts">
 	import { writable } from "svelte/store";
 	import { initData } from "./lib/Initialisation";
+	import { initGrid } from "./lib/GridGenerator";
+
 	/* ================================= STORES ================================= */
 
 	/// Grid
@@ -42,6 +44,12 @@
 	export const clearGrid = () => stateRecord.set({ wordSlots: null });
 	export const changeLayout = (layout: IGridLayout) =>
 		stateRecord.set({ layout, wordSlots: null });
+	export const loadCrossword = (stateRecord: IStateRecord) => {
+		let stateData = initGrid(stateRecord.layout, stateRecord.wordSlots);
+		wordSlots.set(stateData.wordSlots);
+		cells.set(stateData.cells);
+		gridLayout.set(stateData.layout);
+	};
 	export const onNew = (writable: any, callback: Function) =>
 		writable.subscribe(callback);
 
@@ -336,19 +344,19 @@
 		left: 50%;
 	}
 
-	@media (min-width: 800px) {
+	@media (min-width: 1000px) {
 		#main {
 			margin: 0px auto;
 			position: absolute 0 0;
 			width: 100vw;
 			height: 100vh;
 			padding: 30px 30px;
-			max-width: 1800px;
+			max-width: 1200px;
 			overflow-y: auto;
 			display: flex;
-			flex-wrap: nowrap;
+			flex-wrap: wrap;
 			align-items: center;
-			justify-content: space-evenly;
+			justify-content: center
 		}
 
 		#gridArea {

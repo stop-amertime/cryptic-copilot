@@ -1,9 +1,9 @@
 <script lang="ts">
 	import Cell from "./Cell.svelte";
+	
 	import { fly } from "svelte/transition";
 	import { activeSlotId } from "./StateMediator.svelte";
 	import CurrentWord from "./CurrentWord.svelte";
-	import GridSelectionBox from "./lib-sv/GridSelectionBox.svelte";
 	/* -------------------------------------------------------------------------- */
 
 	export let cells: ICell[];
@@ -32,8 +32,6 @@
 		transition:fly={{ duration: 1000 }}
 		style="--dimension:{rowsize}"
 	>
-		<GridSelectionBox />
-
 		{#each cells as cell}
 			<Cell {...cell} on:clicked={updateSelectedSlot} />
 		{/each}
@@ -47,22 +45,25 @@
 	* {
 		box-sizing: border-box;
 	}
-	@media (max-width: 800px) {
+	@media (max-width: 1000px) {
 		#Grid {
+			width: 100%;
 			align-items: center;
 			justify-content: stretch;
 		}
 	}
 
 	#Grid {
+		width: 500px;
+		height: 500px;
 		display: flex;
 		flex-direction: column;
 		align-items: stretch;
 		justify-content: center;
 
 		#GridDiv {
-			max-height: 100%;
-			max-width: 100%;
+			max-height: 500px;
+			max-width: 500px;
 			aspect-ratio: 1;
 			display: grid;
 			grid-template-columns: repeat(var(--dimension), 1fr);

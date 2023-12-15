@@ -5,6 +5,7 @@
 	import { slideReplaceIn, slideReplaceOut } from "./lib/utils";
 	import { quadInOut } from "svelte/easing";
 	import { onMount } from "svelte";
+  import { fade } from "svelte/transition";
 	/* -------------------------------------------------------------------------- */
 
 	/* ----------------------------------------------       Import Secondary Tabs */
@@ -70,8 +71,9 @@
 
 	<div id="panelPageBorder">
 		{#key currentTab}
-			<div
-				id="panelPage"
+
+			<!-- Code for 'Slide Replacement' Animation 
+				
 				in:slideReplaceIn={{
 					direction: pageChangeDirection,
 					easing: quadInOut,
@@ -79,7 +81,12 @@
 				out:slideReplaceOut={{
 					direction: pageChangeDirection,
 					easing: quadInOut,
-				}}
+				}} -->
+
+			<div
+				id="panelPage"
+				in:fade={{ duration: 100 }}
+				out:fade={{ duration: 100 }}
 			>
 				<svelte:component this={displayPage[currentTab]} />
 			</div>

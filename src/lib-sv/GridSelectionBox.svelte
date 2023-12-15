@@ -1,4 +1,6 @@
 <script lang="ts">
+
+  // Box that  moves whwn the user selects a slot. ./o 
   import { tweened } from "svelte/motion";
   import { sineInOut } from "svelte/easing";
   import { activeSlotBoundingBox } from "../StateMediator.svelte";
