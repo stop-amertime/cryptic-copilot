@@ -2,17 +2,26 @@
 import { priorityWords, dictionary } from '../StateMediator.svelte';
 
 let newWordInput = '';
-$: newWordInput = newWordInput.replaceAll(/[^A-z]/g, '').toLocaleUpperCase();
 
 const addWord = () => {
-	if (newWordInput.length > 0 && !$priorityWords.includes(newWordInput)) {
-		$priorityWords = [...$priorityWords, newWordInput];
+	if (newWordInput.trim().length === 0) return;
+	
+	// Split by commas and process each word
+	const wordsToAdd = newWordInput
+		.split(',')
+		.map(word => word.trim().replaceAll(/[^A-Za-z]/g, '').toUpperCase())
+		.filter(word => word.length > 0 && !$priorityWords.includes(word));
+	
+	if (wordsToAdd.length > 0) {
+		// Use the set method on the store to ensure reactivity
+		priorityWords.set([...$priorityWords, ...wordsToAdd]);
 		newWordInput = '';
 	}
 };
 
 const removeWord = (word: string) => {
-	$priorityWords = $priorityWords.filter(w => w !== word);
+	// Use the set method on the store to ensure reactivity
+	priorityWords.set($priorityWords.filter(w => w !== word));
 };
 </script>
 
@@ -21,13 +30,11 @@ const removeWord = (word: string) => {
 
 	<div class="priorityWords">
 		{#each $priorityWords as word}
-			<div class="priorityWord" class:notInDict={$dictionary.has(word)}>
+			<div class="priorityWord" class:notInDict={!$dictionary.has(word)}>
 				<p>{word}</p>
 				<button
 					class="deleteWord"
-					on:click={() => {
-						() => removeWord(word);
-					}}
+					on:click={() => removeWord(word)}
 				>
 					x
 				</button>
@@ -36,22 +43,26 @@ const removeWord = (word: string) => {
 	</div>
 
 	<div class="wordAdder">
-		<input type="text" placeholder="Enter a  new word..." bind:value={newWordInput} />
-		<button on:click={() => addWord()}>+ Add</button>
+		<textarea 
+			placeholder="Enter words separated by commas..." 
+			bind:value={newWordInput}
+			on:keydown={(e) => e.key === 'Enter' && e.ctrlKey && addWord()}
+		></textarea>
+		<button on:click={addWord}>+ Add</button>
 	</div>
 </div>
 
 <style lang="scss">
 .component {
 	width: 100%;
-	height: 100%;
+	max-width: 500px;
+	max-height: 80vh;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	justify-content: center;
 
 	& > div {
-		margin: 20px;
+		margin: 10px;
 		padding: 10px;
 		display: flex;
 		flex-direction: row;
@@ -68,6 +79,8 @@ const removeWord = (word: string) => {
 	.priorityWords {
 		border: 1px solid lightgray;
 		width: 100%;
+		max-height: 40vh;
+		overflow-y: auto;
 	}
 
 	.priorityWord {
@@ -105,11 +118,20 @@ const removeWord = (word: string) => {
 	}
 
 	.wordAdder {
-		input {
+		width: 100%;
+		display: flex;
+		flex-direction: column;
+		
+		textarea {
 			flex: 1 0 auto;
+			height: 60px;
+			max-height: 120px;
+			margin-bottom: 10px;
+			resize: vertical;
 		}
 
 		button {
+			align-self: flex-end;
 			flex: 0 0 50px;
 			background-color: hsl(108, 92%, 95%);
 			color: #000;

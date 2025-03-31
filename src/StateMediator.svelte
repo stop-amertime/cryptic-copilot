@@ -165,6 +165,13 @@
 	onNew(priorityWords, (words: string[]) => {
 		localStorage.setItem("priorityWords", JSON.stringify(words));
 		setDictionary(null, $priorityWords);
+		
+		// Re-sort possible words when priority words change
+		if ($activeSlotId !== null && $wordSlots[$activeSlotId]) {
+			let slot = $wordSlots[$activeSlotId];
+			let [matchArray, len] = mkMatchPredicates(slot);
+			$activePossibleWords = PossibleWords.match(matchArray, len);
+		}
 	});
 
 	(function setupAutoSave() {
